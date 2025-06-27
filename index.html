@@ -441,7 +441,26 @@ function setFilter(type) {
           tvShows = tvData.results || [];
         }
 
-        const allResults = [...movies, ...tvShows];
+        // Carica le liste di ID da VixSRC
+// Carica le liste offline di VixSRC
+// Carica i file locali
+const [rawMovies, rawTV] = await Promise.all([
+  fetch('vix-movies-ids.json').then(r => r.json()),
+  fetch('vix-tv-ids.json').then(r => r.json())
+]);
+
+// Estrai solo gli ID in due array
+const vixsrcMovieIds = rawMovies.map(entry => entry.tmdb_id);
+const vixsrcTVIds = rawTV.map(entry => entry.tmdb_id);
+
+// Filtra i risultati
+const allResults = [...movies, ...tvShows].filter(item => {
+  const isTV = !!item.first_air_date;
+  return isTV ? vixsrcTVIds.includes(item.id) : vixsrcMovieIds.includes(item.id);
+});
+
+
+
 
         if (allResults.length === 0) {
           container.innerHTML = `
@@ -476,6 +495,7 @@ function setFilter(type) {
             </div>
           `;
         }).join('');
+        
 
       } catch (error) {
         console.error("Search error:", error);
