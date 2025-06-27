@@ -3,95 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Streaming Film - Ricerca</title>
+  <title>Streaming Film e Serie TV</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
-<script>
-// Blocco avanzato dei popup indesiderati
-document.addEventListener('DOMContentLoaded', function() {
-  // 1. Blocco delle funzioni native per aprire popup
-  const originalWindowOpen = window.open;
-  window.open = function(url, name, specs) {
-    // Permetti solo popup autorizzati (aggiungi i tuoi domini consentiti)
-    const allowedDomains = [
-      'vixsrc.to',
-      'themoviedb.org'
-    ];
-    
-    const isAllowed = allowedDomains.some(domain => url.includes(domain));
-    if (isAllowed) {
-      return originalWindowOpen.call(window, url, name, specs);
-    }
-    console.log('Popup bloccato:', url);
-    return null;
-  };
-
-  // 2. Blocco dei click su elementi che potrebbero aprire popup
-  document.addEventListener('click', function(e) {
-    let target = e.target;
-    while (target !== null && target !== document) {
-      if (target.tagName === 'A' && target.target === '_blank') {
-        const href = target.getAttribute('href');
-        if (href && href.startsWith('http') && !href.includes('vixsrc.to') && !href.includes('themoviedb.org')) {
-          e.preventDefault();
-          console.log('Popup bloccato da click:', href);
-          return;
-        }
-      }
-      target = target.parentNode;
-    }
-  }, true);
-
-  // 3. Blocco dei popup automatici dopo il caricamento
-  setTimeout(() => {
-    const popups = document.querySelectorAll('[onload*="window.open"], [onclick*="window.open"]');
-    popups.forEach(popup => {
-      popup.removeAttribute('onload');
-      popup.removeAttribute('onclick');
-      console.log('Rimosso gestore popup da elemento');
-    });
-  }, 2000);
-
-  // 4. Protezione contro iframe pubblicitari
-  const observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-      mutation.addedNodes.forEach(function(node) {
-        if (node.nodeName === 'IFRAME') {
-          if (!node.src.includes('vixsrc.to') && !node.src.includes('themoviedb.org')) {
-            node.remove();
-            console.log('Iframe non autorizzato rimosso');
-          }
-        }
-      });
-    });
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
-});
-
-// Notifica all'utente quando viene bloccato un popup (opzionale)
-function showBlockedPopupNotice(url) {
-  const notice = document.createElement('div');
-  notice.style.position = 'fixed';
-  notice.style.bottom = '20px';
-  notice.style.right = '20px';
-  notice.style.backgroundColor = '#e50914';
-  notice.style.color = 'white';
-  notice.style.padding = '10px';
-  notice.style.borderRadius = '5px';
-  notice.style.zIndex = '9999';
-  notice.innerHTML = `
-    🔒 Popup bloccato: ${new URL(url).hostname}
-    <button onclick="this.parentNode.remove()" style="margin-left:10px; background:transparent; border:none; color:white; cursor:pointer;">✕</button>
-  `;
-  document.body.appendChild(notice);
-  setTimeout(() => notice.remove(), 3000);
-}
-</script>
-
   <style>
     :root {
       --primary: #e50914;
@@ -122,7 +35,7 @@ function showBlockedPopupNotice(url) {
       top: 0;
       z-index: 100;
       display: flex;
-      justify-content: center; /* Centra il logo */
+      justify-content: center;
       align-items: center;
     }
 
@@ -130,14 +43,11 @@ function showBlockedPopupNotice(url) {
       height: 40px;
     }
 
-    /* Search Box */
+    /* Search Container */
     .search-container {
       max-width: 800px;
       width: 100%;
       margin: 120px auto 40px;
-    align-items: center; /* Centra orizzontalmente */
-      justify-content: center; /* Centra verticalmente */
-      min-height: 40vh; /* Altezza minima per centrare bene */
       padding: 0 20px;
     }
 
@@ -191,7 +101,7 @@ function showBlockedPopupNotice(url) {
       padding: 20px;
     }
 
-    .movie-card {
+    .media-card {
       background: var(--gray);
       border-radius: 10px;
       overflow: hidden;
@@ -199,22 +109,22 @@ function showBlockedPopupNotice(url) {
       cursor: pointer;
     }
 
-    .movie-card:hover {
+    .media-card:hover {
       transform: translateY(-10px);
       box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
 
-    .movie-poster {
+    .media-poster {
       width: 100%;
       height: 300px;
       object-fit: cover;
     }
 
-    .movie-info {
+    .media-info {
       padding: 15px;
     }
 
-    .movie-title {
+    .media-title {
       font-size: 1.1rem;
       margin-bottom: 5px;
       white-space: nowrap;
@@ -222,7 +132,9 @@ function showBlockedPopupNotice(url) {
       text-overflow: ellipsis;
     }
 
-    .movie-year {
+    .media-meta {
+      display: flex;
+      justify-content: space-between;
       color: var(--light-gray);
       font-size: 0.9rem;
     }
@@ -241,12 +153,6 @@ function showBlockedPopupNotice(url) {
   max-width: 600px;
 }
 
-/* Per il container dei risultati */
-#results-container {
-  position: relative;
-  min-height: 300px; /* Altezza minima per il centramento */
-}
-
     .loading-spinner {
       display: inline-block;
       animation: spin 1s linear infinite;
@@ -258,6 +164,50 @@ function showBlockedPopupNotice(url) {
       100% { transform: rotate(360deg); }
     }
 
+    /* Aggiungi questo allo stile esistente */
+.filters {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin: 0 auto 30px;
+  max-width: 400px;
+}
+
+.filter-btn {
+  flex: 1;
+  padding: 10px 0;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 30px;
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  backdrop-filter: blur(10px);
+  text-align: center;
+}
+
+.filter-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.filter-btn.active {
+  background: var(--primary);
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
+}
+
+/* Versione mobile */
+@media (max-width: 768px) {
+  .filters {
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .filter-btn {
+    padding: 8px 0;
+    font-size: 0.8rem;
+  }
+}
     /* Player */
     .player-container {
       position: fixed;
@@ -293,6 +243,64 @@ function showBlockedPopupNotice(url) {
       cursor: pointer;
     }
 
+    .episode-selection-view {
+  width: 90%;
+  max-width: 1000px;
+  height: 90%;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.episodes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+@media (max-width: 768px) {
+  .episode-card {
+    padding: 10px;
+  }
+  
+  .episode-card img {
+    max-height: 120px;
+  }
+  
+  .episodes-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+  }
+}
+
+.episode-card {
+  background: var(--gray);
+  padding: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.3s;
+  overflow: hidden; /* Nuovo - Contiene l'immagine */
+}
+
+.episode-card img {
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+  margin-top: 10px;
+  object-fit: cover;
+  max-height: 150px; /* Altezza massima */
+  border: 1px solid rgba(255,255,255,0.1); /* Bordo sottile */
+}
+
+.episode-card:hover {
+  transform: translateY(-5px);
+}
+
+.error-message {
+  color: white;
+  text-align: center;
+  padding: 40px;
+}
+
     /* Responsive */
     @media (max-width: 768px) {
       .navbar {
@@ -307,7 +315,7 @@ function showBlockedPopupNotice(url) {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       }
 
-      .movie-poster {
+      .media-poster {
         height: 225px;
       }
 
@@ -316,31 +324,8 @@ function showBlockedPopupNotice(url) {
         height: 60%;
       }
     }
-    
   </style>
-
-  <style id="anti-ad-style">
-  /* Blocca elementi comuni di ads */
-  iframe[src*="ad"], 
-  iframe[src*="ads"], 
-  iframe[src*="doubleclick"],
-  .ad-container,
-  .adsbygoogle,
-  [class*="adunit"],
-  [class*="advertisement"],
-  [id*="advertisement"] {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
-</style>
-
-
-  
 </head>
-
 <body>
   <!-- Navbar -->
   <nav class="navbar">
@@ -354,17 +339,23 @@ function showBlockedPopupNotice(url) {
         type="text" 
         class="search-input" 
         id="search-input" 
-        placeholder="Cerca film..."
+        placeholder="Cerca film o serie TV..."
         onkeyup="handleSearchKeyup(event)"
       >
-      <button class="search-button" onclick="searchMovies()">
+      <button class="search-button" onclick="searchMedia()">
         <i class="fas fa-search"></i>
       </button>
     </div>
 
+<div class="filters">
+  <button class="filter-btn active" onclick="setFilter('all')">Tutti</button>
+  <button class="filter-btn" onclick="setFilter('movie')">Film</button>
+  <button class="filter-btn" onclick="setFilter('tv')">Serie TV</button>
+</div>
+
     <div id="results-container" class="results-grid">
       <div class="state-message">
-        <i class="fas fa-film"></i> Cerca un film per iniziare
+        <i class="fas fa-film"></i> Cerca film o serie TV per iniziare
       </div>
     </div>
   </div>
@@ -378,17 +369,37 @@ function showBlockedPopupNotice(url) {
   </div>
 
   <script>
+    let currentTVData = null; // Memorizza i dati della serie corrente
+let isInEpisodeSelection = false; // Flag per lo stato di selezione episodi
     const API_KEY = "1e8c9083f94c62dd66fb2105cd7b613b";
+    let currentFilter = 'all';
 
     // Handle Enter key
     function handleSearchKeyup(event) {
       if (event.key === 'Enter') {
-        searchMovies();
+        searchMedia();
       }
     }
 
+    // Set filter
+// MODIFICA la funzione setFilter così:
+function setFilter(type) {
+  currentFilter = type;
+  // Aggiorna lo stato attivo di tutti i bottoni
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.remove('active');
+    if ((type === 'all' && btn.textContent.includes('Tutti')) ||
+        (type === 'movie' && btn.textContent.includes('Film')) ||
+        (type === 'tv' && btn.textContent.includes('Serie'))) {
+      btn.classList.add('active');
+    }
+  });
+
+      searchMedia();
+    }
+
     // Main search function
-    async function searchMovies() {
+    async function searchMedia() {
       const query = document.getElementById("search-input").value.trim();
       const container = document.getElementById("results-container");
       
@@ -409,35 +420,58 @@ function showBlockedPopupNotice(url) {
       `;
 
       try {
-        const response = await fetch(
-          `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=it-IT`
-        );
-        
-        const data = await response.json();
+        let movies = [];
+        let tvShows = [];
 
-        if (!data.results || data.results.length === 0) {
+        // Search movies if filter is 'all' or 'movie'
+        if (currentFilter === 'all' || currentFilter === 'movie') {
+          const moviesRes = await fetch(
+            `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=it-IT`
+          );
+          const moviesData = await moviesRes.json();
+          movies = moviesData.results || [];
+        }
+
+        // Search TV shows if filter is 'all' or 'tv'
+        if (currentFilter === 'all' || currentFilter === 'tv') {
+          const tvRes = await fetch(
+            `https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=it-IT`
+          );
+          const tvData = await tvRes.json();
+          tvShows = tvData.results || [];
+        }
+
+        const allResults = [...movies, ...tvShows];
+
+        if (allResults.length === 0) {
           container.innerHTML = `
             <div class="state-message">
-              <i class="far fa-sad-tear"></i> Nessun film trovato
+              <i class="far fa-sad-tear"></i> Nessun risultato trovato
             </div>
           `;
           return;
         }
 
         // Display results
-        container.innerHTML = data.results.map(movie => {
-          const poster = movie.poster_path 
-            ? `https://image.tmdb.org/t/p/w300${movie.poster_path}`
+        container.innerHTML = allResults.map(item => {
+          const isTV = item.first_air_date ? true : false;
+          const poster = item.poster_path 
+            ? `https://image.tmdb.org/t/p/w300${item.poster_path}`
             : 'https://via.placeholder.com/300x450?text=No+poster';
           
-          const year = movie.release_date ? movie.release_date.substring(0, 4) : 'N/D';
+          const year = isTV 
+            ? (item.first_air_date ? item.first_air_date.substring(0, 4) : 'N/D')
+            : (item.release_date ? item.release_date.substring(0, 4) : 'N/D');
           
           return `
-            <div class="movie-card" onclick="watchMovie(${movie.id})">
-              <img src="${poster}" alt="${movie.title}" class="movie-poster">
-              <div class="movie-info">
-                <h3 class="movie-title">${movie.title}</h3>
-                <div class="movie-year">${year}</div>
+            <div class="media-card" onclick="${isTV ? 'showTVSeasons' : 'watchMovie'}(${item.id}, '${isTV ? 'tv' : 'movie'}')">
+              <img src="${poster}" alt="${isTV ? item.name : item.title}" class="media-poster">
+              <div class="media-info">
+                <h3 class="media-title">${isTV ? item.name : item.title}</h3>
+                <div class="media-meta">
+                  <span>${isTV ? 'Serie TV' : 'Film'}</span>
+                  <span>${year}</span>
+                </div>
               </div>
             </div>
           `;
@@ -448,7 +482,7 @@ function showBlockedPopupNotice(url) {
         container.innerHTML = `
           <div class="state-message">
             <i class="fas fa-exclamation-triangle"></i> Errore durante la ricerca
-            <button onclick="searchMovies()" style="
+            <button onclick="searchMedia()" style="
               margin-top: 15px;
               background: var(--primary);
               color: white;
@@ -465,24 +499,171 @@ function showBlockedPopupNotice(url) {
     }
 
     // Watch movie using vixsrc
-    function watchMovie(movieId) {
+    function watchMovie(movieId, type) {
       const playerContainer = document.getElementById("player-container");
       const playerIframe = document.getElementById("player-iframe");
       
-      playerIframe.src = `https://vixsrc.to/movie/${movieId}?lang=it&primaryColor=e50914`;
+      playerIframe.src = `https://vixsrc.to/${type}/${movieId}?lang=it&primaryColor=e50914`;
+      playerContainer.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    // Show TV seasons selection
+    async function showTVSeasons(tvId, type) {
+      const playerContainer = document.getElementById("player-container");
+      playerContainer.innerHTML = `
+        <button class="close-player" onclick="closePlayer()">
+          <i class="fas fa-times"></i>
+        </button>
+        <div style="width:80%; height:80%; overflow-y:auto; padding:20px;">
+          <h2 style="margin-bottom:20px; text-align:center;">Seleziona Stagione</h2>
+          <div id="seasons-container" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:15px;"></div>
+        </div>
+      `;
+      
+      try {
+        const response = await fetch(
+          `https://api.themoviedb.org/3/tv/${tvId}?api_key=${API_KEY}&language=it-IT`
+        );
+        const data = await response.json();
+        
+        const seasonsContainer = document.getElementById("seasons-container");
+        seasonsContainer.innerHTML = data.seasons.map(season => `
+          <div class="season-card" onclick="showEpisodes(${tvId}, ${season.season_number})" style="
+            background: var(--gray);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+          ">
+            <h3>Stagione ${season.season_number+1}</h3>
+            <p>${season.episode_count} episodi</p>
+          </div>
+        `).join('');
+        
+        playerContainer.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+      } catch (error) {
+        console.error("Error loading seasons:", error);
+        playerContainer.innerHTML = `
+          <button class="close-player" onclick="closePlayer()">
+            <i class="fas fa-times"></i>
+          </button>
+          <div style="color:white; text-align:center; padding:40px;">
+            <i class="fas fa-exclamation-triangle" style="font-size:2rem; margin-bottom:15px;"></i>
+            <p>Errore nel caricamento delle stagioni</p>
+            <button onclick="showTVSeasons(${tvId}, '${type}')" style="
+              margin-top: 15px;
+              background: var(--primary);
+              color: white;
+              border: none;
+              padding: 8px 15px;
+              border-radius: 5px;
+              cursor: pointer;
+            ">
+              Riprova
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    // Show episodes for selected season
+    async function showEpisodes(tvId, seasonNumber) {
+  currentTVData = { tvId, seasonNumber };
+  isInEpisodeSelection = true;
+  
+  const playerContainer = document.getElementById("player-container");
+  playerContainer.innerHTML = `
+    <button class="close-player" onclick="closePlayer()">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="episode-selection-view">
+      <h2>Stagione ${seasonNumber} - Seleziona Episodio</h2>
+      <div id="episodes-container" class="episodes-grid"></div>
+    </div>
+  `;
+  
+  try {
+    const response = await fetch(`https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}?api_key=${API_KEY}&language=it-IT`);
+    const data = await response.json();
+    
+    const episodesContainer = document.getElementById("episodes-container");
+    episodesContainer.innerHTML = data.episodes.map(episode => `
+  <div class="episode-card" onclick="playTVEpisode(${tvId}, ${seasonNumber}, ${episode.episode_number})">
+    <h3>Episodio ${episode.episode_number}</h3>
+    <p>${episode.name || 'Senza titolo'}</p>
+    ${episode.still_path ? `
+      <img src="https://image.tmdb.org/t/p/w300${episode.still_path}" 
+           alt="${episode.name || 'Episodio'}"
+           loading="lazy">` : ''}
+  </div>
+`).join('');
+    
+    playerContainer.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+  } catch (error) {
+    console.error("Error loading episodes:", error);
+    playerContainer.innerHTML = `
+      <div class="error-message">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Errore nel caricamento degli episodi</p>
+        <button onclick="showEpisodes(${tvId}, ${seasonNumber})">Riprova</button>
+      </div>
+    `;
+  }
+}
+
+function playTVEpisode(tvId, seasonNumber, episodeNumber) {
+  isInEpisodeSelection = false;
+  
+  const playerContainer = document.getElementById("player-container");
+  playerContainer.innerHTML = `
+    <button class="close-player" onclick="closePlayer()">
+      <i class="fas fa-times"></i>
+    </button>
+    <iframe class="player-iframe" 
+            src="https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodeNumber}?lang=it&primaryColor=e50914" 
+            allowfullscreen></iframe>
+  `;
+}
+
+    // Watch TV episode using vixsrc
+    function watchTV(tvId, seasonNumber, episodeNumber) {
+      const playerContainer = document.getElementById("player-container");
+      const playerIframe = document.getElementById("player-iframe");
+      
+      // Ricrea l'iframe se è stato rimosso
+      if (!playerIframe) {
+        const newIframe = document.createElement('iframe');
+        newIframe.className = 'player-iframe';
+        newIframe.id = 'player-iframe';
+        newIframe.allowfullscreen = true;
+        playerContainer.appendChild(newIframe);
+      }
+      
+      document.querySelector('.player-iframe').src = `https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodeNumber}?lang=it&primaryColor=e50914`;
       playerContainer.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     }
 
     // Close player
-    function closePlayer() {
-      const playerContainer = document.getElementById("player-container");
-      const playerIframe = document.getElementById("player-iframe");
-      
-      playerIframe.src = '';
-      playerContainer.style.display = 'none';
-      document.body.style.overflow = 'auto';
-    }
+function closePlayer() {
+  const playerContainer = document.getElementById("player-container");
+  playerContainer.style.display = 'none';
+  document.body.style.overflow = 'auto';
+  
+  if (currentTVData && !isInEpisodeSelection) {
+    // Ritorna alla selezione episodi se stavi guardando una serie
+    showEpisodes(currentTVData.tvId, currentTVData.seasonNumber);
+  } else {
+    currentTVData = null;
+    isInEpisodeSelection = false;
+  }
+}
   </script>
 </body>
 </html>
