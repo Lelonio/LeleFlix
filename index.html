@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Streaming Film e Serie TV</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <style>
     :root {
       --primary: #e50914;
@@ -227,6 +228,7 @@
       height: 80%;
       border: none;
       border-radius: 10px;
+      display: none;
     }
 
     .close-player {
@@ -362,9 +364,6 @@
 
   <!-- Player -->
   <div class="player-container" id="player-container">
-    <button class="close-player" onclick="closePlayer()">
-      <i class="fas fa-times"></i>
-    </button>
     <iframe class="player-iframe" id="player-iframe" allowfullscreen></iframe>
   </div>
 
@@ -519,14 +518,44 @@ const allResults = [...movies, ...tvShows].filter(item => {
     }
 
     // Watch movie using vixsrc
-    function watchMovie(movieId, type) {
-      const playerContainer = document.getElementById("player-container");
-      const playerIframe = document.getElementById("player-iframe");
-      
-      playerIframe.src = `https://vixsrc.to/${type}/${movieId}?lang=it&primaryColor=e50914`;
-      playerContainer.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-    }
+async function watchMovie(movieId, type) {
+  const playerContainer = document.getElementById("player-container");
+  const playerIframe = document.getElementById("player-iframe");
+
+  // Mostra loading temporaneo
+  playerContainer.style.display = 'flex';
+  playerContainer.innerHTML = `<div class="state-message">Caricamento player...</div>`;
+  document.body.style.overflow = 'hidden';
+
+  try {
+    const res = await fetch(`https://vixproxy.onrender.com/proxy/movie/${movieId}`);
+    const data = await res.json();
+
+    if (!data.url) throw new Error("Nessun URL restituito");
+
+    playerContainer.innerHTML = `
+      <button class="close-player" onclick="closePlayer()">
+        <i class="fas fa-times"></i>
+      </button>
+      <video id="video" controls autoplay crossorigin="anonymous" style="width: 80%; height: 80%; border-radius: 10px; background: black;"></video>
+    `;
+
+    const video = document.getElementById('video');
+    const hls = new Hls();
+    hls.loadSource(`https://vixproxy.onrender.com/stream?url=${encodeURIComponent(data.url)}`);
+    hls.attachMedia(video);
+
+  } catch (err) {
+    console.error("Errore nel caricamento:", err);
+    playerContainer.innerHTML = `
+      <div class="state-message">
+        <i class="fas fa-exclamation-triangle"></i> Errore durante il caricamento del player
+        <button onclick="watchMovie(${movieId}, '${type}')">Riprova</button>
+      </div>
+    `;
+  }
+}
+
 
     // Show TV seasons selection
     async function showTVSeasons(tvId, type) {
@@ -646,7 +675,7 @@ function playTVEpisode(tvId, seasonNumber, episodeNumber) {
       <i class="fas fa-times"></i>
     </button>
     <iframe class="player-iframe" 
-            src="https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodeNumber}?lang=it&primaryColor=e50914" 
+            src="https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodeNumber}?lang=it&autoplay=false" 
             allowfullscreen></iframe>
   `;
 }
@@ -665,7 +694,7 @@ function playTVEpisode(tvId, seasonNumber, episodeNumber) {
         playerContainer.appendChild(newIframe);
       }
       
-      document.querySelector('.player-iframe').src = `https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodeNumber}?lang=it&primaryColor=e50914`;
+      document.querySelector('.player-iframe').src = `https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodeNumber}?lang=it&autoplay=false`;
       playerContainer.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     }
@@ -673,6 +702,14 @@ function playTVEpisode(tvId, seasonNumber, episodeNumber) {
     // Close player
 function closePlayer() {
   const playerContainer = document.getElementById("player-container");
+  const iframe = playerContainer.querySelector("video");
+  
+  // Ferma il video
+  if (video) {
+    const iframeSrc = video.src;
+    video.src = ""; // Questo ferma il video
+  }
+  
   playerContainer.style.display = 'none';
   document.body.style.overflow = 'auto';
   
