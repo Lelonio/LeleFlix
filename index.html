@@ -528,7 +528,7 @@ async function watchMovie(movieId, type) {
   document.body.style.overflow = 'hidden';
 
   try {
-    const res = await fetch(`https://vixproxy.onrender.com/proxy/movie/${movieId}`);
+    const res = await fetch(`https://vixproxy.fly.dev/proxy/movie/${movieId}`);
     const data = await res.json();
 
     if (!data.url) throw new Error("Nessun URL restituito");
@@ -542,7 +542,7 @@ async function watchMovie(movieId, type) {
 
     const video = document.getElementById('video');
     const hls = new Hls();
-    hls.loadSource(`https://vixproxy.onrender.com/stream?url=${encodeURIComponent(data.url)}`);
+    hls.loadSource(`https://vixproxy.fly.dev/stream?url=${encodeURIComponent(data.url)}`);
     hls.attachMedia(video);
 
   } catch (err) {
