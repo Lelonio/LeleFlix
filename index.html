@@ -4,14 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Streaming Film e Serie TV</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <style>
     :root {
       --primary: #e50914;
+      --primary-dark: #b2070f;
       --dark: #141414;
+      --darker: #0a0a0a;
       --gray: #222;
       --light-gray: #8c8c8c;
+      --white: #fff;
+      --transition: all 0.3s ease;
     }
 
     * {
@@ -21,194 +26,192 @@
     }
 
     body {
-      background-color: var(--dark);
-      color: white;
+      background-color: var(--darker);
+      color: var(--white);
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    /* Header */
-    .navbar {
-      background: linear-gradient(to bottom, rgba(255,0,0,0.3) 0%, transparent 100%);
-      padding: 20px 50px;
-      position: fixed;
-      width: 100%;
-      top: 0;
-      z-index: 100;
+ /* Navbar più alta */
+.navbar {
+  height: 80px; /* Altezza aumentata da ~60px a 80px */
+  padding: 0 4%; /* Rimuovo il padding verticale per gestirlo manualmente */
+  display: flex;
+  align-items: center; /* Allineamento verticale al centro */
+}
+
+.logo {
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+}
+
+/* Logo proporzionato */
+.logo {
+  height: 45px; /* Aumentato da 36px */
+  width: auto;
+  position: absolute;
+  left: 44%;
+}
+
+/* Se necessario, aggiusta il padding del contenuto principale */
+.main-content {
+  padding-top: 50px; /* Aumentato da 120px per compensare la navbar più alta */
+}
+
+
+    /* Search Section */
+    .search-section {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
+      justify-content: center;
+      padding: 40px 4%;
+      text-align: center;
     }
 
-    .logo {
-      height: 40px;
+    .search-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+      line-height: 1.1;
     }
 
-    /* Search Container */
     .search-container {
-      max-width: 800px;
       width: 100%;
-      margin: 120px auto 40px;
-      padding: 0 20px;
-    }
-
-    .search-box {
-      display: flex;
+      max-width: 600px;
       position: relative;
-      margin-bottom: 30px;
     }
 
     .search-input {
-      flex: 1;
-      padding: 15px 25px;
+      width: 100%;
+      padding: 15px 20px;
       font-size: 1.1rem;
       border: none;
       border-radius: 30px;
       background: rgba(255,255,255,0.1);
       color: white;
+      transition: var(--transition);
       backdrop-filter: blur(10px);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
     .search-input:focus {
       outline: none;
       background: rgba(255,255,255,0.2);
-      box-shadow: 0 5px 20px rgba(229, 9, 20, 0.3);
+      box-shadow: 0 0 15px rgba(229, 9, 20, 0.3);
     }
 
     .search-button {
       position: absolute;
-      right: 5px;
-      top: 5px;
-      bottom: 5px;
-      width: 50px;
-      background: var(--primary);
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
       border: none;
-      border-radius: 25px;
-      color: white;
+      color: var(--primary);
+      font-size: 1.2rem;
       cursor: pointer;
-      transition: all 0.3s;
     }
 
-    .search-button:hover {
-      background: #f40612;
+    /* Row Container */
+    .rows-container {
+      padding: 0 4%;
+      margin-bottom: 3rem;
     }
 
-    /* Results */
-    .results-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 25px;
-      padding: 20px;
+    .row-title {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      font-weight: 600;
     }
 
-    .media-card {
-      background: var(--gray);
-      border-radius: 10px;
+    .row {
+      display: flex;
+      overflow-x: auto;
+      gap: 0.5rem;
+      padding: 1rem 0;
+      scroll-behavior: smooth;
+    }
+
+    .row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .row-item {
+      flex: 0 0 auto;
+      width: 16.666%;
+      min-width: 150px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      border-radius: 4px;
       overflow: hidden;
-      transition: transform 0.3s;
-      cursor: pointer;
+      aspect-ratio: 2/3;
     }
 
-    .media-card:hover {
-      transform: translateY(-10px);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    .row-item:hover {
+      transform: scale(1.1) translateY(-10px);
+      z-index: 10;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
 
-    .media-poster {
+    .row-item img {
       width: 100%;
-      height: 300px;
+      height: 100%;
       object-fit: cover;
+      display: block;
+      transition: opacity 0.3s ease;
     }
 
-    .media-info {
-      padding: 15px;
+    .row-item:hover img {
+      opacity: 0.7;
     }
 
-    .media-title {
-      font-size: 1.1rem;
-      margin-bottom: 5px;
+    .row-item-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+      padding: 1.5rem 1rem 1rem;
+      opacity: 0;
+      transition: var(--transition);
+    }
+
+    .row-item:hover .row-item-info {
+      opacity: 1;
+    }
+
+    .row-item-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .media-meta {
+    .row-item-meta {
       display: flex;
       justify-content: space-between;
+      font-size: 0.8rem;
       color: var(--light-gray);
-      font-size: 0.9rem;
     }
 
-    /* States */
-.state-message {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  padding: 30px;
-  font-size: 1.2rem;
-  color: var(--light-gray);
-  width: 100%;
-  max-width: 600px;
-}
-
-    .loading-spinner {
-      display: inline-block;
-      animation: spin 1s linear infinite;
-      margin-right: 10px;
+    /* Search Results */
+    .search-results {
+      display: none;
+      padding: 0 4% 2rem;
     }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    .search-results .row-title {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
     }
 
-    /* Aggiungi questo allo stile esistente */
-.filters {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin: 0 auto 30px;
-  max-width: 400px;
-}
-
-.filter-btn {
-  flex: 1;
-  padding: 10px 0;
-  background: rgba(255,255,255,0.1);
-  border: none;
-  border-radius: 30px;
-  color: white;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  backdrop-filter: blur(10px);
-  text-align: center;
-}
-
-.filter-btn:hover {
-  background: rgba(255,255,255,0.2);
-}
-
-.filter-btn.active {
-  background: var(--primary);
-  box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
-}
-
-/* Versione mobile */
-@media (max-width: 768px) {
-  .filters {
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-  
-  .filter-btn {
-    padding: 8px 0;
-    font-size: 0.8rem;
-  }
-}
     /* Player */
     .player-container {
       position: fixed;
@@ -223,14 +226,6 @@
       align-items: center;
     }
 
-    .player-iframe {
-      width: 80%;
-      height: 80%;
-      border: none;
-      border-radius: 10px;
-      display: none;
-    }
-
     .close-player {
       position: absolute;
       top: 20px;
@@ -243,135 +238,284 @@
       border-radius: 50%;
       font-size: 1.2rem;
       cursor: pointer;
+      transition: var(--transition);
+      z-index: 1001;
     }
 
+    .close-player:hover {
+      background: var(--primary-dark);
+      transform: rotate(90deg);
+    }
+
+    #video {
+      width: 80%;
+      height: 80%;
+      border-radius: 8px;
+      background: black;
+    }
+
+    /* Episode Selection */
     .episode-selection-view {
-  width: 90%;
-  max-width: 1000px;
-  height: 90%;
-  overflow-y: auto;
-  padding: 20px;
-}
+      width: 90%;
+      max-width: 1200px;
+      height: 90%;
+      overflow-y: auto;
+      padding: 2rem;
+      background: var(--dark);
+      border-radius: 8px;
+    }
 
-.episodes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-  margin-top: 20px;
-}
-@media (max-width: 768px) {
-  .episode-card {
-    padding: 10px;
-  }
-  
-  .episode-card img {
-    max-height: 120px;
-  }
-  
-  .episodes-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
-  }
-}
+    .episodes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
 
-.episode-card {
-  background: var(--gray);
-  padding: 15px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: transform 0.3s;
-  overflow: hidden; /* Nuovo - Contiene l'immagine */
-}
+    .episode-card {
+      background: var(--gray);
+      padding: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: var(--transition);
+      overflow: hidden;
+    }
 
-.episode-card img {
-  width: 100%;
-  height: auto;
-  border-radius: 5px;
-  margin-top: 10px;
-  object-fit: cover;
-  max-height: 150px; /* Altezza massima */
-  border: 1px solid rgba(255,255,255,0.1); /* Bordo sottile */
-}
+    .episode-card:hover {
+      transform: translateY(-5px);
+      background: var(--primary);
+    }
 
-.episode-card:hover {
-  transform: translateY(-5px);
-}
+    .episode-card img {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin-top: 0.5rem;
+      object-fit: cover;
+      aspect-ratio: 16/9;
+    }
 
-.error-message {
-  color: white;
-  text-align: center;
-  padding: 40px;
-}
+    /* States */
+    .state-message {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      padding: 2rem;
+      font-size: 1.2rem;
+      color: var(--light-gray);
+      width: 100%;
+      max-width: 600px;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      animation: spin 1s linear infinite;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
     /* Responsive */
+    @media (max-width: 1024px) {
+      .search-title {
+        font-size: 2rem;
+      }
+      
+      .row-item {
+        width: 20%;
+      }
+    }
+
     @media (max-width: 768px) {
-      .navbar {
-        padding: 15px;
-      }
+.navbar {
+  height: 80px; /* Altezza aumentata da ~60px a 80px */
+  padding: 0 4%; /* Rimuovo il padding verticale per gestirlo manualmente */
+  display: flex;
+  align-items: center; /* Allineamento verticale al centro */
+}
 
-      .search-container {
-        margin-top: 80px;
+/* Logo proporzionato */
+.logo {
+  height: 45px; /* Aumentato da 36px */
+  width: auto;
+  position: absolute;
+  left: 31%;
+}
+      
+      .main-content {
+        padding-top: 10px;
       }
-
-      .results-grid {
+      
+      .search-title {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+      }
+      
+      .search-input {
+        padding: 12px 20px;
+        font-size: 1rem;
+      }
+      
+      .rows-container {
+        padding: 0 1rem;
+      }
+      
+      .row-item {
+        width: 25%;
+        min-width: 120px;
+      }
+      
+      .episodes-grid {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       }
+    }
 
-      .media-poster {
-        height: 225px;
+    @media (max-width: 480px) {
+      .search-title {
+        font-size: 1.5rem;
       }
-
-      .player-iframe {
+      
+      .row-item {
+        width: 33.333%;
+      }
+      
+      #video {
         width: 95%;
-        height: 60%;
+        height: 50%;
       }
     }
   </style>
 </head>
 <body>
   <!-- Navbar -->
-  <nav class="navbar">
-    <img src="logo.png" alt="Logo" class="logo">
-  </nav>
+<nav class="navbar" id="navbar">
+  <img src="logo.png" alt="Logo" class="logo" onclick="goToHome()">
+</nav>
 
   <!-- Main Content -->
-  <div class="search-container">
-    <div class="search-box">
-      <input 
-        type="text" 
-        class="search-input" 
-        id="search-input" 
-        placeholder="Cerca film o serie TV..."
-        onkeyup="handleSearchKeyup(event)"
-      >
-      <button class="search-button" onclick="searchMedia()">
-        <i class="fas fa-search"></i>
-      </button>
+  <div class="main-content">
+    <!-- Search Section -->
+    <section class="search-section">
+      <h1 class="search-title">Cosa vuoi guardare oggi?</h1>
+      <div class="search-container">
+        <input 
+          type="text" 
+          class="search-input" 
+          id="search-input" 
+          placeholder="Cerca film, serie TV..."
+          onkeyup="handleSearchKeyup(event)"
+        >
+        <button class="search-button" onclick="searchMedia()">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- Trending Rows -->
+    <div id="trending-container">
+      <div class="rows-container">
+        <h2 class="row-title">Tendenze</h2>
+        <div class="row" id="trending-movies-tv"></div>
+      </div>
+
     </div>
 
-<div class="filters">
-  <button class="filter-btn active" onclick="setFilter('all')">Tutti</button>
-  <button class="filter-btn" onclick="setFilter('movie')">Film</button>
-  <button class="filter-btn" onclick="setFilter('tv')">Serie TV</button>
-</div>
-
-    <div id="results-container" class="results-grid">
-      <div class="state-message">
-        <i class="fas fa-film"></i> Cerca film o serie TV per iniziare
-      </div>
+    <!-- Search Results -->
+    <div id="search-results" class="search-results">
+      <h2 class="row-title">Risultati della ricerca</h2>
+      <div class="row" id="results-container"></div>
     </div>
   </div>
 
   <!-- Player -->
   <div class="player-container" id="player-container">
-    <iframe class="player-iframe" id="player-iframe" allowfullscreen></iframe>
+    <button class="close-player" onclick="closePlayer()">
+      <i class="fas fa-times"></i>
+    </button>
   </div>
 
   <script>
-    let currentTVData = null; // Memorizza i dati della serie corrente
-let isInEpisodeSelection = false; // Flag per lo stato di selezione episodi
-    const API_KEY = "1e8c9083f94c62dd66fb2105cd7b613b";
-    let currentFilter = 'all';
+    function goToHome() {
+  // Nascondi i risultati di ricerca
+  document.getElementById("search-results").style.display = 'none';
+  
+  // Mostra la sezione trending
+  document.getElementById("trending-container").style.display = 'block';
+  
+  // Resetta il campo di ricerca
+  document.getElementById("search-input").value = '';
+  
+  // Scrolla in cima alla pagina
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  
+  // Se vuoi anche ricaricare i contenuti trending:
+  // loadTrendingContent(); // Scommenta se vuoi ricaricare i dati
+}
+    // Load trending content
+    window.onload = async function() {
+      try {
+        const res = await fetch('https://vixproxy.fly.dev/home/trending');
+        const data = await res.json();
+        displayTrending(data);
+      } catch (e) {
+        console.error("Errore caricamento trending:", e);
+      }
+    };
+
+    function displayTrending(data) {
+      const { movies, tv } = data;
+      
+      // Trending row (mixed movies and TV)
+      const trendingContainer = document.getElementById("trending-movies-tv");
+      const allTrending = [...movies.slice(0, 10), ...tv.slice(0, 10)]
+        .sort(() => Math.random() - 0.5); // Shuffle results
+      
+      trendingContainer.innerHTML = allTrending.map(item => {
+        const isTV = !!item.first_air_date;
+        const poster = item.poster_path
+          ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+          : 'https://via.placeholder.com/500x750?text=No+poster';
+
+        return `
+          <div class="row-item" onclick="${isTV ? 'showTVSeasons' : 'watchMovie'}(${item.id}, '${isTV ? 'tv' : 'movie'}')">
+            <img src="${poster}" alt="${isTV ? item.name : item.title}" loading="lazy">
+            <div class="row-item-info">
+              <h3 class="row-item-title">${isTV ? item.name : item.title}</h3>
+              <div class="row-item-meta">
+                <span>${isTV ? 'Serie TV' : 'Film'}</span>
+                <span>${(isTV ? item.first_air_date : item.release_date) ? (isTV ? item.first_air_date : item.release_date).substring(0, 4) : 'N/D'}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // New releases row (movies only)
+      const newReleasesContainer = document.getElementById("new-releases");
+      newReleasesContainer.innerHTML = movies.slice(10, 20).map(item => {
+        const poster = item.poster_path
+          ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+          : 'https://via.placeholder.com/500x750?text=No+poster';
+
+        return `
+          <div class="row-item" onclick="watchMovie(${item.id}, 'movie')">
+            <img src="${poster}" alt="${item.title}" loading="lazy">
+            <div class="row-item-info">
+              <h3 class="row-item-title">${item.title}</h3>
+              <div class="row-item-meta">
+                <span>Film</span>
+                <span>${item.release_date ? item.release_date.substring(0, 4) : 'N/D'}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
     // Handle Enter key
     function handleSearchKeyup(event) {
@@ -380,113 +524,69 @@ let isInEpisodeSelection = false; // Flag per lo stato di selezione episodi
       }
     }
 
-    // Set filter
-// MODIFICA la funzione setFilter così:
-function setFilter(type) {
-  currentFilter = type;
-  // Aggiorna lo stato attivo di tutti i bottoni
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.remove('active');
-    if ((type === 'all' && btn.textContent.includes('Tutti')) ||
-        (type === 'movie' && btn.textContent.includes('Film')) ||
-        (type === 'tv' && btn.textContent.includes('Serie'))) {
-      btn.classList.add('active');
-    }
-  });
-
-      searchMedia();
-    }
-
     // Main search function
     async function searchMedia() {
       const query = document.getElementById("search-input").value.trim();
-      const container = document.getElementById("results-container");
+      const resultsContainer = document.getElementById("results-container");
+      const trendingContainer = document.getElementById("trending-container");
+      const searchResults = document.getElementById("search-results");
       
       if (!query) {
-        container.innerHTML = `
-          <div class="state-message">
-            <i class="fas fa-film"></i> Inserisci un titolo per cercare
-          </div>
-        `;
+        trendingContainer.style.display = 'block';
+        searchResults.style.display = 'none';
         return;
       }
 
-      // Show loading state
-      container.innerHTML = `
-        <div class="state-message">
+      trendingContainer.style.display = 'none';
+      searchResults.style.display = 'block';
+
+      resultsContainer.innerHTML = `
+        <div style="width:100%; text-align:center; padding:40px;">
           <i class="fas fa-spinner loading-spinner"></i> Ricerca in corso...
         </div>
       `;
 
       try {
-        let movies = [];
-        let tvShows = [];
+        const vixsrcResponse = await fetch('vix-all-ids.json');
+        const vixsrcData = await vixsrcResponse.json();
+        const vixsrcIds = new Set(vixsrcData.map(entry => entry.tmdb_id));
 
-        // Search movies if filter is 'all' or 'movie'
-        if (currentFilter === 'all' || currentFilter === 'movie') {
-          const moviesRes = await fetch(
-            `https://api.themoviedb.org/3/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=it-IT`
-          );
-          const moviesData = await moviesRes.json();
-          movies = moviesData.results || [];
-        }
+        const searchResponse = await fetch(
+          `https://api.themoviedb.org/3/search/multi?api_key=1e8c9083f94c62dd66fb2105cd7b613b&query=${encodeURIComponent(query)}&language=it-IT`
+        );
+        const searchData = await searchResponse.json();
 
-        // Search TV shows if filter is 'all' or 'tv'
-        if (currentFilter === 'all' || currentFilter === 'tv') {
-          const tvRes = await fetch(
-            `https://api.themoviedb.org/3/search/tv?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=it-IT`
-          );
-          const tvData = await tvRes.json();
-          tvShows = tvData.results || [];
-        }
-
-        // Carica le liste di ID da VixSRC
-// Carica le liste offline di VixSRC
-// Carica i file locali
-const [rawMovies, rawTV] = await Promise.all([
-  fetch('vix-movies-ids.json').then(r => r.json()),
-  fetch('vix-tv-ids.json').then(r => r.json())
-]);
-
-// Estrai solo gli ID in due array
-const vixsrcMovieIds = rawMovies.map(entry => entry.tmdb_id);
-const vixsrcTVIds = rawTV.map(entry => entry.tmdb_id);
-
-// Filtra i risultati
-const allResults = [...movies, ...tvShows].filter(item => {
-  const isTV = !!item.first_air_date;
-  return isTV ? vixsrcTVIds.includes(item.id) : vixsrcMovieIds.includes(item.id);
-});
-
-
-
+        const allResults = (searchData.results || []).filter(item => 
+          vixsrcIds.has(item.id) && (item.media_type === 'movie' || item.media_type === 'tv')
+        );
 
         if (allResults.length === 0) {
-          container.innerHTML = `
-            <div class="state-message">
+          resultsContainer.innerHTML = `
+            <div style="width:100%; text-align:center; padding:40px;">
               <i class="far fa-sad-tear"></i> Nessun risultato trovato
             </div>
           `;
           return;
         }
 
-        // Display results
-        container.innerHTML = allResults.map(item => {
-          const isTV = item.first_air_date ? true : false;
+        resultsContainer.innerHTML = allResults.map(item => {
+          const isTV = item.media_type === 'tv';
           const poster = item.poster_path 
-            ? `https://image.tmdb.org/t/p/w300${item.poster_path}`
-            : 'https://via.placeholder.com/300x450?text=No+poster';
+            ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
+            : 'https://via.placeholder.com/500x750?text=No+poster';
           
           const year = isTV 
             ? (item.first_air_date ? item.first_air_date.substring(0, 4) : 'N/D')
             : (item.release_date ? item.release_date.substring(0, 4) : 'N/D');
           
+          const title = isTV ? item.name : item.title;
+          
           return `
-            <div class="media-card" onclick="${isTV ? 'showTVSeasons' : 'watchMovie'}(${item.id}, '${isTV ? 'tv' : 'movie'}')">
-              <img src="${poster}" alt="${isTV ? item.name : item.title}" class="media-poster">
-              <div class="media-info">
-                <h3 class="media-title">${isTV ? item.name : item.title}</h3>
-                <div class="media-meta">
+            <div class="row-item" onclick="${isTV ? 'showTVSeasons' : 'watchMovie'}(${item.id}, '${isTV ? 'tv' : 'movie'}')">
+              <img src="${poster}" alt="${title}" loading="lazy">
+              <div class="row-item-info">
+                <h3 class="row-item-title">${title}</h3>
+                <div class="row-item-meta">
                   <span>${isTV ? 'Serie TV' : 'Film'}</span>
                   <span>${year}</span>
                 </div>
@@ -494,12 +594,11 @@ const allResults = [...movies, ...tvShows].filter(item => {
             </div>
           `;
         }).join('');
-        
 
       } catch (error) {
         console.error("Search error:", error);
-        container.innerHTML = `
-          <div class="state-message">
+        resultsContainer.innerHTML = `
+          <div style="width:100%; text-align:center; padding:40px;">
             <i class="fas fa-exclamation-triangle"></i> Errore durante la ricerca
             <button onclick="searchMedia()" style="
               margin-top: 15px;
@@ -518,44 +617,48 @@ const allResults = [...movies, ...tvShows].filter(item => {
     }
 
     // Watch movie using vixsrc
-async function watchMovie(movieId, type) {
-  const playerContainer = document.getElementById("player-container");
-  const playerIframe = document.getElementById("player-iframe");
+    async function watchMovie(movieId, type) {
+      const playerContainer = document.getElementById("player-container");
 
-  // Mostra loading temporaneo
-  playerContainer.style.display = 'flex';
-  playerContainer.innerHTML = `<div class="state-message">Caricamento player...</div>`;
-  document.body.style.overflow = 'hidden';
+      // Show loading
+      playerContainer.style.display = 'flex';
+      playerContainer.innerHTML = `<div class="state-message">Caricamento player...</div>`;
+      document.body.style.overflow = 'hidden';
 
-  try {
-    const res = await fetch(`https://vixproxy.fly.dev/proxy/movie/${movieId}`);
-    const data = await res.json();
+      try {
+        const res = await fetch(`https://vixproxy.fly.dev/proxy/movie/${movieId}`);
+        const data = await res.json();
 
-    if (!data.url) throw new Error("Nessun URL restituito");
+        if (!data.url) throw new Error("Nessun URL restituito");
 
-    playerContainer.innerHTML = `
-      <button class="close-player" onclick="closePlayer()">
-        <i class="fas fa-times"></i>
-      </button>
-      <video id="video" controls autoplay crossorigin="anonymous" style="width: 80%; height: 80%; border-radius: 10px; background: black;"></video>
-    `;
+        playerContainer.innerHTML = `
+          <button class="close-player" onclick="closePlayer()">
+            <i class="fas fa-times"></i>
+          </button>
+          <video id="video" controls autoplay crossorigin="anonymous"></video>
+        `;
 
-    const video = document.getElementById('video');
-    const hls = new Hls();
-    hls.loadSource(`https://vixproxy.fly.dev/stream?url=${encodeURIComponent(data.url)}`);
-    hls.attachMedia(video);
+        const video = document.getElementById('video');
+        const hls = new Hls();
+        hls.loadSource(`https://vixproxy.fly.dev/stream?url=${encodeURIComponent(data.url)}`);
+        hls.attachMedia(video);
+        // forza 1080p se presente
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            const lvl = hls.levels.findIndex(l => l.height === 1080);
+            if (lvl >= 0) hls.currentLevel = lvl;
+            video.play();
+          });
 
-  } catch (err) {
-    console.error("Errore nel caricamento:", err);
-    playerContainer.innerHTML = `
-      <div class="state-message">
-        <i class="fas fa-exclamation-triangle"></i> Errore durante il caricamento del player
-        <button onclick="watchMovie(${movieId}, '${type}')">Riprova</button>
-      </div>
-    `;
-  }
-}
-
+      } catch (err) {
+        console.error("Errore nel caricamento:", err);
+        playerContainer.innerHTML = `
+          <div class="state-message">
+            <i class="fas fa-exclamation-triangle"></i> Errore durante il caricamento del player
+            <button onclick="watchMovie(${movieId}, '${type}')">Riprova</button>
+          </div>
+        `;
+      }
+    }
 
     // Show TV seasons selection
     async function showTVSeasons(tvId, type) {
@@ -564,28 +667,21 @@ async function watchMovie(movieId, type) {
         <button class="close-player" onclick="closePlayer()">
           <i class="fas fa-times"></i>
         </button>
-        <div style="width:80%; height:80%; overflow-y:auto; padding:20px;">
-          <h2 style="margin-bottom:20px; text-align:center;">Seleziona Stagione</h2>
-          <div id="seasons-container" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:15px;"></div>
+        <div class="episode-selection-view">
+          <h2>Seleziona Stagione</h2>
+          <div id="seasons-container" class="episodes-grid"></div>
         </div>
       `;
       
       try {
         const response = await fetch(
-          `https://api.themoviedb.org/3/tv/${tvId}?api_key=${API_KEY}&language=it-IT`
+          `https://api.themoviedb.org/3/tv/${tvId}?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT`
         );
         const data = await response.json();
         
         const seasonsContainer = document.getElementById("seasons-container");
         seasonsContainer.innerHTML = data.seasons.map(season => `
-          <div class="season-card" onclick="showEpisodes(${tvId}, ${season.season_number})" style="
-            background: var(--gray);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: transform 0.3s;
-          ">
+          <div class="episode-card" onclick="showEpisodes(${tvId}, ${season.season_number})">
             <h3>Stagione ${season.season_number}</h3>
             <p>${season.episode_count} episodi</p>
           </div>
@@ -597,23 +693,10 @@ async function watchMovie(movieId, type) {
       } catch (error) {
         console.error("Error loading seasons:", error);
         playerContainer.innerHTML = `
-          <button class="close-player" onclick="closePlayer()">
-            <i class="fas fa-times"></i>
-          </button>
-          <div style="color:white; text-align:center; padding:40px;">
-            <i class="fas fa-exclamation-triangle" style="font-size:2rem; margin-bottom:15px;"></i>
+          <div class="state-message">
+            <i class="fas fa-exclamation-triangle"></i>
             <p>Errore nel caricamento delle stagioni</p>
-            <button onclick="showTVSeasons(${tvId}, '${type}')" style="
-              margin-top: 15px;
-              background: var(--primary);
-              color: white;
-              border: none;
-              padding: 8px 15px;
-              border-radius: 5px;
-              cursor: pointer;
-            ">
-              Riprova
-            </button>
+            <button onclick="showTVSeasons(${tvId}, '${type}')">Riprova</button>
           </div>
         `;
       }
@@ -621,133 +704,104 @@ async function watchMovie(movieId, type) {
 
     // Show episodes for selected season
     async function showEpisodes(tvId, seasonNumber) {
-  currentTVData = { tvId, seasonNumber };
-  isInEpisodeSelection = true;
-  
-  const playerContainer = document.getElementById("player-container");
-  playerContainer.innerHTML = `
-    <button class="close-player" onclick="closePlayer()">
-      <i class="fas fa-times"></i>
-    </button>
-    <div class="episode-selection-view">
-      <h2>Stagione ${seasonNumber} - Seleziona Episodio</h2>
-      <div id="episodes-container" class="episodes-grid"></div>
-    </div>
-  `;
-  
-  try {
-    const response = await fetch(`https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}?api_key=${API_KEY}&language=it-IT`);
-    const data = await response.json();
-    
-    const episodesContainer = document.getElementById("episodes-container");
-    episodesContainer.innerHTML = data.episodes.map(episode => `
-  <div class="episode-card" onclick="playTVEpisode(${tvId}, ${seasonNumber}, ${episode.episode_number})">
-    <h3>Episodio ${episode.episode_number}</h3>
-    <p>${episode.name || 'Senza titolo'}</p>
-    ${episode.still_path ? `
-      <img src="https://image.tmdb.org/t/p/w300${episode.still_path}" 
-           alt="${episode.name || 'Episodio'}"
-           loading="lazy">` : ''}
-  </div>
-`).join('');
-    
-    playerContainer.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    
-  } catch (error) {
-    console.error("Error loading episodes:", error);
-    playerContainer.innerHTML = `
-      <div class="error-message">
-        <i class="fas fa-exclamation-triangle"></i>
-        <p>Errore nel caricamento degli episodi</p>
-        <button onclick="showEpisodes(${tvId}, ${seasonNumber})">Riprova</button>
-      </div>
-    `;
-  }
-}
-
-async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
-  isInEpisodeSelection = false;
-
-  const playerContainer = document.getElementById("player-container");
-
-  // Mostra loading temporaneo
-  playerContainer.innerHTML = `
-    <div class="state-message">Caricamento episodio...</div>
-  `;
-  document.body.style.overflow = 'hidden';
-
-  try {
-    const res = await fetch(`https://vixproxy.fly.dev/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
-    const data = await res.json();
-
-    if (!data.url) throw new Error("Nessun URL restituito dal proxy");
-
-    playerContainer.innerHTML = `
-      <button class="close-player" onclick="closePlayer()">
-        <i class="fas fa-times"></i>
-      </button>
-      <video id="video" controls autoplay crossorigin="anonymous" style="width: 80%; height: 80%; border-radius: 10px; background: black;"></video>
-    `;
-
-    const video = document.getElementById('video');
-    const hls = new Hls();
-    hls.loadSource(`https://vixproxy.fly.dev/stream?url=${encodeURIComponent(data.url)}`);
-    hls.attachMedia(video);
-
-  } catch (error) {
-    console.error("Errore durante la riproduzione episodio:", error);
-    playerContainer.innerHTML = `
-      <div class="state-message">
-        <i class="fas fa-exclamation-triangle"></i> Errore nel caricamento dell'episodio
-        <button onclick="playTVEpisode(${tvId}, ${seasonNumber}, ${episodeNumber})">Riprova</button>
-      </div>
-    `;
-  }
-}
-
-
-    // Watch TV episode using vixsrc
-    function watchTV(tvId, seasonNumber, episodeNumber) {
       const playerContainer = document.getElementById("player-container");
-      const playerIframe = document.getElementById("player-iframe");
+      playerContainer.innerHTML = `
+        <button class="close-player" onclick="closePlayer()">
+          <i class="fas fa-times"></i>
+        </button>
+        <div class="episode-selection-view">
+          <h2>Stagione ${seasonNumber} - Seleziona Episodio</h2>
+          <div id="episodes-container" class="episodes-grid"></div>
+        </div>
+      `;
       
-      // Ricrea l'iframe se è stato rimosso
-      if (!playerIframe) {
-        const newIframe = document.createElement('iframe');
-        newIframe.className = 'player-iframe';
-        newIframe.id = 'player-iframe';
-        newIframe.allowfullscreen = true;
-        playerContainer.appendChild(newIframe);
+      try {
+        const response = await fetch(`https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT`);
+        const data = await response.json();
+        
+        const episodesContainer = document.getElementById("episodes-container");
+        episodesContainer.innerHTML = data.episodes.map(episode => `
+          <div class="episode-card" onclick="playTVEpisode(${tvId}, ${seasonNumber}, ${episode.episode_number})">
+            <h3>Episodio ${episode.episode_number}</h3>
+            <p>${episode.name || 'Senza titolo'}</p>
+            ${episode.still_path ? `
+              <img src="https://image.tmdb.org/t/p/w300${episode.still_path}" 
+                   alt="${episode.name || 'Episodio'}"
+                   loading="lazy">` : ''}
+          </div>
+        `).join('');
+        
+        playerContainer.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+      } catch (error) {
+        console.error("Error loading episodes:", error);
+        playerContainer.innerHTML = `
+          <div class="state-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Errore nel caricamento degli episodi</p>
+            <button onclick="showEpisodes(${tvId}, ${seasonNumber})">Riprova</button>
+          </div>
+        `;
       }
-      
-      document.querySelector('.player-iframe').src = `https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodeNumber}?lang=it&autoplay=false`;
-      playerContainer.style.display = 'flex';
+    }
+
+    async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
+      const playerContainer = document.getElementById("player-container");
+
+      // Show loading
+      playerContainer.innerHTML = `<div class="state-message">Caricamento episodio...</div>`;
       document.body.style.overflow = 'hidden';
+
+      try {
+        const res = await fetch(`https://vixproxy.fly.dev/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
+        const data = await res.json();
+
+        if (!data.url) throw new Error("Nessun URL restituito dal proxy");
+
+        playerContainer.innerHTML = `
+          <button class="close-player" onclick="closePlayer()">
+            <i class="fas fa-times"></i>
+          </button>
+          <video id="video" controls autoplay crossorigin="anonymous"></video>
+        `;
+
+        const video = document.getElementById('video');
+        const hls = new Hls();
+        hls.loadSource(`https://vixproxy.fly.dev/stream?url=${encodeURIComponent(data.url)}`);
+        hls.attachMedia(video);
+        // forza 1080p se presente
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            const lvl = hls.levels.findIndex(l => l.height === 1080);
+            if (lvl >= 0) hls.currentLevel = lvl;
+            video.play();
+          });
+
+      } catch (error) {
+        console.error("Errore durante la riproduzione episodio:", error);
+        playerContainer.innerHTML = `
+          <div class="state-message">
+            <i class="fas fa-exclamation-triangle"></i> Errore nel caricamento dell'episodio
+            <button onclick="playTVEpisode(${tvId}, ${seasonNumber}, ${episodeNumber})">Riprova</button>
+          </div>
+        `;
+      }
     }
 
     // Close player
-function closePlayer() {
-  const playerContainer = document.getElementById("player-container");
-  const video = playerContainer.querySelector("video");
+    function closePlayer() {
+      const playerContainer = document.getElementById("player-container");
+      const video = playerContainer.querySelector("video");
 
-  if (video) {
-    video.pause();
-    video.src = "";
-    video.load();
-  }
+      if (video) {
+        video.pause();
+        video.src = "";
+        video.load();
+      }
 
-  playerContainer.style.display = 'none';
-  document.body.style.overflow = 'auto';
-
-  if (currentTVData && !isInEpisodeSelection) {
-    showEpisodes(currentTVData.tvId, currentTVData.seasonNumber);
-  } else {
-    currentTVData = null;
-    isInEpisodeSelection = false;
-  }
-}
-
+      playerContainer.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
   </script>
 </body>
 </html>
