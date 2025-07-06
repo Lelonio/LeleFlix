@@ -586,7 +586,7 @@ async function watchMovie(movieId, type) {
             cursor: pointer;
             transition: transform 0.3s;
           ">
-            <h3>Stagione ${season.season_number+1}</h3>
+            <h3>Stagione ${season.season_number}</h3>
             <p>${season.episode_count} episodi</p>
           </div>
         `).join('');
@@ -630,7 +630,7 @@ async function watchMovie(movieId, type) {
       <i class="fas fa-times"></i>
     </button>
     <div class="episode-selection-view">
-      <h2>Stagione ${seasonNumber+1} - Seleziona Episodio</h2>
+      <h2>Stagione ${seasonNumber} - Seleziona Episodio</h2>
       <div id="episodes-container" class="episodes-grid"></div>
     </div>
   `;
@@ -666,19 +666,46 @@ async function watchMovie(movieId, type) {
   }
 }
 
-function playTVEpisode(tvId, seasonNumber, episodeNumber) {
+async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
   isInEpisodeSelection = false;
-  
+
   const playerContainer = document.getElementById("player-container");
+
+  // Mostra loading temporaneo
   playerContainer.innerHTML = `
-    <button class="close-player" onclick="closePlayer()">
-      <i class="fas fa-times"></i>
-    </button>
-    <iframe class="player-iframe" 
-            src="https://vixsrc.to/tv/${tvId}/${seasonNumber}/${episodeNumber}?lang=it&autoplay=false" 
-            allowfullscreen></iframe>
+    <div class="state-message">Caricamento episodio...</div>
   `;
+  document.body.style.overflow = 'hidden';
+
+  try {
+    const res = await fetch(`https://vixproxy.fly.dev/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
+    const data = await res.json();
+
+    if (!data.url) throw new Error("Nessun URL restituito dal proxy");
+
+    playerContainer.innerHTML = `
+      <button class="close-player" onclick="closePlayer()">
+        <i class="fas fa-times"></i>
+      </button>
+      <video id="video" controls autoplay crossorigin="anonymous" style="width: 80%; height: 80%; border-radius: 10px; background: black;"></video>
+    `;
+
+    const video = document.getElementById('video');
+    const hls = new Hls();
+    hls.loadSource(`https://vixproxy.fly.dev/stream?url=${encodeURIComponent(data.url)}`);
+    hls.attachMedia(video);
+
+  } catch (error) {
+    console.error("Errore durante la riproduzione episodio:", error);
+    playerContainer.innerHTML = `
+      <div class="state-message">
+        <i class="fas fa-exclamation-triangle"></i> Errore nel caricamento dell'episodio
+        <button onclick="playTVEpisode(${tvId}, ${seasonNumber}, ${episodeNumber})">Riprova</button>
+      </div>
+    `;
+  }
 }
+
 
     // Watch TV episode using vixsrc
     function watchTV(tvId, seasonNumber, episodeNumber) {
@@ -702,25 +729,25 @@ function playTVEpisode(tvId, seasonNumber, episodeNumber) {
     // Close player
 function closePlayer() {
   const playerContainer = document.getElementById("player-container");
-  const iframe = playerContainer.querySelector("video");
-  
-  // Ferma il video
+  const video = playerContainer.querySelector("video");
+
   if (video) {
-    const iframeSrc = video.src;
-    video.src = ""; // Questo ferma il video
+    video.pause();
+    video.src = "";
+    video.load();
   }
-  
+
   playerContainer.style.display = 'none';
   document.body.style.overflow = 'auto';
-  
+
   if (currentTVData && !isInEpisodeSelection) {
-    // Ritorna alla selezione episodi se stavi guardando una serie
     showEpisodes(currentTVData.tvId, currentTVData.seasonNumber);
   } else {
     currentTVData = null;
     isInEpisodeSelection = false;
   }
 }
+
   </script>
 </body>
 </html>
