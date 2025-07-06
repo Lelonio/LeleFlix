@@ -39,6 +39,7 @@
   padding: 0 4%; /* Rimuovo il padding verticale per gestirlo manualmente */
   display: flex;
   align-items: center; /* Allineamento verticale al centro */
+background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1) 64%);
 }
 
 .logo {
@@ -170,20 +171,45 @@
       opacity: 0.7;
     }
 
-    .row-item-info {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
-      padding: 1.5rem 1rem 1rem;
-      opacity: 0;
-      transition: var(--transition);
-    }
+    /* Modifica per mostrare sempre le info su mobile */
+.row-item-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+  padding: 1.5rem 1rem 1rem;
+  /* Mostra sempre su mobile */
+  opacity: 1;
+}
 
-    .row-item:hover .row-item-info {
-      opacity: 1;
-    }
+/* Mantieni l'effetto hover solo su desktop */
+@media (hover: hover) and (pointer: fine) {
+  .row-item-info {
+    opacity: 0;
+    transition: var(--transition);
+  }
+  
+  .row-item:hover .row-item-info {
+    opacity: 1;
+  }
+}
+
+/* Ottimizzazione per mobile */
+@media (max-width: 768px) {
+  .row-item-info {
+    padding: 1rem 0.5rem 0.5rem;
+  }
+  
+  .row-item-title {
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+  }
+  
+  .row-item-meta {
+    font-size: 0.7rem;
+  }
+}
 
     .row-item-title {
       font-size: 1rem;
@@ -642,12 +668,7 @@
         const hls = new Hls();
         hls.loadSource(`https://vixproxy.fly.dev/stream?url=${encodeURIComponent(data.url)}`);
         hls.attachMedia(video);
-        // forza 1080p se presente
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            const lvl = hls.levels.findIndex(l => l.height === 1080);
-            if (lvl >= 0) hls.currentLevel = lvl;
-            video.play();
-          });
+
 
       } catch (err) {
         console.error("Errore nel caricamento:", err);
