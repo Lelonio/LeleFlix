@@ -415,6 +415,32 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
         height: 50%;
       }
     }
+
+    /* Skip‑controls overlay */
+.skip-controls {
+  position: absolute;             /* segue video / fullscreen */
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 14px;
+  opacity: 0;                     /* nascosti di default */
+  transition: opacity 0.3s ease;
+  z-index: 1002;                  /* sopra il player, sotto al tasto “chiudi” */
+}
+
+/* Pulsanti +10 / -10 */
+.skip-btn {
+  background: rgba(0, 0, 0, 0.75);
+  border: none;
+  color: #fff;
+  font-size: 1rem;
+  padding: 10px 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+}
+
   </style>
 </head>
 <body>
@@ -451,6 +477,8 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
 
     </div>
 
+    
+
     <!-- Search Results -->
     <div id="search-results" class="search-results">
       <h2 class="row-title">Risultati della ricerca</h2>
@@ -485,7 +513,7 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
     // Load trending content
     window.onload = async function() {
       try {
-        const res = await fetch('https://vixproxy.fly.dev/home/trending');
+        const res = await fetch('https://vixproxy.onrender.com/home/trending');
         const data = await res.json();
         displayTrending(data);
       } catch (e) {
@@ -498,7 +526,7 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
       
       // Trending row (mixed movies and TV)
       const trendingContainer = document.getElementById("trending-movies-tv");
-      const allTrending = [...movies.slice(0, 10), ...tv.slice(0, 10)]
+      const allTrending = [...movies.slice(0, 20), ...tv.slice(0, 20)]
         .sort(() => Math.random() - 0.5); // Shuffle results
       
       trendingContainer.innerHTML = allTrending.map(item => {
@@ -521,26 +549,6 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
         `;
       }).join('');
 
-      // New releases row (movies only)
-      const newReleasesContainer = document.getElementById("new-releases");
-      newReleasesContainer.innerHTML = movies.slice(10, 20).map(item => {
-        const poster = item.poster_path
-          ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-          : 'https://via.placeholder.com/500x750?text=No+poster';
-
-        return `
-          <div class="row-item" onclick="watchMovie(${item.id}, 'movie')">
-            <img src="${poster}" alt="${item.title}" loading="lazy">
-            <div class="row-item-info">
-              <h3 class="row-item-title">${item.title}</h3>
-              <div class="row-item-meta">
-                <span>Film</span>
-                <span>${item.release_date ? item.release_date.substring(0, 4) : 'N/D'}</span>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
     }
 
     // Handle Enter key
@@ -642,6 +650,68 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
       }
     }
 
+    /**
+ * Aggancia al <video> due pulsanti ±10 s.
+ * Mostra i pulsanti a ogni interazione e li nasconde dopo 3 s.
+ * Mantiene l’overlay anche in fullscreen.
+ */
+function addSkipControls(video) {
+  // Evita doppia inizializzazione
+  if (video.dataset.skipControls) return;
+  video.dataset.skipControls = 'true';
+
+  // Creo l’overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'skip-controls';
+  overlay.innerHTML = `
+    <button class="skip-btn" id="rewind10">‑10 s</button>
+    <button class="skip-btn" id="forward10">+10 s</button>
+  `;
+
+  // Contenitore iniziale
+  const homeParent = video.parentElement;
+  homeParent.style.position = 'relative';  // garantisce positioning
+
+  // Azioni su click
+  overlay.querySelector('#rewind10').onclick = () => {
+    video.currentTime = Math.max(video.currentTime - 10, 0);
+    showControls();
+  };
+  overlay.querySelector('#forward10').onclick = () => {
+    video.currentTime = Math.min(video.currentTime + 10, video.duration || Infinity);
+    showControls();
+  };
+
+  // Logica di show / auto‑hide
+  let hideTimeout;
+  function showControls() {
+    overlay.style.opacity = 1;
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => (overlay.style.opacity = 0), 3000);
+  }
+  showControls(); // visibili appena creati
+
+  // Eventi che riattivano i controlli
+  ['mousemove', 'touchstart'].forEach(evt =>
+    video.parentElement.addEventListener(evt, showControls, { passive: true })
+  );
+
+  // Mantieni l’overlay sul nodo “fullscreen” corrente
+  document.addEventListener('fullscreenchange', () => {
+    const fsEl = document.fullscreenElement;
+    if (fsEl && (fsEl === video || fsEl.contains(video))) {
+      fsEl.style.position = 'relative';
+      fsEl.appendChild(overlay);
+    } else {
+      homeParent.appendChild(overlay);
+    }
+  });
+
+  // Inserisci l’overlay per la prima volta
+  homeParent.appendChild(overlay);
+}
+
+
     // Watch movie using vixsrc
     async function watchMovie(movieId, type) {
       const playerContainer = document.getElementById("player-container");
@@ -652,7 +722,7 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
       document.body.style.overflow = 'hidden';
 
       try {
-        const res = await fetch(`https://vixproxy.fly.dev/proxy/movie/${movieId}`);
+        const res = await fetch(`https://vixproxy.onrender.com/proxy/movie/${movieId}`);
         const data = await res.json();
 
         if (!data.url) throw new Error("Nessun URL restituito");
@@ -666,8 +736,14 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
 
         const video = document.getElementById('video');
         const hls = new Hls();
-        hls.loadSource(`https://vixproxy.fly.dev/stream?url=${encodeURIComponent(data.url)}`);
+        hls.loadSource(`https://vixproxy.onrender.com/stream?url=${encodeURIComponent(data.url)}`);
         hls.attachMedia(video);
+                // forza 1080p se presente
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            const lvl = hls.levels.findIndex(l => l.height === 1080);
+            if (lvl >= 0) hls.currentLevel = lvl;
+            video.play();
+          });
 
 
       } catch (err) {
@@ -775,7 +851,7 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
       document.body.style.overflow = 'hidden';
 
       try {
-        const res = await fetch(`https://vixproxy.fly.dev/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
+        const res = await fetch(`https://vixproxy.onrender.com/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
         const data = await res.json();
 
         if (!data.url) throw new Error("Nessun URL restituito dal proxy");
@@ -789,7 +865,7 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
 
         const video = document.getElementById('video');
         const hls = new Hls();
-        hls.loadSource(`https://vixproxy.fly.dev/stream?url=${encodeURIComponent(data.url)}`);
+        hls.loadSource(`https://vixproxy.onrender.com/stream?url=${encodeURIComponent(data.url)}`);
         hls.attachMedia(video);
         // forza 1080p se presente
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
