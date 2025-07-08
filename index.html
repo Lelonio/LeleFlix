@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#e50914">
 
-  <title>Streaming Film e Serie TV</title>
+  <title>LeleFlix</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -40,29 +40,26 @@
 
  /* Navbar più alta */
 .navbar {
-  height: 80px; /* Altezza aumentata da ~60px a 80px */
-  padding: 0 4%; /* Rimuovo il padding verticale per gestirlo manualmente */
+  height: 80px;
+  padding: 0 4%;
   display: flex;
-  align-items: center; /* Allineamento verticale al centro */
-background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1) 64%);
+  align-items: center;
+  justify-content: center; /* Aggiunto per centrare orizzontalmente */
+  background: linear-gradient(180deg, rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1) 64%);
 }
 
 .logo {
   cursor: pointer;
   transition: transform 0.3s ease;
+  height: 45px;
+  width: auto; /* Rimuovi position: absolute e left */
 }
 
 .logo:hover {
   transform: scale(1.05);
 }
 
-/* Logo proporzionato */
-.logo {
-  height: 45px; /* Aumentato da 36px */
-  width: auto;
-  position: absolute;
-  left: 44%;
-}
+
 
 /* Se necessario, aggiusta il padding del contenuto principale */
 .main-content {
@@ -363,20 +360,7 @@ background: linear-gradient(180deg,rgba(229, 9, 20, 0.75) 0%, rgba(10, 10, 10, 1
     }
 
     @media (max-width: 768px) {
-.navbar {
-  height: 80px; /* Altezza aumentata da ~60px a 80px */
-  padding: 0 4%; /* Rimuovo il padding verticale per gestirlo manualmente */
-  display: flex;
-  align-items: center; /* Allineamento verticale al centro */
-}
 
-/* Logo proporzionato */
-.logo {
-  height: 45px; /* Aumentato da 36px */
-  width: auto;
-  position: absolute;
-  left: 31%;
-}
       
       .main-content {
         padding-top: 10px;
