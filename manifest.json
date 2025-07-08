@@ -1,0 +1,21 @@
+{
+  "name": "Streaming Film e Serie TV",
+  "short_name": "Streaming",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#e50914",
+  "description": "Guarda film e serie TV in streaming.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
