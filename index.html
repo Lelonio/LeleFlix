@@ -10,9 +10,472 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  
+
+
   
   <style>
+    @media (max-width: 768px) {
+
+      /* Time display per mobile */
+.time-display-mobile {
+  display: none;
+  font-size: 12px;
+  color: #ccc;
+  margin-left: 10px;
+}
+
+@media (max-width: 768px) {
+  .time-display {
+    display: none;
+  }
+  
+  .time-display-mobile {
+    display: block;
+  }
+  
+  /* Nascondi i controlli non essenziali */
+  .skip-btn {
+    display: none !important;
+  }
+  
+  /* Semplifica il volume */
+
+}
+  /* Riduci il padding dei controlli */
+  .bottom-controls {
+    padding: 15px;
+  }
+  
+  /* Adatta la barra di progresso */
+  .progress-container {
+    margin-bottom: 10px;
+  }
+  
+  /* Ridimensiona i pulsanti */
+  .control-btn {
+    font-size: 18px;
+    padding: 8px;
+  }
+  
+  .play-pause-btn {
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+  }
+  
+  /* Riduci lo spazio tra i controlli */
+  .left-controls, .right-controls {
+    gap: 10px;
+  }
+  
+  /* Adatta i controlli skip */
+  .skip-controls {
+    gap: 30px;
+    bottom: 100px; /* Posizione più alta */
+  }
+  
+  .skip-control {
+    width: 50px;
+    height: 50px;
+    font-size: 12px;
+  }
+  
+  .skip-control i {
+    font-size: 18px;
+  }
+  
+  /* Riduci le dimensioni del testo */
+  .video-title {
+    font-size: 16px;
+  }
+  
+  .video-subtitle {
+    font-size: 12px;
+  }
+  
+  .time-display {
+    font-size: 12px;
+    min-width: 80px;
+  }
+  
+  /* Adatta i menu a tendina */
+  .subtitle-menu, .audio-menu {
+    min-width: 120px;
+  }
+  
+  .menu-option {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+@media (max-width: 768px) {
+  /* Top bar */
+  .top-bar {
+    height: 60px;
+    padding: 0 15px;
+    padding-top: env(safe-area-inset-top); /* Considera notch */
+  }
+
+  /* Bottom bar */
+  .bottom-controls {
+    padding: 15px;
+    padding-bottom: calc(15px + env(safe-area-inset-bottom)); /* Considera area sicura */
+    position: relative;
+    z-index: 10;
+  }
+
+  /* Video container */
+  .video-container {
+    height: calc(50vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+}
+/* Player Container */
+.player-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  z-index: 1000;
+  display: none;
+}
+
+.video-container {
+  
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.video-overlay.show-controls {
+  pointer-events: all;
+}
+
+/* Top Bar */
+.top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.video-overlay.show-controls .top-bar {
+  opacity: 1;
+}
+
+.video-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.video-title {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.video-subtitle {
+  font-size: 16px;
+  color: #ccc;
+  margin-top: 4px;
+}
+
+.top-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.top-control-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.top-control-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Bottom Controls */
+.bottom-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  padding: 40px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.video-overlay.show-controls .bottom-controls {
+  opacity: 1;
+}
+
+/* Progress Bar */
+.progress-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 3px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #e50914;
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.1s ease;
+}
+
+.progress-handle {
+  position: absolute;
+  top: -6px;
+  width: 18px;
+  height: 18px;
+  background: #e50914;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.progress-container:hover .progress-handle {
+  opacity: 1;
+}
+
+.progress-container:hover {
+  height: 8px;
+}
+
+/* Controls Row */
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.left-controls,
+.right-controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.control-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-btn:hover {
+  background: rgba(255,255,255,0.1);
+  transform: scale(1.1);
+}
+
+.play-pause-btn {
+  font-size: 32px;
+  width: 60px;
+  height: 60px;
+  background: rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.play-pause-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.skip-btn {
+  font-size: 28px;
+}
+
+.time-display {
+  font-size: 14px;
+  color: #ccc;
+  margin: 0 10px;
+  min-width: 100px;
+}
+
+.volume-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+
+
+.volume-fill {
+  height: 100%;
+  background: white;
+  border-radius: 2px;
+  width: 100%;
+  transition: width 0.1s ease;
+}
+
+.fullscreen-btn {
+  font-size: 20px;
+}
+
+.skip-controls {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 80px;
+  align-items: center; /* Allinea verticalmente gli elementi */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.video-overlay.show-controls .skip-controls {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.loading-spinner {
+  font-size: 48px;
+  color: #e50914;
+  animation: spin 1s linear infinite;
+  /* Rimuovi position:absolute e altre proprietà di posizionamento */
+  display: none; /* Gestito via JavaScript */
+}
+
+/* Per mobile */
+@media (max-width: 768px) {
+  .skip-controls {
+    gap: 60px;
+  }
+  
+  .loading-spinner {
+    font-size: 36px;
+  }
+}
+
+
+.skip-control {
+  background: rgba(0,0,0,0.7);
+  border: none;
+  color: white;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.skip-control:hover {
+  background: rgba(0,0,0,0.9);
+  transform: scale(1.1);
+}
+
+.skip-control i {
+  font-size: 24px;
+}
+
+
+
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .top-bar,
+  .bottom-controls {
+    padding: 20px;
+  }
+
+  .video-title {
+    font-size: 20px;
+  }
+
+  .controls-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .skip-controls {
+    gap: 60px;
+  }
+
+  .skip-control {
+    width: 60px;
+    height: 60px;
+    font-size: 14px;
+  }
+}
     :root {
       --primary: #e50914;
       --primary-dark: #b2070f;
@@ -240,40 +703,44 @@
       margin-bottom: 1.5rem;
     }
 
-    /* Player */
-    .player-container {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.9);
-      z-index: 1000;
-      display: none;
-      justify-content: center;
-      align-items: center;
-    }
+/* Player Container */
+.player-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  z-index: 1000;
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
 
-    .close-player {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      background: var(--primary);
-      border: none;
-      color: white;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      font-size: 1.2rem;
-      cursor: pointer;
-      transition: var(--transition);
-      z-index: 1001;
-    }
+.close-player {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(20, 20, 20, 0.7);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 1001;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-    .close-player:hover {
-      background: var(--primary-dark);
-      transform: rotate(90deg);
-    }
+.close-player:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: scale(1.1);
+}
 
     #video {
       width: 80%;
@@ -337,11 +804,6 @@
       max-width: 600px;
     }
 
-    .loading-spinner {
-      display: inline-block;
-      animation: spin 1s linear infinite;
-      margin-right: 0.5rem;
-    }
 
     @keyframes spin {
       0% { transform: rotate(0deg); }
@@ -404,32 +866,139 @@
         height: 50%;
       }
     }
-
-    /* Skip‑controls overlay */
-.skip-controls {
-  position: absolute;             /* segue video / fullscreen */
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 14px;
-  opacity: 0;                     /* nascosti di default */
-  transition: opacity 0.3s ease;
-  z-index: 1002;                  /* sopra il player, sotto al tasto “chiudi” */
-}
-
-/* Pulsanti +10 / -10 */
-.skip-btn {
-  background: rgba(0, 0, 0, 0.75);
-  border: none;
-  color: #fff;
-  font-size: 1rem;
-  padding: 10px 16px;
-  border-radius: 50%;
+/* Assicura che i pulsanti siano cliccabili */
+.control-btn, .skip-control, .progress-container{
   cursor: pointer;
-  backdrop-filter: blur(4px);
+  pointer-events: auto;
 }
 
+/* Il video deve essere cliccabile */
+video {
+  cursor: pointer;
+}
+
+/* L'overlay non deve bloccare gli eventi quando i controlli sono nascosti */
+.video-overlay:not(.show-controls) {
+  pointer-events: none;
+}
+
+.video-overlay.show-controls {
+  pointer-events: auto;
+}
+
+/* I controlli devono sempre ricevere gli eventi */
+.top-bar, .bottom-controls, .skip-controls {
+  pointer-events: auto;
+}
+
+/* Menu a tendina */
+.subtitle-control, .audio-control {
+  position: relative;
+  display: inline-block;
+}
+
+.subtitle-menu, .audio-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: rgba(0, 0, 0, 0.9);
+  min-width: 160px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.menu-option {
+  color: white;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.menu-option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Mostra menu quando la classe 'show' è presente */
+.subtitle-menu.show, .audio-menu.show {
+  display: block;
+}
+
+/* Icona attiva */
+.top-control-btn.active {
+  color: var(--primary);
+}
+/* Quando il video è in caricamento */
+.video-container.loading video {
+  opacity: 0.5; /* Riduci l'opacità del video durante il caricamento */
+}
+
+/* Assicurati che l'overlay sia visibile durante il caricamento */
+.video-container.loading .video-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Controlli durante il caricamento */
+.video-container.loading .bottom-controls,
+.video-container.loading .top-bar {
+  opacity: 1 !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+}
+
+@media (max-width: 768px) {
+  .video-overlay.show-controls {
+    /* Assicura che i controlli siano sempre cliccabili su mobile */
+    pointer-events: auto;
+  }
+  
+  /* Animazione più fluida per mobile */
+  .top-bar, .bottom-controls {
+    transition: opacity 0.2s ease;
+  }
+  
+  /* Area click più ampia per i controlli su mobile */
+  .control-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Stile per il pulsante */
+.size-btn {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.size-btn:hover {
+  transform: scale(1.1);
+}
+
+/* Stile base per tutte le icone */
+.size-btn i {
+  display: inline-block;
+  transition: opacity 0.3s ease;
+}
+
+/* Nascondi tutte le icone tranne quella predefinita */
+.size-btn .fa-expand-arrows-alt { opacity: 1; }
+.size-btn .fa-object-group { opacity: 0; position: absolute; }
+.size-btn .fa-vector-square { opacity: 0; position: absolute; }
+
+/* Mostra solo l'icona corretta in base alla modalità */
+.size-btn[data-size-mode="contain"] .fa-expand-arrows-alt { opacity: 0; }
+.size-btn[data-size-mode="contain"] .fa-object-group { opacity: 1; }
+.size-btn[data-size-mode="contain"] .fa-vector-square { opacity: 0; }
+
+.size-btn[data-size-mode="cover"] .fa-expand-arrows-alt { opacity: 0; }
+.size-btn[data-size-mode="cover"] .fa-object-group { opacity: 0; }
+.size-btn[data-size-mode="cover"] .fa-vector-square { opacity: 1; }
+
+.size-btn[data-size-mode="fill"] .fa-expand-arrows-alt { opacity: 1; }
+.size-btn[data-size-mode="fill"] .fa-object-group { opacity: 0; }
+.size-btn[data-size-mode="fill"] .fa-vector-square { opacity: 0; }
   </style>
 </head>
 <body>
@@ -474,15 +1043,694 @@
       <div class="row" id="results-container"></div>
     </div>
   </div>
+<div class="player-wrapper">
 
-  <!-- Player -->
-  <div class="player-container" id="player-container">
-    <button class="close-player" onclick="closePlayer()">
-      <i class="fas fa-times"></i>
+<div class="player-container" id="player-container">
+  <div class="video-container">
+    <video id="mainVideo" preload="metadata"></video>
+
+    <div class="video-overlay" id="videoOverlay">
+      <!-- Top Bar -->
+      <div class="top-bar">
+        <div class="video-info">
+          <button class="back-button" onclick="closePlayer()">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div>
+            <div class="video-title" id="playerTitle">Titolo</div>
+            <div class="video-subtitle" id="playerSubtitle">Sottotitolo</div>
+          </div>
+        </div>
+        <div class="top-controls">
+  <!-- Pulsante Sottotitoli -->
+  <div class="subtitle-control">
+    <button class="top-control-btn" id="subtitleBtn">
+      <i class="fas fa-closed-captioning"></i>
     </button>
+    <div class="subtitle-menu" id="subtitleMenu">
+      <div class="menu-option" data-lang="off">Disattivati</div>
+      <!-- Le opzioni verranno aggiunte dinamicamente -->
+    </div>
   </div>
+  
+  <!-- Pulsante Lingua Audio -->
+  <div class="audio-control">
+    <button class="top-control-btn" id="audioBtn">
+      <i class="fas fa-language"></i>
+    </button>
+    <div class="audio-menu" id="audioMenu">
+      <!-- Le opzioni verranno aggiunte dinamicamente -->
+    </div>
+  </div>
+        </div>
+      </div>
+
+      <!-- Skip Controls -->
+      <div class="skip-controls">
+        <button class="skip-control">
+          <i class="fas fa-undo"></i>
+          <span>10s</span>
+        </button>
+            <div class="loading-spinner" id="loadingSpinner" style="display: none;">
+            <i class="fa fa-spinner"></i>
+            </div>
+        <button class="skip-control">
+          <i class="fas fa-redo"></i>
+          <span>10s</span>
+        </button>
+      </div>
+
+      <!-- Bottom Controls -->
+<div class="bottom-controls">
+  <div class="progress-container" onclick="seekPlayerTo(event)">
+    <div class="progress-bar" id="progressBar"></div>
+    <div class="progress-handle" id="progressHandle"></div>
+  </div>
+  
+  <div class="controls-row">
+    <div class="left-controls">
+      <button class="control-btn play-pause-btn">
+        <i class="fas fa-play" id="playPauseIcon"></i>
+      </button>
+      <div class="time-display-mobile" id="timeDisplay">0:00 / 0:00</div>
+    </div>
+    
+    <div class="right-controls">
+<button class="control-btn size-btn" id="sizeBtn" title="Cambia dimensione video">
+  <i class="fas fa-expand-arrows-alt"></i>
+  <i class="fas fa-object-group"></i>
+  <i class="fas fa-vector-square"></i>
+</button>
+      <button class="control-btn fullscreen-btn">
+        <i class="fas fa-expand" id="fullscreenIcon"></i>
+      </button>
+    </div>
+  </div>
+</div>
+    </div>
+
+
+    </div>
+  </div>
+</div>
+
 
   <script>
+  // Aggiungi questo all'inizio dello script
+document.addEventListener('DOMContentLoaded', () => {
+  initPlayerElements();
+  setupPlayerListeners();
+  setupDesktopClickControls(); // <-- aggiunto
+      setupMobileTouchControls();
+
+
+});
+// Variabile per tracciare lo stato corrente
+let currentSizeMode = 'contain'; // 'contain', 'cover', 'fill'
+
+// Funzione per ciclare tra le dimensioni
+function cycleVideoSize() {
+  const videoElement = document.getElementById('mainVideo');
+  const sizeBtn = document.getElementById('sizeBtn');
+  
+  switch(currentSizeMode) {
+    case 'contain':
+      videoElement.style.objectFit = 'cover';
+      videoElement.style.backgroundColor = '#000';
+      sizeBtn.setAttribute('data-size-mode', 'cover');
+      sizeBtn.title = 'Adatta allo schermo (copri tutto)';
+      currentSizeMode = 'cover';
+      break;
+      
+    case 'cover':
+      videoElement.style.objectFit = 'fill';
+      videoElement.style.backgroundColor = 'transparent';
+      sizeBtn.setAttribute('data-size-mode', 'fill');
+      sizeBtn.title = 'Stira per riempire';
+      currentSizeMode = 'fill';
+      break;
+      
+    case 'fill':
+      videoElement.style.objectFit = 'contain';
+      videoElement.style.backgroundColor = '#000';
+      sizeBtn.setAttribute('data-size-mode', 'contain');
+      sizeBtn.title = 'Mostra tutto il video';
+      currentSizeMode = 'contain';
+      break;
+  }
+  
+  // Forza il ridisegno per alcuni browser
+  void sizeBtn.offsetWidth;
+  
+  // Salva la preferenza
+  localStorage.setItem('videoSizeMode', currentSizeMode);
+}
+function initVideoSize() {
+  const savedMode = localStorage.getItem('videoSizeMode') || 'contain';
+  currentSizeMode = savedMode;
+  const videoElement = document.getElementById('mainVideo');
+  const sizeBtn = document.getElementById('sizeBtn');
+  
+  // Applica lo stile iniziale
+  videoElement.style.objectFit = currentSizeMode;
+  sizeBtn.setAttribute('data-size-mode', currentSizeMode);
+  
+  // Imposta il colore di sfondo
+  if (currentSizeMode === 'fill') {
+    videoElement.style.backgroundColor = 'transparent';
+  } else {
+    videoElement.style.backgroundColor = '#000';
+  }
+  
+  // Imposta il tooltip iniziale
+  switch(currentSizeMode) {
+    case 'contain': sizeBtn.title = 'Mostra tutto il video'; break;
+    case 'cover': sizeBtn.title = 'Adatta allo schermo (copri tutto)'; break;
+    case 'fill': sizeBtn.title = 'Stira per riempire'; break;
+  }
+}
+
+// Aggiungi l'event listener
+document.addEventListener('DOMContentLoaded', () => {
+  const sizeBtn = document.getElementById('sizeBtn');
+  if (sizeBtn) {
+    sizeBtn.addEventListener('click', cycleVideoSize);
+    initVideoSize();
+  }
+});
+function setupMobileLayout() {
+  if (window.innerWidth <= '768px') {
+    // Sposta il time display per mobile
+    const timeDisplay = document.getElementById('timeDisplay');
+    const leftControls = document.querySelector('.left-controls');
+    leftControls.appendChild(timeDisplay);
+    
+    // Nascondi controlli non essenziali su mobile
+    document.querySelectorAll('.skip-btn').forEach(btn => {
+      btn.style.display = 'none';
+    });
+    
+    // Adatta il volume a un pulsante toggle su mobile
+    const volumeContainer = document.querySelector('.volume-container');
+    volumeContainer.innerHTML = `
+      <button class="control-btn" onclick="togglePlayerMute()">
+        <i class="fas fa-volume-up" id="volumeIcon"></i>
+      </button>
+    `;
+  }
+}
+
+// Chiama la funzione al caricamento e al ridimensionamento
+window.addEventListener('load', setupMobileLayout);
+window.addEventListener('resize', setupMobileLayout);
+// Player variables
+// Aggiungi questa variabile con le altre
+let playerContainer;
+let subtitleBtn, subtitleMenu, audioBtn, audioMenu;
+let currentSubtitleTrack = -1; // -1 = disattivati
+let currentAudioTrack = 0;
+let availableSubtitles = [];
+let availableAudioTracks = [];
+let playerVideo, playerOverlay, playerProgressBar, playerProgressHandle;
+let playerPlayPauseIcon, playerTimeDisplay, playerVolumeIcon, playerVolumeFill;
+let playerFullscreenIcon, playerLoadingSpinner;
+let playerControlsTimeout, isPlayerPlaying, currentPlayerVolume;
+
+function initPlayerElements() {
+  playerContainer = document.getElementById("player-container"); // Aggiungi questa linea
+  playerVideo = document.getElementById("mainVideo");
+  playerOverlay = document.getElementById("videoOverlay");
+  playerProgressBar = document.getElementById("progressBar");
+  playerProgressHandle = document.getElementById("progressHandle");
+  playerPlayPauseIcon = document.getElementById("playPauseIcon");
+  playerTimeDisplay = document.getElementById("timeDisplay");
+  playerVolumeIcon = document.getElementById("volumeIcon");
+  playerVolumeFill = document.getElementById("volumeFill");
+  playerFullscreenIcon = document.getElementById("fullscreenIcon");
+  playerLoadingSpinner = document.getElementById("loadingSpinner");
+    subtitleBtn = document.getElementById("subtitleBtn");
+  subtitleMenu = document.getElementById("subtitleMenu");
+  audioBtn = document.getElementById("audioBtn");
+  audioMenu = document.getElementById("audioMenu");
+}
+
+function showPlayerControls() {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  playerOverlay.classList.add('show-controls');
+  clearTimeout(playerControlsTimeout);
+  
+  if (isPlayerPlaying) {
+    playerControlsTimeout = setTimeout(() => {
+      // Su mobile, nascondi solo dopo un timeout più lungo
+      if (isMobile) {
+        if (!playerVideo.paused) {
+          playerOverlay.classList.remove('show-controls');
+        }
+      } else {
+        playerOverlay.classList.remove('show-controls');
+      }
+    }, isMobile ? 4000 : 3000); // Timeout più lungo per mobile
+  }
+}
+
+function setupMobileTouchControls() {
+  if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) return;
+
+  let firstTap = true;
+  const tapDelay = 300; // ms
+  
+  playerVideo.addEventListener('click', (e) => {
+    if (firstTap) {
+      // Primo tocco: mostra solo i controlli
+      showPlayerControls();
+      firstTap = false;
+      
+      setTimeout(() => {
+        firstTap = true;
+      }, tapDelay);
+    } else {
+      // Secondo tocco: play/pause
+      togglePlayerPlayPause();
+      firstTap = true;
+    }
+  });
+
+  // Gestione aree di skip con doppio tocco
+  playerVideo.addEventListener('dblclick', (e) => {
+    const rect = playerVideo.getBoundingClientRect();
+    const clickPosition = (e.clientX - rect.left) / rect.width;
+    
+    if (clickPosition < 0.3) {
+      skipPlayerTime(-10);
+    } else if (clickPosition > 0.7) {
+      skipPlayerTime(10);
+    }
+  });
+}
+function setupDesktopClickControls() {
+  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) return;
+  
+  playerVideo.addEventListener('click', togglePlayerPlayPause);
+}
+
+// Player event listeners
+function setupPlayerListeners() {
+  playerVideo.addEventListener('loadstart', () => {
+    document.getElementById('loadingSpinner').style.display = 'block';
+    playerOverlay.classList.add('show-controls');
+  });
+
+  playerVideo.addEventListener('loadeddata', () => {
+    document.getElementById('loadingSpinner').style.display = 'none';
+    // Mantieni i controlli visibili per un po' dopo il caricamento
+    showPlayerControls();
+  });
+
+  playerVideo.addEventListener('play', () => {
+    isPlayerPlaying = true;
+    playerPlayPauseIcon.className = 'fas fa-pause';
+  });
+
+  playerVideo.addEventListener('pause', () => {
+    isPlayerPlaying = false;
+    playerPlayPauseIcon.className = 'fas fa-play';
+    showPlayerControls();
+  });
+
+    // Listener per i pulsanti dei sottotitoli e audio
+  subtitleBtn.addEventListener('click', toggleSubtitles);
+  audioBtn.addEventListener('click', toggleAudioMenu);
+  
+  // Chiudi menu quando si clicca fuori
+  document.addEventListener('click', (e) => {
+    if (!subtitleMenu.contains(e.target) && e.target !== subtitleBtn) {
+      subtitleMenu.classList.remove('show');
+    }
+    if (!audioMenu.contains(e.target) && e.target !== audioBtn) {
+      audioMenu.classList.remove('show');
+    }
+  });
+
+  playerVideo.addEventListener('timeupdate', updatePlayerProgress);
+  playerVideo.addEventListener('volumechange', updatePlayerVolumeDisplay);
+
+    // Mouse/touch events - modificati
+  playerContainer.addEventListener('mousemove', showPlayerControls);
+  playerContainer.addEventListener('touchstart', showPlayerControls);
+  
+
+  
+  // Su mobile, gestisci diversamente gli eventi touch
+  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    playerContainer.addEventListener('touchstart', () => {
+      showPlayerControls();
+      
+      // Su mobile, nascondi i controlli dopo un timeout più breve
+      if (isPlayerPlaying) {
+        clearTimeout(playerControlsTimeout);
+        playerControlsTimeout = setTimeout(() => {
+          playerOverlay.classList.remove('show-controls');
+        }, 2000);
+      }
+    });
+  }
+
+  // Aggiungi questi listener per i controlli
+  document.querySelector('.play-pause-btn').addEventListener('click', togglePlayerPlayPause);
+  document.querySelectorAll('.skip-btn').forEach(btn => {
+    const seconds = btn.querySelector('.fa-backward') ? -10 : 10;
+    btn.addEventListener('click', () => skipPlayerTime(seconds));
+  });
+  document.querySelectorAll('.skip-control').forEach(btn => {
+    const seconds = btn.querySelector('.fa-undo') ? -10 : 10;
+    btn.addEventListener('click', () => skipPlayerTime(seconds));
+  });
+  document.querySelector('.progress-container').addEventListener('click', seekPlayerTo);
+  document.addEventListener('fullscreenchange', handleFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+  document.addEventListener('msfullscreenchange', handleFullscreenChange);
+  document.querySelector('.fullscreen-btn').addEventListener('click', togglePlayerFullscreen);
+  document.querySelector('[onclick="toggleMute()"]').addEventListener('click', togglePlayerMute);
+  document.querySelector('.back-button').addEventListener('click', closePlayer);
+
+  // Keyboard events
+  document.addEventListener('keydown', (e) => {
+    if (document.getElementById("player-container").style.display !== 'flex') return;
+    
+    switch(e.code) {
+      case 'Space':
+        e.preventDefault();
+        togglePlayerPlayPause();
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        skipPlayerTime(-10);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        skipPlayerTime(10);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        changePlayerVolume(0.1);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        changePlayerVolume(-0.1);
+        break;
+      case 'KeyF':
+        e.preventDefault();
+        togglePlayerFullscreen();
+        break;
+      case 'KeyM':
+        e.preventDefault();
+        togglePlayerMute();
+        break;
+    }
+  });
+}
+
+function handleFullscreenChange() {
+  const isFullscreen = document.fullscreenElement || 
+                      document.webkitFullscreenElement ||
+                      document.msFullscreenElement;
+  
+  // Aggiorna l'icona
+  if (playerFullscreenIcon) {
+    playerFullscreenIcon.className = isFullscreen ? 'fas fa-compress' : 'fas fa-expand';
+  }
+  
+  // Se uscito dal fullscreen, ripristina stato
+  if (!isFullscreen) {
+    document.querySelector('.player-container').classList.remove('fullscreen-fallback');
+    
+    // Su mobile, ritorna a portrait quando si esce
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      try {
+        screen.orientation.unlock();
+        if (window.innerHeight > window.innerWidth) {
+          screen.orientation.lock('portrait').catch(e => {});
+        }
+      } catch (e) {
+        console.log("Orientation error:", e);
+      }
+    }
+  }
+}
+
+function updateFullscreenState() {
+  const isFullscreen = document.fullscreenElement || 
+                      document.webkitFullscreenElement || 
+                      document.msFullscreenElement;
+  
+  playerFullscreenIcon.className = isFullscreen ? 'fas fa-compress' : 'fas fa-expand';
+  playerFullscreenIcon.parentElement.classList.toggle('active', isFullscreen);
+  
+  // Aggiorna il layout per mobile
+  if (window.innerWidth <= '768px') {
+    const videoContainer = document.querySelector('.video-container');
+    if (isFullscreen) {
+      videoContainer.style.height = '100vh';
+    } else {
+      videoContainer.style.height = 'calc(100vh - env(safe-area-inset-top)';
+    }
+  }
+}
+
+// Player control functions
+function togglePlayerPlayPause() {
+  const wasPlaying = !playerVideo.paused;
+  
+  if (playerVideo.paused) {
+    playerVideo.play().then(() => {
+      isPlayerPlaying = true;
+      playerPlayPauseIcon.className = 'fas fa-pause';
+      
+      // Su mobile, nascondi i controlli dopo un breve ritardo
+      if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        playerControlsTimeout = setTimeout(() => {
+          if (!playerVideo.paused) {
+            playerOverlay.classList.remove('show-controls');
+          }
+        }, 2000);
+      }
+    });
+  } else {
+    playerVideo.pause();
+    isPlayerPlaying = false;
+    playerPlayPauseIcon.className = 'fas fa-play';
+    
+    // Su mobile, mantieni i controlli visibili quando in pausa
+    showPlayerControls();
+  }
+  
+  showPlayerControls();
+}
+
+function skipPlayerTime(seconds) {
+  playerVideo.currentTime = Math.max(0, Math.min(playerVideo.duration, playerVideo.currentTime + seconds));
+  showPlayerControls();
+}
+
+// Funzione per attivare/disattivare i sottotitoli
+function toggleSubtitles() {
+  subtitleMenu.classList.toggle('show');
+  audioMenu.classList.remove('show');
+}
+
+// Funzione per cambiare lingua audio
+function toggleAudioMenu() {
+  audioMenu.classList.toggle('show');
+  subtitleMenu.classList.remove('show');
+}
+
+function setupTracks(hls) {
+  // Aggiungi sempre l'opzione "Disattivati" come prima scelta
+  subtitleMenu.innerHTML = `
+    <div class="menu-option active" data-lang="off" onclick="setSubtitleTrack(-1)">
+      <i class="fas fa-eye-slash"></i> Disattivati
+    </div>
+  `;
+
+  // Aggiungi le altre tracce disponibili
+  availableSubtitles = hls.subtitleTracks || [];
+  availableSubtitles.forEach((track, index) => {
+    const option = document.createElement('div');
+    option.className = 'menu-option';
+    option.dataset.lang = track.lang;
+    option.innerHTML = `
+      <i class="fas fa-closed-captioning"></i> ${track.name || `Sottotitoli ${track.lang}`}
+    `;
+    option.addEventListener('click', () => setSubtitleTrack(index));
+    subtitleMenu.appendChild(option);
+  });
+}
+
+function setSubtitleTrack(index) {
+  if (!playerVideo._hls) return;
+
+  // Disattiva tutti i menu option
+  document.querySelectorAll('.subtitle-menu .menu-option').forEach(opt => {
+    opt.classList.remove('active');
+  });
+
+  // Attiva l'opzione selezionata
+  const selectedOption = index === -1 
+    ? document.querySelector('.menu-option[data-lang="off"]')
+    : document.querySelector(`.menu-option[data-lang="${availableSubtitles[index]?.lang}"]`);
+  
+  if (selectedOption) selectedOption.classList.add('active');
+
+  // Imposta la traccia
+  playerVideo._hls.subtitleTrack = index;
+  currentSubtitleTrack = index;
+  subtitleMenu.classList.remove('show');
+
+  // Aggiorna lo stato del pulsante
+  subtitleBtn.classList.toggle('active', index !== -1);
+  showPlayerControls();
+}
+
+// Funzione per impostare la traccia audio
+function setAudioTrack(index) {
+  if (playerVideo._hls) {
+    playerVideo._hls.audioTrack = index;
+    currentAudioTrack = index;
+    audioMenu.classList.remove('show');
+  }
+}
+
+// Carica le tracce disponibili quando il manifesto è parsato
+function setupTracks(hls) {
+  // Sottotitoli
+  availableSubtitles = hls.subtitleTracks || [];
+  subtitleMenu.innerHTML = '<div class="menu-option" data-lang="off">Disattivati</div>';
+  
+  availableSubtitles.forEach((track, index) => {
+    const option = document.createElement('div');
+    option.className = 'menu-option';
+    option.dataset.lang = track.lang;
+    option.textContent = track.name || `Sottotitoli ${track.lang}`;
+    option.addEventListener('click', () => setSubtitleTrack(index));
+    subtitleMenu.appendChild(option);
+  });
+
+  // Lingue audio
+  availableAudioTracks = hls.audioTracks || [];
+  audioMenu.innerHTML = '';
+  
+  availableAudioTracks.forEach((track, index) => {
+    const option = document.createElement('div');
+    option.className = 'menu-option';
+    option.dataset.lang = track.lang;
+    option.textContent = track.name || `Audio ${track.lang}`;
+    option.addEventListener('click', () => setAudioTrack(index));
+    audioMenu.appendChild(option);
+  });
+}
+
+function updatePlayerProgress() {
+  if (playerVideo.duration) {
+    const progress = (playerVideo.currentTime / playerVideo.duration) * 100;
+    playerProgressBar.style.width = progress + '%';
+    playerProgressHandle.style.left = progress + '%';
+    
+    const current = formatPlayerTime(playerVideo.currentTime);
+    const total = formatPlayerTime(playerVideo.duration);
+    playerTimeDisplay.textContent = `${current} / ${total}`;
+  }
+}
+
+function formatPlayerTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+function seekPlayerTo(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const percentage = (e.clientX - rect.left) / rect.width;
+  playerVideo.currentTime = percentage * playerVideo.duration;
+  showPlayerControls();
+}
+
+function togglePlayerMute() {
+  if (playerVideo.muted) {
+    playerVideo.muted = false;
+    playerVideo.volume = currentPlayerVolume;
+  } else {
+    currentPlayerVolume = playerVideo.volume;
+    playerVideo.muted = true;
+  }
+  showPlayerControls();
+}
+
+function setPlayerVolume(e) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const percentage = (e.clientX - rect.left) / rect.width;
+  const newVolume = Math.max(0, Math.min(1, percentage));
+  playerVideo.volume = newVolume;
+  playerVideo.muted = false;
+  currentPlayerVolume = newVolume; // Aggiorna il volume corrente
+  updatePlayerVolumeDisplay();
+  showPlayerControls();
+}
+
+function changePlayerVolume(delta) {
+  playerVideo.volume = Math.max(0, Math.min(1, playerVideo.volume + delta));
+  playerVideo.muted = false;
+  showPlayerControls();
+}
+
+function updatePlayerVolumeDisplay() {
+  const volume = playerVideo.muted ? 0 : playerVideo.volume;
+  playerVolumeFill.style.width = (volume * 100) + '%';
+  
+  if (playerVideo.muted || volume === 0) {
+    playerVolumeIcon.className = 'fas fa-volume-mute';
+  } else if (volume < 0.5) {
+    playerVolumeIcon.className = 'fas fa-volume-down';
+  } else {
+    playerVolumeIcon.className = 'fas fa-volume-up';
+  }
+}
+function togglePlayerFullscreen(force = false) {
+  const playerContainer = document.getElementById("player-container");
+  const videoContainer = document.querySelector('.video-container');
+  
+  // Se forzato o non è già in fullscreen
+  if (force || !document.fullscreenElement) {
+    if (videoContainer.requestFullscreen) {
+      videoContainer.requestFullscreen().catch(e => {
+        console.error("Fullscreen error:", e);
+        // Fallback per alcuni browser mobile
+        playerContainer.classList.add('fullscreen-fallback');
+      });
+    } else if (videoContainer.webkitRequestFullscreen) { /* Safari */
+      videoContainer.webkitRequestFullscreen();
+    } else if (videoContainer.msRequestFullscreen) { /* IE11 */
+      videoContainer.msRequestFullscreen();
+    }
+    
+    // Forza landscape su mobile
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+      screen.orientation.lock('landscape').catch(e => {});
+    }
+  }
+}
+
+
+function toggleCaptions() {
+  console.log('Toggling captions...');
+}
+
+function showSettings() {
+  console.log('Showing settings...');
+}
+
+
+
     function goToHome() {
   // Nascondi i risultati di ricerca
   document.getElementById("search-results").style.display = 'none';
@@ -639,112 +1887,113 @@
       }
     }
 
-    /**
- * Aggancia al <video> due pulsanti ±10 s.
- * Mostra i pulsanti a ogni interazione e li nasconde dopo 3 s.
- * Mantiene l’overlay anche in fullscreen.
- */
-function addSkipControls(video) {
-  // Evita doppia inizializzazione
-  if (video.dataset.skipControls) return;
-  video.dataset.skipControls = 'true';
 
-  // Creo l’overlay
-  const overlay = document.createElement('div');
-  overlay.className = 'skip-controls';
-  overlay.innerHTML = `
-    <button class="skip-btn" id="rewind10">‑10 s</button>
-    <button class="skip-btn" id="forward10">+10 s</button>
-  `;
 
-  // Contenitore iniziale
-  const homeParent = video.parentElement;
-  homeParent.style.position = 'relative';  // garantisce positioning
 
-  // Azioni su click
-  overlay.querySelector('#rewind10').onclick = () => {
-    video.currentTime = Math.max(video.currentTime - 10, 0);
-    showControls();
-  };
-  overlay.querySelector('#forward10').onclick = () => {
-    video.currentTime = Math.min(video.currentTime + 10, video.duration || Infinity);
-    showControls();
-  };
+// Watch movie using vixsrc with Netflix-style player and HLS.js
+async function watchMovie(movieId, type) {
+  const playerContainer = document.getElementById("player-container");
+  const titleElement = document.getElementById("playerTitle");
+  const subtitleElement = document.getElementById("playerSubtitle");
 
-  // Logica di show / auto‑hide
-  let hideTimeout;
-  function showControls() {
-    overlay.style.opacity = 1;
-    clearTimeout(hideTimeout);
-    hideTimeout = setTimeout(() => (overlay.style.opacity = 0), 3000);
+        togglePlayerFullscreen();
+
+    // Mostra container e controlli immediatamente
+  playerContainer.style.display = 'flex';
+  playerOverlay.classList.add('show-controls'); // Mostra i controlli
+  document.body.style.overflow = 'hidden';
+  // Show loading
+
+
+  try {
+    // Get movie info for title
+        playerLoadingSpinner.style.display = 'block';
+
+            document.querySelector('.video-container').classList.add('loading');
+
+
+    const infoRes = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT`);
+    const movieInfo = await infoRes.json();
+    
+    // Set title and subtitle
+    titleElement.textContent = movieInfo.title || 'Film';
+    subtitleElement.textContent = movieInfo.release_date ? movieInfo.release_date.substring(0, 4) : 'Film';
+
+    // Get stream URL
+    const streamRes = await fetch(`https://vixproxy.onrender.com/proxy/movie/${movieId}`);
+    const streamData = await streamRes.json();
+
+    if (!streamData.url) throw new Error("Nessun URL restituito");
+
+    // Initialize player elements if not already done
+    if (!playerVideo) {
+      initPlayerElements();
+      setupPlayerListeners();
+    }
+
+    // Clear previous source
+    playerVideo.src = '';
+    
+if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(`https://vixproxy.onrender.com/stream?url=${encodeURIComponent(streamData.url)}`);
+    hls.attachMedia(playerVideo);
+    
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            document.querySelector('.video-container').classList.remove('loading');
+
+      // Forza 1080p se presente
+      const lvl = hls.levels.findIndex(l => l.height === 1080);
+      if (lvl >= 0) hls.currentLevel = lvl;
+      
+      // Configura sottotitoli e audio
+      setupTracks(hls);
+      
+      playerVideo.play().catch(e => {
+        console.log("Auto-play prevented:", e);
+        isPlayerPlaying = false;
+        playerPlayPauseIcon.className = 'fas fa-play';
+      });
+    });
+    
+    playerVideo._hls = hls;
   }
-  showControls(); // visibili appena creati
-
-  // Eventi che riattivano i controlli
-  ['mousemove', 'touchstart'].forEach(evt =>
-    video.parentElement.addEventListener(evt, showControls, { passive: true })
-  );
-
-  // Mantieni l’overlay sul nodo “fullscreen” corrente
-  document.addEventListener('fullscreenchange', () => {
-    const fsEl = document.fullscreenElement;
-    if (fsEl && (fsEl === video || fsEl.contains(video))) {
-      fsEl.style.position = 'relative';
-      fsEl.appendChild(overlay);
+      
+     else if (playerVideo.canPlayType('application/vnd.apple.mpegurl')) {
+      // Fallback for Safari
+      playerVideo.src = `https://vixproxy.onrender.com/stream?url=${encodeURIComponent(streamData.url)}`;
+      playerVideo.addEventListener('loadedmetadata', () => {
+        playerVideo.play().catch(e => {
+          console.log("Auto-play prevented:", e);
+          isPlayerPlaying = false;
+          playerPlayPauseIcon.className = 'fas fa-play';
+        });
+      });
     } else {
-      homeParent.appendChild(overlay);
+      throw new Error("HLS not supported");
     }
-  });
+    
+    // Reset player state
+    isPlayerPlaying = false;
+    currentPlayerVolume = 1;
+    playerVideo.volume = 1;
+    playerVideo.muted = false;
+    
+    // Show controls initially
+    showPlayerControls();
 
-  // Inserisci l’overlay per la prima volta
-  homeParent.appendChild(overlay);
+  } catch (err) {
+    console.error("Errore nel caricamento:", err);
+        playerLoadingSpinner.style.display = 'none';
+
+    playerContainer.innerHTML = `
+      <div class="state-message">
+        <i class="fas fa-exclamation-triangle"></i> Errore durante il caricamento del player
+        <button onclick="watchMovie(${movieId}, '${type}')">Riprova</button>
+      </div>
+    `;
+  }
 }
-
-
-    // Watch movie using vixsrc
-    async function watchMovie(movieId, type) {
-      const playerContainer = document.getElementById("player-container");
-
-      // Show loading
-      playerContainer.style.display = 'flex';
-      playerContainer.innerHTML = `<div class="state-message">Caricamento player...</div>`;
-      document.body.style.overflow = 'hidden';
-
-      try {
-        const res = await fetch(`https://vixproxy.onrender.com/proxy/movie/${movieId}`);
-        const data = await res.json();
-
-        if (!data.url) throw new Error("Nessun URL restituito");
-
-        playerContainer.innerHTML = `
-          <button class="close-player" onclick="closePlayer()">
-            <i class="fas fa-times"></i>
-          </button>
-          <video id="video" controls autoplay crossorigin="anonymous"></video>
-        `;
-
-        const video = document.getElementById('video');
-        const hls = new Hls();
-        hls.loadSource(`https://vixproxy.onrender.com/stream?url=${encodeURIComponent(data.url)}`);
-        hls.attachMedia(video);
-                // forza 1080p se presente
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            const lvl = hls.levels.findIndex(l => l.height === 1080);
-            if (lvl >= 0) hls.currentLevel = lvl;
-            video.play();
-          });
-
-
-      } catch (err) {
-        console.error("Errore nel caricamento:", err);
-        playerContainer.innerHTML = `
-          <div class="state-message">
-            <i class="fas fa-exclamation-triangle"></i> Errore durante il caricamento del player
-            <button onclick="watchMovie(${movieId}, '${type}')">Riprova</button>
-          </div>
-        `;
-      }
-    }
 
     // Show TV seasons selection
     async function showTVSeasons(tvId, type) {
@@ -832,62 +2081,110 @@ function addSkipControls(video) {
       }
     }
 
-    async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
-      const playerContainer = document.getElementById("player-container");
+   // Play TV episode with Video.js
+// Play TV episode with Netflix-style player
+async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
+  const playerContainer = document.getElementById("player-container");
+  const titleElement = document.getElementById("playerTitle");
+  const subtitleElement = document.getElementById("playerSubtitle");
 
-      // Show loading
-      playerContainer.innerHTML = `<div class="state-message">Caricamento episodio...</div>`;
-      document.body.style.overflow = 'hidden';
+  // Show loading
+  playerContainer.style.display = 'flex';
+  playerLoadingSpinner.style.display = 'block';
+  document.body.style.overflow = 'hidden';
 
-      try {
-        const res = await fetch(`https://vixproxy.onrender.com/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
-        const data = await res.json();
+  try {
+    // Get episode info for title
+    const infoRes = await fetch(`https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT`);
+    const episodeInfo = await infoRes.json();
+    
+    // Set title and subtitle
+    titleElement.textContent = episodeInfo.name || 'Episodio';
+    subtitleElement.textContent = `Stagione ${seasonNumber} • Episodio ${episodeNumber}`;
 
-        if (!data.url) throw new Error("Nessun URL restituito dal proxy");
+    // Get stream URL
+    const streamRes = await fetch(`https://vixproxy.onrender.com/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
+    const streamData = await streamRes.json();
 
-        playerContainer.innerHTML = `
-          <button class="close-player" onclick="closePlayer()">
-            <i class="fas fa-times"></i>
-          </button>
-          <video id="video" controls autoplay crossorigin="anonymous"></video>
-        `;
+    if (!streamData.url) throw new Error("Nessun URL restituito dal proxy");
 
-        const video = document.getElementById('video');
-        const hls = new Hls();
-        hls.loadSource(`https://vixproxy.onrender.com/stream?url=${encodeURIComponent(data.url)}`);
-        hls.attachMedia(video);
-        // forza 1080p se presente
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            const lvl = hls.levels.findIndex(l => l.height === 1080);
-            if (lvl >= 0) hls.currentLevel = lvl;
-            video.play();
-          });
-
-      } catch (error) {
-        console.error("Errore durante la riproduzione episodio:", error);
-        playerContainer.innerHTML = `
-          <div class="state-message">
-            <i class="fas fa-exclamation-triangle"></i> Errore nel caricamento dell'episodio
-            <button onclick="playTVEpisode(${tvId}, ${seasonNumber}, ${episodeNumber})">Riprova</button>
-          </div>
-        `;
-      }
+    // Initialize player elements if not already done
+    if (!playerVideo) {
+      initPlayerElements();
+      setupPlayerListeners();
     }
 
-    // Close player
-    function closePlayer() {
-      const playerContainer = document.getElementById("player-container");
-      const video = playerContainer.querySelector("video");
+    // Set video source
+    playerVideo.src = `https://vixproxy.onrender.com/stream?url=${encodeURIComponent(streamData.url)}`;
+    
+    // Reset player state
+    isPlayerPlaying = false;
+    currentPlayerVolume = 1;
+    playerVideo.volume = 1;
+    playerVideo.muted = false;
+    
+    // Auto-play
+    playerVideo.play().catch(e => console.log("Auto-play prevented:", e));
+    
+    // Show controls initially
+    showPlayerControls();
 
-      if (video) {
-        video.pause();
-        video.src = "";
-        video.load();
-      }
+  } catch (error) {
+    console.error("Errore durante la riproduzione episodio:", error);
+    playerContainer.innerHTML = `
+      <div class="state-message">
+        <i class="fas fa-exclamation-triangle"></i> Errore nel caricamento dell'episodio
+        <button onclick="playTVEpisode(${tvId}, ${seasonNumber}, ${episodeNumber})">Riprova</button>
+      </div>
+    `;
+  }
+}
 
-      playerContainer.style.display = 'none';
-      document.body.style.overflow = 'auto';
+function closePlayer() {
+  // Esci dalla modalità fullscreen se attiva
+  if (document.fullscreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else if (document.webkitExitFullscreen) { /* Safari */
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) { /* IE11 */
+      document.msExitFullscreen();
     }
+  }
+
+  // Ripristina orientamento verticale su mobile
+  if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+    try {
+      // Prova a sbloccare l'orientamento
+      screen.orientation.unlock();
+      
+      // Forza portrait solo su dispositivi mobile
+      if (window.innerHeight > window.innerWidth) {
+        screen.orientation.lock('portrait').catch(e => {});
+      }
+    } catch (e) {
+      console.log("Orientation API not fully supported");
+    }
+  }
+
+  // Pulisci il player
+  if (playerVideo) {
+    playerVideo.pause();
+    if (playerVideo._hls) {
+      playerVideo._hls.destroy();
+    }
+    playerVideo.src = '';
+  }
+
+  // Nascondi il player
+  const playerContainer = document.getElementById("player-container");
+  playerContainer.style.display = 'none';
+  document.body.style.overflow = 'auto';
+  
+  // Rimuovi eventuali classi di fallback
+  playerContainer.classList.remove('fullscreen-fallback');
+  document.documentElement.style.overflow = '';
+}
   </script>
   <script>
   if ('serviceWorker' in navigator) {
