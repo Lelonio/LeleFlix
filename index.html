@@ -1750,7 +1750,7 @@ function showSettings() {
     // Load trending content
     window.onload = async function() {
       try {
-        const res = await fetch('http://vixprx.myddns.me:80/home/trending');
+        const res = await fetch('https://crisis-cube-rpg-hunt.trycloudflare.com/home/trending');
         const data = await res.json();
         displayTrending(data);
       } catch (e) {
@@ -1920,7 +1920,7 @@ async function watchMovie(movieId, type) {
     subtitleElement.textContent = movieInfo.release_date ? movieInfo.release_date.substring(0, 4) : 'Film';
 
     // Get stream URL
-    const streamRes = await fetch(`http://vixprx.myddns.me:80/proxy/movie/${movieId}`);
+    const streamRes = await fetch(`https://crisis-cube-rpg-hunt.trycloudflare.com/proxy/movie/${movieId}`);
     const streamData = await streamRes.json();
 
     if (!streamData.url) throw new Error("Nessun URL restituito");
@@ -1962,7 +1962,7 @@ hls.loadSource(streamData.url); // già proxyfied dal server Android
       
      else if (playerVideo.canPlayType('application/vnd.apple.mpegurl')) {
       // Fallback for Safari
-      playerVideo.src = `http://vixprx.myddns.me:80/stream?url=${encodeURIComponent(streamData.url)}`;
+      playerVideo.src = `https://crisis-cube-rpg-hunt.trycloudflare.com/stream?url=${encodeURIComponent(streamData.url)}`;
       playerVideo.addEventListener('loadedmetadata', () => {
         playerVideo.play().catch(e => {
           console.log("Auto-play prevented:", e);
@@ -2104,7 +2104,7 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
     subtitleElement.textContent = `Stagione ${seasonNumber} • Episodio ${episodeNumber}`;
 
     // Get stream URL
-    const streamRes = await fetch(`http://vixprx.myddns.me:80/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
+    const streamRes = await fetch(`https://crisis-cube-rpg-hunt.trycloudflare.com/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
     const streamData = await streamRes.json();
 
     if (!streamData.url) throw new Error("Nessun URL restituito dal proxy");
@@ -2121,7 +2121,7 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
     // Initialize HLS.js
     if (Hls.isSupported()) {
       const hls = new Hls();
-      hls.loadSource(`http://vixprx.myddns.me:80/stream?url=${encodeURIComponent(streamData.url)}`);
+      hls.loadSource(`https://crisis-cube-rpg-hunt.trycloudflare.com/stream?url=${encodeURIComponent(streamData.url)}`);
       hls.attachMedia(playerVideo);
       
       // Force 1080p if available
@@ -2140,7 +2140,7 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
       playerVideo._hls = hls;
     } else if (playerVideo.canPlayType('application/vnd.apple.mpegurl')) {
       // Fallback for Safari
-      playerVideo.src = `http://vixprx.myddns.me:80/stream?url=${encodeURIComponent(streamData.url)}`;
+      playerVideo.src = `https://crisis-cube-rpg-hunt.trycloudflare.com/stream?url=${encodeURIComponent(streamData.url)}`;
       playerVideo.addEventListener('loadedmetadata', () => {
         playerVideo.play().catch(e => {
           console.log("Auto-play prevented:", e);
