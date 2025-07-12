@@ -1750,7 +1750,7 @@ function showSettings() {
     // Load trending content
     window.onload = async function() {
       try {
-        const res = await fetch('https://vixproxy.onrender.com/home/trending');
+        const res = await fetch('http://vixprx.myddns.me:80/home/trending');
         const data = await res.json();
         displayTrending(data);
       } catch (e) {
@@ -1920,7 +1920,7 @@ async function watchMovie(movieId, type) {
     subtitleElement.textContent = movieInfo.release_date ? movieInfo.release_date.substring(0, 4) : 'Film';
 
     // Get stream URL
-    const streamRes = await fetch(`https://vixproxy.onrender.com/proxy/movie/${movieId}`);
+    const streamRes = await fetch(`http://vixprx.myddns.me:80/proxy/movie/${movieId}`);
     const streamData = await streamRes.json();
 
     if (!streamData.url) throw new Error("Nessun URL restituito");
@@ -1935,8 +1935,9 @@ async function watchMovie(movieId, type) {
     playerVideo.src = '';
     
 if (Hls.isSupported()) {
-    const hls = new Hls();
-    hls.loadSource(`https://vixproxy.onrender.com/stream?url=${encodeURIComponent(streamData.url)}`);
+const hls = new Hls();
+hls.loadSource(streamData.url); // già proxyfied dal server Android
+
     hls.attachMedia(playerVideo);
     
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -1961,7 +1962,7 @@ if (Hls.isSupported()) {
       
      else if (playerVideo.canPlayType('application/vnd.apple.mpegurl')) {
       // Fallback for Safari
-      playerVideo.src = `https://vixproxy.onrender.com/stream?url=${encodeURIComponent(streamData.url)}`;
+      playerVideo.src = `http://vixprx.myddns.me:80/stream?url=${encodeURIComponent(streamData.url)}`;
       playerVideo.addEventListener('loadedmetadata', () => {
         playerVideo.play().catch(e => {
           console.log("Auto-play prevented:", e);
@@ -2103,7 +2104,7 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
     subtitleElement.textContent = `Stagione ${seasonNumber} • Episodio ${episodeNumber}`;
 
     // Get stream URL
-    const streamRes = await fetch(`https://vixproxy.onrender.com/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
+    const streamRes = await fetch(`http://vixprx.myddns.me:80/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
     const streamData = await streamRes.json();
 
     if (!streamData.url) throw new Error("Nessun URL restituito dal proxy");
@@ -2114,17 +2115,48 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
       setupPlayerListeners();
     }
 
-    // Set video source
-    playerVideo.src = `https://vixproxy.onrender.com/stream?url=${encodeURIComponent(streamData.url)}`;
+    // Clear previous source
+    playerVideo.src = '';
+    
+    // Initialize HLS.js
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(`http://vixprx.myddns.me:80/stream?url=${encodeURIComponent(streamData.url)}`);
+      hls.attachMedia(playerVideo);
+      
+      // Force 1080p if available
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        const lvl = hls.levels.findIndex(l => l.height === 1080);
+        if (lvl >= 0) hls.currentLevel = lvl;
+        
+        playerVideo.play().catch(e => {
+          console.log("Auto-play prevented:", e);
+          isPlayerPlaying = false;
+          playerPlayPauseIcon.className = 'fas fa-play';
+        });
+      });
+      
+      // Store HLS instance on video element for cleanup
+      playerVideo._hls = hls;
+    } else if (playerVideo.canPlayType('application/vnd.apple.mpegurl')) {
+      // Fallback for Safari
+      playerVideo.src = `http://vixprx.myddns.me:80/stream?url=${encodeURIComponent(streamData.url)}`;
+      playerVideo.addEventListener('loadedmetadata', () => {
+        playerVideo.play().catch(e => {
+          console.log("Auto-play prevented:", e);
+          isPlayerPlaying = false;
+          playerPlayPauseIcon.className = 'fas fa-play';
+        });
+      });
+    } else {
+      throw new Error("HLS not supported");
+    }
     
     // Reset player state
     isPlayerPlaying = false;
     currentPlayerVolume = 1;
     playerVideo.volume = 1;
     playerVideo.muted = false;
-    
-    // Auto-play
-    playerVideo.play().catch(e => console.log("Auto-play prevented:", e));
     
     // Show controls initially
     showPlayerControls();
