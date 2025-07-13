@@ -10,6 +10,10 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <!-- Cast SDK -->
+<script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js"></script>
+<!-- AirPlay (per Safari) -->
+<script src="https://cdn.jsdelivr.net/npm/airplay-web@1.0.0/dist/airplay-web.min.js"></script>
 
 
   
@@ -999,6 +1003,11 @@ video {
 .size-btn[data-size-mode="fill"] .fa-expand-arrows-alt { opacity: 1; }
 .size-btn[data-size-mode="fill"] .fa-object-group { opacity: 0; }
 .size-btn[data-size-mode="fill"] .fa-vector-square { opacity: 0; }
+
+.top-control-btn.active {
+  color: var(--primary);
+  background: rgba(229, 9, 20, 0.2);
+}
   </style>
 </head>
 <body>
@@ -1082,6 +1091,7 @@ video {
       <!-- Le opzioni verranno aggiunte dinamicamente -->
     </div>
   </div>
+  
         </div>
       </div>
 
@@ -1147,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 // Variabile per tracciare lo stato corrente
 let currentSizeMode = 'contain'; // 'contain', 'cover', 'fill'
-
+let isPlayerLoading = false; // Aggiungi questa variabile con le altre variabili globali
 // Funzione per ciclare tra le dimensioni
 function cycleVideoSize() {
   const videoElement = document.getElementById('mainVideo');
@@ -1359,8 +1369,9 @@ function setupPlayerListeners() {
   });
 
     // Listener per i pulsanti dei sottotitoli e audio
-  subtitleBtn.addEventListener('click', toggleSubtitles);
-  audioBtn.addEventListener('click', toggleAudioMenu);
+subtitleBtn.addEventListener('click', (e) => toggleSubtitles(e));
+audioBtn.addEventListener('click', (e) => toggleAudioMenu(e));
+
   
   // Chiudi menu quando si clicca fuori
   document.addEventListener('click', (e) => {
@@ -1534,16 +1545,18 @@ function skipPlayerTime(seconds) {
 }
 
 // Funzione per attivare/disattivare i sottotitoli
-function toggleSubtitles() {
+function toggleSubtitles(e) {
+  e.stopPropagation(); // <--- Aggiunto
   subtitleMenu.classList.toggle('show');
   audioMenu.classList.remove('show');
 }
 
-// Funzione per cambiare lingua audio
-function toggleAudioMenu() {
+function toggleAudioMenu(e) {
+  e.stopPropagation(); // <--- Aggiunto
   audioMenu.classList.toggle('show');
   subtitleMenu.classList.remove('show');
 }
+
 
 function setupTracks(hls) {
   // Aggiungi sempre l'opzione "Disattivati" come prima scelta
@@ -1594,40 +1607,67 @@ function setSubtitleTrack(index) {
 
 // Funzione per impostare la traccia audio
 function setAudioTrack(index) {
-  if (playerVideo._hls) {
-    playerVideo._hls.audioTrack = index;
-    currentAudioTrack = index;
-    audioMenu.classList.remove('show');
-  }
+  if (!playerVideo._hls) return;
+
+  // Disattiva tutti i menu option audio
+  document.querySelectorAll('.audio-menu .menu-option').forEach(opt => {
+    opt.classList.remove('active');
+  });
+
+  // Attiva l'opzione selezionata
+  const selectedOption = document.querySelector(`.audio-menu .menu-option:nth-child(${index + 1})`);
+  if (selectedOption) selectedOption.classList.add('active');
+
+  // Imposta la traccia audio
+  playerVideo._hls.audioTrack = index;
+  currentAudioTrack = index;
+  audioMenu.classList.remove('show');
+
+  // Aggiorna lo stato del pulsante
+  audioBtn.classList.add('active');
+  showPlayerControls();
 }
 
 // Carica le tracce disponibili quando il manifesto è parsato
 function setupTracks(hls) {
   // Sottotitoli
+  subtitleMenu.innerHTML = `
+    <div class="menu-option" data-lang="off" onclick="setSubtitleTrack(-1)">
+      <i class="fas fa-eye-slash"></i> Disattivati
+    </div>
+  `;
+
   availableSubtitles = hls.subtitleTracks || [];
-  subtitleMenu.innerHTML = '<div class="menu-option" data-lang="off">Disattivati</div>';
-  
   availableSubtitles.forEach((track, index) => {
     const option = document.createElement('div');
     option.className = 'menu-option';
     option.dataset.lang = track.lang;
-    option.textContent = track.name || `Sottotitoli ${track.lang}`;
+    option.innerHTML = `
+      <i class="fas fa-closed-captioning"></i> ${track.name || `Sottotitoli ${track.lang}`}
+    `;
     option.addEventListener('click', () => setSubtitleTrack(index));
     subtitleMenu.appendChild(option);
   });
 
   // Lingue audio
-  availableAudioTracks = hls.audioTracks || [];
   audioMenu.innerHTML = '';
+  availableAudioTracks = hls.audioTracks || [];
   
   availableAudioTracks.forEach((track, index) => {
     const option = document.createElement('div');
     option.className = 'menu-option';
     option.dataset.lang = track.lang;
-    option.textContent = track.name || `Audio ${track.lang}`;
+    option.innerHTML = `
+      <i class="fas fa-language"></i> ${track.name || `Audio ${track.lang}`}
+    `;
     option.addEventListener('click', () => setAudioTrack(index));
     audioMenu.appendChild(option);
   });
+
+  // Imposta la prima traccia audio come attiva inizialmente
+  if (availableAudioTracks.length > 0) {
+    document.querySelector('.audio-menu .menu-option:first-child').classList.add('active');
+  }
 }
 
 function updatePlayerProgress() {
@@ -1904,7 +1944,7 @@ async function watchMovie(movieId, type) {
   document.body.style.overflow = 'hidden';
   // Show loading
 
-
+  isPlayerLoading = true; // Aggiungi questa linea prima del try
   try {
     // Get movie info for title
         playerLoadingSpinner.style.display = 'block';
@@ -1941,6 +1981,7 @@ hls.loadSource(streamData.url); // già proxyfied dal server Android
     hls.attachMedia(playerVideo);
     
     hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      isPlayerLoading = false; // Aggiungi questa linea
             document.querySelector('.video-container').classList.remove('loading');
 
       // Forza 1080p se presente
@@ -1984,6 +2025,7 @@ hls.loadSource(streamData.url); // già proxyfied dal server Android
     showPlayerControls();
 
   } catch (err) {
+    isPlayerLoading = false; // Aggiungi questa linea
     console.error("Errore nel caricamento:", err);
         playerLoadingSpinner.style.display = 'none';
 
@@ -2093,7 +2135,7 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
   playerContainer.style.display = 'flex';
   playerLoadingSpinner.style.display = 'block';
   document.body.style.overflow = 'hidden';
-
+  isPlayerLoading = true;
   try {
     // Get episode info for title
     const infoRes = await fetch(`https://api.themoviedb.org/3/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT`);
@@ -2126,6 +2168,7 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
       
       // Force 1080p if available
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        isPlayerLoading = false;
         const lvl = hls.levels.findIndex(l => l.height === 1080);
         if (lvl >= 0) hls.currentLevel = lvl;
         
@@ -2162,6 +2205,8 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
     showPlayerControls();
 
   } catch (error) {
+            isPlayerLoading = false;
+
     console.error("Errore durante la riproduzione episodio:", error);
     playerContainer.innerHTML = `
       <div class="state-message">
@@ -2173,6 +2218,17 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
 }
 
 function closePlayer() {
+  // Se il player sta ancora caricando, ferma tutto immediatamente
+  if (isPlayerLoading) {
+    if (playerVideo._hls) {
+      playerVideo._hls.destroy();
+      playerVideo._hls = null;
+    }
+    playerVideo.src = '';
+    playerVideo.load(); // Forza l'interruzione del caricamento
+    isPlayerLoading = false;
+  }
+
   // Esci dalla modalità fullscreen se attiva
   if (document.fullscreenElement) {
     if (document.exitFullscreen) {
@@ -2187,10 +2243,7 @@ function closePlayer() {
   // Ripristina orientamento verticale su mobile
   if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
     try {
-      // Prova a sbloccare l'orientamento
       screen.orientation.unlock();
-      
-      // Forza portrait solo su dispositivi mobile
       if (window.innerHeight > window.innerWidth) {
         screen.orientation.lock('portrait').catch(e => {});
       }
@@ -2206,6 +2259,7 @@ function closePlayer() {
       playerVideo._hls.destroy();
     }
     playerVideo.src = '';
+    playerVideo.load(); // Forza l'interruzione del caricamento
   }
 
   // Nascondi il player
@@ -2216,7 +2270,23 @@ function closePlayer() {
   // Rimuovi eventuali classi di fallback
   playerContainer.classList.remove('fullscreen-fallback');
   document.documentElement.style.overflow = '';
+  
+  // Resetta lo stato di caricamento
+  isPlayerLoading = false;
 }
+
+window.addEventListener('beforeunload', (e) => {
+  if (isPlayerLoading) {
+    // Pulisci tutto prima di chiudere
+    if (playerVideo && playerVideo._hls) {
+      playerVideo._hls.destroy();
+    }
+    if (playerVideo) {
+      playerVideo.src = '';
+      playerVideo.load();
+    }
+  }
+});
   </script>
   <script>
   if ('serviceWorker' in navigator) {
