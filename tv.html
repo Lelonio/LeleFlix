@@ -610,28 +610,6 @@ video {
     .row::-webkit-scrollbar {
       display: none;
     }
-    .row-item:focus {
-  outline: 3px solid #e50914;
-  outline-offset: 3px;
-  transform: scale(1.15) translateY(-10px);
-  z-index: 20;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.7);
-}
-
-.row-item:focus .row-item-info {
-  opacity: 1 !important;
-}
-
-/* Per dispositivi TV */
-@media (min-width: 1280px) {
-  .row-item {
-    min-width: 200px;
-  }
-  
-  .row-item:focus {
-    transform: scale(1.2) translateY(-15px);
-  }
-}
 
     .row-item {
       flex: 0 0 auto;
@@ -1092,7 +1070,7 @@ video {
     <!-- Search Section -->
     <section class="search-section">
       <h1 class="search-title">Cosa vuoi guardare oggi?</h1>
-      <div class="search-container" tabindex="0" >
+      <div class="search-container">
         <input 
           type="text" 
           class="search-input" 
@@ -1100,7 +1078,7 @@ video {
           placeholder="Cerca film, serie TV..."
           onkeyup="handleSearchKeyup(event)"
         >
-        <button class="search-button" onclick="searchMedia()" tabindex="0" >
+        <button class="search-button" onclick="searchMedia()">
           <i class="fas fa-search"></i>
         </button>
       </div>
@@ -1110,7 +1088,7 @@ video {
     <div id="trending-container">
       <div class="rows-container">
         <h2 class="row-title">Tendenze</h2>
-        <div class="row" id="trending-movies-tv" tabindex="0" ></div>
+        <div class="row" id="trending-movies-tv"></div>
       </div>
 
     </div>
@@ -1211,113 +1189,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupDesktopClickControls(); // <-- aggiunto
       setupMobileTouchControls();
 
-      setupGridNavigation();
-        setupVerticalNavigation();
-
-  
-  // Auto-focus sul primo elemento al caricamento
-  setTimeout(() => {
-    const firstItem = document.querySelector('.row-item');
-    if(firstItem) firstItem.focus();
-  }, 1000);
-
 
 });
-
-// Aggiungi questa funzione
-function setupVerticalNavigation() {
-  const rows = document.querySelectorAll('.rows-container');
-  
-  document.addEventListener('keydown', (e) => {
-    if(e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      const currentItem = document.activeElement;
-      if(!currentItem.classList.contains('row-item')) return;
-      
-      const currentRow = currentItem.closest('.rows-container');
-      const currentRowIndex = Array.from(rows).indexOf(currentRow);
-      
-      if(e.key === 'ArrowDown' && currentRowIndex < rows.length - 1) {
-        const nextRow = rows[currentRowIndex + 1];
-        const items = nextRow.querySelectorAll('.row-item');
-        if(items.length > 0) {
-          currentItem.setAttribute('tabindex', '-1');
-          items[0].setAttribute('tabindex', '0');
-          items[0].focus();
-          e.preventDefault();
-        }
-      }
-      else if(e.key === 'ArrowUp' && currentRowIndex > 0) {
-        const prevRow = rows[currentRowIndex - 1];
-        const items = prevRow.querySelectorAll('.row-item');
-        if(items.length > 0) {
-          currentItem.setAttribute('tabindex', '-1');
-          items[0].setAttribute('tabindex', '0');
-          items[0].focus();
-          e.preventDefault();
-        }
-      }
-    }
-  });
-}
-// Aggiungi questa funzione
-function setupGridNavigation() {
-  const rows = document.querySelectorAll('.row');
-  
-  rows.forEach(row => {
-    const items = row.querySelectorAll('.row-item');
-    
-    if(items.length === 0) return;
-    
-    // Imposta il primo elemento come focusabile
-    items[0].setAttribute('tabindex', '0');
-    
-    row.addEventListener('keydown', (e) => {
-      const currentItem = document.activeElement;
-      if(!currentItem.classList.contains('row-item')) return;
-      
-      const currentIndex = Array.from(items).indexOf(currentItem);
-      let nextIndex = currentIndex;
-      
-      switch(e.key) {
-        case 'ArrowRight':
-          nextIndex = (currentIndex + 1) % items.length;
-          break;
-        case 'ArrowLeft':
-          nextIndex = (currentIndex - 1 + items.length) % items.length;
-          break;
-        case 'ArrowDown':
-          nextIndex = Math.min(currentIndex + 6, items.length - 1); // 6 elementi per riga
-          break;
-        case 'ArrowUp':
-          nextIndex = Math.max(currentIndex - 6, 0);
-          break;
-        case 'Enter':
-          currentItem.click();
-          return;
-        default:
-          return;
-      }
-      
-      items[currentIndex].setAttribute('tabindex', '-1');
-      items[nextIndex].setAttribute('tabindex', '0');
-      items[nextIndex].focus();
-      e.preventDefault();
-    });
-  });
-}
-
-function handleRowItemKey(event, id, type) {
-  if(event.key === 'Enter') {
-    event.preventDefault();
-    if(type === 'tv') {
-      showTVSeasons(id, type);
-    } else {
-      watchMovie(id, type);
-    }
-  }
-}
-
-
 let playerSessionToken = null;
 
 // Variabile per tracciare lo stato corrente
@@ -1917,7 +1790,7 @@ function showSettings() {
           : 'https://via.placeholder.com/500x750?text=No+poster';
 
         return `
-          <div class="row-item" tabindex="0"  onclick="${isTV ? 'showTVSeasons' : 'watchMovie'}(${item.id}, '${isTV ? 'tv' : 'movie'}')">
+          <div class="row-item" onclick="${isTV ? 'showTVSeasons' : 'watchMovie'}(${item.id}, '${isTV ? 'tv' : 'movie'}')">
             <img src="${poster}" alt="${isTV ? item.name : item.title}" loading="lazy">
             <div class="row-item-info">
               <h3 class="row-item-title">${isTV ? item.name : item.title}</h3>
@@ -1997,7 +1870,7 @@ function showSettings() {
           const title = isTV ? item.name : item.title;
           
           return `
-            <div class="row-item" tabindex="0" onclick="${isTV ? 'showTVSeasons' : 'watchMovie'}(${item.id}, '${isTV ? 'tv' : 'movie'}')">
+            <div class="row-item" onclick="${isTV ? 'showTVSeasons' : 'watchMovie'}(${item.id}, '${isTV ? 'tv' : 'movie'}')">
               <img src="${poster}" alt="${title}" loading="lazy">
               <div class="row-item-info">
                 <h3 class="row-item-title">${title}</h3>
@@ -2029,11 +1902,6 @@ function showSettings() {
           </div>
         `;
       }
-        setTimeout(() => {
-    setupGridNavigation();
-    const firstResult = document.querySelector('#results-container .row-item');
-    if(firstResult) firstResult.focus();
-  }, 300);
     }
 
 
