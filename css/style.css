@@ -1,1 +1,510 @@
 
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+        
+        /* Add these styles to your existing style section */
+
+        /* Season/Episode Selector Styles */
+
+        html {
+  scroll-behavior: smooth;
+}
+
+h2[trending] {
+  scroll-margin-bottom: 50px; /* Spazio sotto la navbar (96px = h-16) */
+}
+
+.subtitle-options,
+.audio-options,
+.quality-options {
+  max-height: 250px; /* o quello che vuoi in base al layout */
+  overflow-y: auto;
+  padding-right: 6px; /* per non tagliare scrollbar su browser con overlay */
+}
+
+.season-episode-selector {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.selection-container {
+    background-color: #141414;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+    position: relative;
+}
+
+.selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #333;
+}
+
+.selection-header h2 {
+    color: #fff;
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.close-selector {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.seasons-grid, .episodes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.season-card, .episode-card {
+    background: #222;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.season-card:hover, .episode-card:hover {
+    transform: scale(1.03);
+}
+
+.season-poster, .episode-still {
+    width: 100%;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+}
+
+.episode-still {
+    aspect-ratio: 16/9;
+}
+
+.season-info, .episode-info {
+    padding: 10px;
+}
+
+.season-info h3, .episode-info h3 {
+    color: #fff;
+    margin: 0 0 5px 0;
+    font-size: 1rem;
+}
+
+.season-info p, .episode-info p {
+    color: #aaa;
+    margin: 0;
+    font-size: 0.8rem;
+}
+
+.episode-overview {
+    color: #ddd;
+    font-size: 0.8rem;
+    margin-top: 5px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.back-button {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.loading-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 30px;
+    color: #fff;
+}
+
+.error-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 30px;
+    color: #fff;
+}
+
+.error-state i {
+    color: #E50914;
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.error-state button {
+    background: #E50914;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    margin-top: 15px;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .seasons-grid, .episodes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .selection-container {
+        padding: 15px;
+    }
+    
+    .season-info h3, .episode-info h3 {
+        font-size: 0.9rem;
+    }
+}
+.video-container {
+    position: relative;
+    overflow: hidden;
+    background-color: #000;
+}
+
+.video-js {
+    width: 100%;
+    height: 100%;
+}
+
+.controls-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    padding: 1.5rem;
+    transition: opacity 0.3s ease;
+    opacity: 0;
+    touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+    .controls-container {
+        padding: 1.2rem;
+    }
+    
+    .progress-container {
+        height: 10px;
+        margin-bottom: 15px;
+    }
+    
+    button {
+        min-width: 44px;
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    /* Larger touch targets for mobile */
+    .progress-container {
+        height: 12px;
+        margin-bottom: 20px;
+    }
+
+    /* Prevent double-tap zoom */
+    video {
+        touch-action: pan-x pan-y;
+    }
+}
+
+/* Video zoom states */
+.video-zoom-1 {
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+}
+.video-zoom-2 {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+}
+.video-zoom-3 {
+    object-fit: fill;
+    width: 100%;
+    height: 100%;
+}
+
+.video-container:hover .controls-container {
+    opacity: 1;
+}
+
+.progress-container {
+    height: 6px;
+    background-color: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: #E50914;
+    border-radius: 3px;
+    position: relative;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background-color: white;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.progress-container:hover .progress-bar::after {
+    opacity: 1;
+}
+
+.volume-slider {
+    width: 0;
+    transition: width 0.2s ease;
+    overflow: hidden;
+}
+
+.volume-container:hover .volume-slider {
+    width: 80px;
+}
+
+.settings-menu {
+    position: absolute;
+    bottom: 60px;
+    right: 10px;
+    background-color: rgba(0,0,0,0.8);
+    border-radius: 4px;
+    padding: 8px 0;
+    min-width: 150px;
+    transform: translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+}
+
+.settings-menu.active {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
+.quality-option:hover, .speed-option:hover {
+    background-color: rgba(255,255,255,0.1);
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+    animation: spin 1s linear infinite;
+}
+
+.error-message {
+    background-color: rgba(0,0,0,0.7);
+}
+
+.skip-animation {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 20;
+}
+
+.skip-forward {
+    right: 0;
+    background: linear-gradient(to left, rgba(229,9,20,0.7), transparent);
+}
+
+.skip-backward {
+    left: 0;
+    background: linear-gradient(to right, rgba(229,9,20,0.7), transparent);
+}
+
+@keyframes skipFade {
+    0% { opacity: 0; transform: translateX(0); }
+    20% { opacity: 1; transform: translateX(0); }
+    80% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(20px); }
+}
+
+.skip-animation.forward {
+    animation: skipFade 1s ease-out forwards;
+}
+
+.skip-animation.backward {
+    animation: skipFade 1s ease-out forwards;
+}
+
+/* For fullscreen mode */
+:fullscreen .controls-container {
+    padding-bottom: 2.5rem;
+}
+
+.logo{
+    width: 50%;
+    height: auto;
+}
+
+        /* For mobile search */
+        #mobile-search-box {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+/* Larger controls for TV */
+@media (min-width: 1024px) and (hover: none) and (pointer: coarse) {
+    .controls-container {
+        padding: 2rem;
+    }
+    
+    button {
+        font-size: 1.2rem;
+        padding: 15px;
+    }
+    
+    .progress-container {
+        height: 12px;
+    }
+    
+    .settings-menu {
+        min-width: 200px;
+        font-size: 1.1rem;
+    }
+}
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #141414;
+            color: #fff;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(to right, rgba(20, 20, 20, 0.9) 0%, rgba(20, 20, 20, 0.6) 100%);
+        }
+        
+        .movie-card:hover .movie-poster {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .movie-poster {
+            transition: all 0.3s ease;
+        }
+        
+        .loader {
+            border-top-color: #E50914;
+            animation: spinner 1.5s linear infinite;
+        }
+        
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #141414;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #E50914;
+            border-radius: 4px;
+        }
+        
+        /* For mobile menu */
+        .mobile-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+
+        body.show-search-results #hero-section,
+body.show-search-results main,
+body.show-search-results footer {
+  display: none;
+}
+
+body.show-search-results #search-results-section {
+  display: block !important;
+}
+
+.show-search-results main,
+.show-search-results footer {
+    display: none;
+}
+#search-results-section {
+  padding-top: 6rem; /* o quanto basta per scendere sotto la navbar */
+}
+
+
+.bg-secondary{
+
+/* From https://css.glass */
+background: rgba(255, 255, 255, 0.27);
+border-radius: 16px;
+box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+backdrop-filter: blur(12.5px);
+-webkit-backdrop-filter: blur(12.5px);
+}
+
+.bg-primary{
+
+/* From https://css.glass */
+background: rgba(255, 255, 255, 0.27);
+border-radius: 16px;
+box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+backdrop-filter: blur(12.5px);
+-webkit-backdrop-filter: blur(12.5px);
+}
+
