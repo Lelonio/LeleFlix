@@ -653,4 +653,16 @@ backdrop-filter: blur(12.5px);
             text-overflow: ellipsis;
             max-width: 70%;
         }
+/* FORZA la visibilità solo quando la classe 'visible' è presente */
+#controlsContainer:not(.visible),
+#backButtonContainer:not(.visible) {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease !important;
+}
 
+#controlsContainer.visible,
+#backButtonContainer.visible {
+    opacity: 1 !important;
+    pointer-events: all !important;
+}
