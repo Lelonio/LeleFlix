@@ -222,8 +222,20 @@ class VideoPlayer {
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
         
-        // Mouse movement for controls
-        this.videoPlayer.addEventListener('mousemove', () => this.showControlsTemporarily());
+    this.videoPlayer.addEventListener('mousemove', () => this.showControlsTemporarily());
+    this.videoPlayer.addEventListener('touchmove', () => this.showControlsTemporarily());
+    
+    // Nascondi controlli quando il video inizia a riprodurre
+    this.videoPlayer.addEventListener('play', () => {
+        this.showControlsTemporarily();
+    });
+    
+    // Mostra sempre i controlli quando il video è in pausa
+    this.videoPlayer.addEventListener('pause', () => {
+        this.controlsContainer.style.opacity = '1';
+        this.backButtonContainer.style.opacity = '1';
+        clearTimeout(this.controlsTimeout);
+    });
     }
 
     // Metodi per la gestione del player
@@ -419,15 +431,24 @@ handleMenuSelection(e) {
     }
 }
 
-
 showControlsTemporarily() {
-    this.controlsContainer.style.opacity = '1';
-    this.backButtonContainer.style.opacity = '1';
+    // Aggiungi classi
+    this.controlsContainer.classList.add('visible');
+    this.backButtonContainer.classList.add('visible');
+    
+    // Rimuovi qualsiasi stile inline che potrebbe sovrascrivere
+    this.controlsContainer.style.removeProperty('opacity');
+    this.backButtonContainer.style.removeProperty('opacity');
+    
     clearTimeout(this.controlsTimeout);
+    
     this.controlsTimeout = setTimeout(() => {
-        if (!this.isSeeking) { // Non nascondere se l'utente sta cercando
-            this.controlsContainer.style.opacity = '0';
-            this.backButtonContainer.style.opacity = '0';
+        if (!this.videoPlayer.paused && !this.isSeeking) {
+            // Rimuovi classi invece di modificare lo stile
+            this.controlsContainer.classList.remove('visible');
+            this.backButtonContainer.classList.remove('visible');
+            
+            console.log('Controlli nascosti con successo'); // Debug
         }
     }, 3000);
 }
