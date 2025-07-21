@@ -3,15 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>LeleFlix</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">    
+  <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
         <link rel="stylesheet" href="css/style.css">
     <script>
         tailwind.config = {
+            important: true,
+            corePlugins: {
+                backdropFilter: true,
+            },
             theme: {
                 extend: {
                     colors: {
@@ -23,48 +28,549 @@
                     fontFamily: {
                         sans: ['Netflix Sans', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
                     },
+                    backdropBlur: {
+                        glass: '16px',
+                    },
+                    boxShadow: {
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.36)',
+                    },
+                    borderColor: {
+                        'glass': 'rgba(255, 255, 255, 0.18)',
+                    },
                 }
             }
         }
     </script>
 
+    <style>
+/* Aggiungi questi stili alla sezione CSS del tuo file */
+#backButtonContainer {
+    opacity: 1 !important; /* Forza la visibilità */
+    transition: opacity 0.3s ease;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+    padding: 1rem;
+    width: 100%;
+}
+
+#player-title {
+    color: white;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
+}
+
+/* Assicurati che i controlli siano visibili all'inizio */
+.controls-container {
+    opacity: 1 !important;
+    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+}
+
+/* Stile per il container del video */
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Stile per il pulsante di chiusura */
+#close-player {
+    color: white;
+    font-size: 1.5rem;
+    margin-right: 10px;
+}
+
+#close-player:hover {
+    color: #E50914;
+}
+</style>
+
+    <!-- Stili Liquid Glass avanzati -->
+    <style>
+        /* Base per l'effetto glass avanzato */
+        .glass-nav-container {
+            position: fixed;
+            width: 100%;
+            z-index: 50;
+            height: 4rem;
+            perspective: 1000px;
+        }
+        
+        /* Navbar con effetto glass premium */
+        .glass-nav {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: rgba(34, 31, 31, 0.45);
+            backdrop-filter: blur(16px) saturate(200%);
+            -webkit-backdrop-filter: blur(16px) saturate(200%);
+
+            box-shadow: theme('boxShadow.glass');
+            transform-style: preserve-3d;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        /* Effetto liquido dinamico */
+        .glass-nav::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.05) 50%,
+                rgba(255, 255, 255, 0.1) 100%
+            );
+            z-index: -1;
+            mix-blend-mode: overlay;
+            opacity: 0.8;
+        }
+        
+        /* Riflessi dinamici */
+        .glass-nav::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.1) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            animation: shine 8s infinite;
+            z-index: -1;
+        }
+        
+        /* Animazione fluida */
+        @keyframes liquidMotion {
+            0% {
+                transform: translate(-5%, -5%) scale(1.05);
+                background-position: 0% 0%;
+            }
+            50% {
+                transform: translate(5%, 2%) scale(1.02);
+                background-position: 50% 50%;
+            }
+            100% {
+                transform: translate(-5%, 5%) scale(1.05);
+                background-position: 100% 100%;
+            }
+        }
+        
+        /* Animazione riflessi */
+        @keyframes shine {
+            0% {
+                left: -100%;
+            }
+            20% {
+                left: 100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+        
+        /* Stato scroll */
+        .glass-nav.scrolled {
+            background: rgba(34, 31, 31, 0.8);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            height: 3.5rem;
+        }
+        
+        /* Contenuto navbar */
+        .nav-content {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+        }
+        
+        /* Filtro SVG per distorsione liquida */
+        .glass-filter {
+            position: absolute;
+            inset: 0; /* invece di width/height */
+
+            filter: url(#glass-distortion);
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: -1;
+        }
+.glass-modal-content {
+    position: relative;
+    background: rgba(34, 31, 31, 0.65);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.36);
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 90%;
+    max-height: 90vh;
+    transform-style: preserve-3d;
+    animation: modalAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow-y: auto; /* Abilita scroll solo nel modale se necessario */
+}
+
+/* Rimuovi il filtro separato e usa il backdrop-filter direttamente sul content */
+.glass-filter {
+    display: none; /* Non serve più il div separato */
+}
+
+.glass-modal-content::before {
+    content: '';
+    position: fixed; /* Cambia da absolute a fixed */
+    inset: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.12) 0%,
+        rgba(255, 255, 255, 0.06) 50%,
+        rgba(255, 255, 255, 0.12) 100%
+    );
+    z-index: -1;
+    mix-blend-mode: overlay;
+    opacity: 0.9;
+}
+
+.glass-modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    overflow-y: auto; /* Permetti scrolling dell'intero modale */
+    padding: 20px;
+}
+
+.glass-modal-content {
+    min-height: min-content; /* Adatta l'altezza al contenuto */
+}
+
+/* Aggiungi questo per il contenuto scrollabile */
+.modal-scroll-content {
+    max-height: calc(100vh - 40px); /* 40px di padding */
+    overflow-y: auto;
+}
+
+
+
+
+        /* Stili per le card dinamiche */
+.movie-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    transform-style: preserve-3d;
+    z-index: 1;
+}
+
+.movie-card:hover {
+    transform: translateY(-8px) scale(1.03);
+    z-index: 10;
+}
+
+.movie-card:hover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+
+    z-index: 2;
+}
+
+.movie-card:hover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+
+    z-index: 3;
+    mix-blend-mode: overlay;
+    opacity: 0.8;
+}
+
+.movie-card-content {
+    position: relative;
+    z-index: 4;
+    height: 100%;
+}
+
+.play-button-glass {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 48px;
+    height: 48px;
+    background: rgba(229, 9, 20, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
+    border: none;
+    cursor: pointer;
+}
+
+.movie-card:hover .play-button-glass {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.tv-card::before {
+    content: 'TV';
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    background: rgba(34, 31, 31, 0.8);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    z-index: 6;
+}
+    </style>
+
+        <style>
+        /* Stile scrollbar personalizzata */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(229, 9, 20, 0.5);
+            border-radius: 5px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(229, 9, 20, 0.8);
+        }
+        
+        /* Dissolvenza hero section */
+        .hero-fade {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(to bottom, 
+                          transparent 0%, 
+                          rgba(20, 20, 20, 0.3) 30%,
+                          rgba(20, 20, 20, 0.7) 70%,
+                          rgba(20, 20, 20, 1) 100%);
+            z-index: 5;
+        }
+        
+        /* Hero section modificata */
+        #hero-section {
+            position: relative;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #hero-backdrop {
+    transition: opacity 0.5s ease-in-out;
+    will-change: opacity; /* Ottimizzazione prestazioni */
+}
+        
+        #hero-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: 0;
+        }
+        
+        .hero-gradient {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, 
+                          rgba(20, 20, 20, 0.9) 0%, 
+                          rgba(20, 20, 20, 0.5) 50%,
+                          rgba(20, 20, 20, 0.1) 100%);
+            z-index: 1;
+        }
+    </style>
+        <style>
+        /* Stile base pulsanti con effetto glass */
+        .glass-button {
+            position: relative;
+            overflow: hidden;
+            border: none;
+            border-radius: 0.375rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+            transform-style: preserve-3d;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0.5rem 1.5rem;
+        }
+        
+        /* Effetto glass per il pulsante Play */
+        #play-button {
+            background: rgba(229, 9, 20, 0.85);
+            color: white;
+        }
+        
+        /* Effetto glass per il pulsante Info */
+        #more-info-button {
+            background: rgba(109, 109, 109, 0.7);
+            color: white;
+        }
+        
+        /* Overlay glass per entrambi i pulsanti */
+        .glass-button::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: -1;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        /* Effetto liquido dinamico */
+        .glass-button::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.15) 0%,
+                rgba(255, 255, 255, 0.05) 50%,
+                rgba(255, 255, 255, 0.15) 100%
+            );
+            animation: liquidMotion 6s infinite alternate;
+            z-index: -2;
+            mix-blend-mode: overlay;
+            opacity: 0.8;
+        }
+        
+        /* Effetti hover */
+        .glass-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        #play-button:hover {
+            background: rgba(229, 9, 20, 0.95);
+            box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+        }
+        
+        #more-info-button:hover {
+            background: rgba(109, 109, 109, 0.85);
+        }
+        
+        /* Icone all'interno dei pulsanti */
+        .glass-button i {
+            transition: transform 0.3s ease;
+        }
+        
+        .glass-button:hover i {
+            transform: scale(1.1);
+        }
+        
+        /* Animazione liquida */
+        @keyframes liquidMotion {
+            0% {
+                transform: translate(-5%, -5%) scale(1.05);
+                background-position: 0% 0%;
+            }
+            50% {
+                transform: translate(5%, 2%) scale(1.02);
+                background-position: 50% 50%;
+            }
+            100% {
+                transform: translate(-5%, 5%) scale(1.05);
+                background-position: 100% 100%;
+            }
+        }
+    </style>
 </head>
-<body class="bg-dark text-accent">
-    <!-- Navigation -->
-    <nav class="bg-secondary bg-opacity-0 fixed w-full z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <img class="logo" src="logo.png">
-                    </div>
-                    <div class="hidden md:block">
-                        <div class="ml-10 flex items-baseline space-x-4">
-<a href="#hero-section" class="text-accent hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Home</a>
-<a href="#movie-trend" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Film</a>
-<a href="#tv-popular" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Serie TV</a>
-<a href="#critics" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Più votati</a>
+<body class="bg-dark text-accent " >
+    <!-- Filtro SVG per l'effetto liquido avanzato -->
+    <svg style="display: none">
+        <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
+            <feTurbulence type="fractalNoise" baseFrequency="0.003 0.008" numOctaves="2" seed="17" result="turbulence" />
+            <feComponentTransfer in="turbulence" result="mapped">
+                <feFuncR type="gamma" amplitude="1" exponent="6" offset="0.5" />
+                <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
+                <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
+            </feComponentTransfer>
+            <feGaussianBlur in="turbulence" stdDeviation="2" result="softMap" />
+            <feSpecularLighting in="softMap" surfaceScale="3" specularConstant="0.8" specularExponent="30" lighting-color="white" result="specLight">
+                <fePointLight x="-100" y="-100" z="150" />
+            </feSpecularLighting>
+            <feComposite in="specLight" in2="SourceGraphic" operator="arithmetic" k1="0" k2="1" k3="0.4" k4="0" />
+        </filter>
+    </svg>
 
-<a href="#new" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium">Nuovi</a>
-
-                        </div>
-                    </div>
-                </div>
-                <div class="hidden md:block">
-                    <div class="ml-4 flex items-center md:ml-6">
-                        <div class="relative">
-                            <input id="search-input" type="text" placeholder="Cerca Film o Serie TV..." class=" bg-secondary bg-opacity-70 text-white px-4 py-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64">
-                            <button id="search-button" class=" absolute right-3 top-1/2 transform -translate-y-1/2">
-                                <i class="fas fa-search text-gray-400 hover:text-primary"></i>
-                            </button>
-                        </div>
-                        <div class="ml-4 flex items-center space-x-4">
-                            <div class="relative">
-
+    <!-- Navbar con effetto liquid glass premium -->
+    <div class="glass-nav-container">
+        <nav class="glass-nav">
+            <!-- Filtro liquido avanzato -->
+            <div class="glass-filter"></div>
+            
+            <!-- Contenuto navbar -->
+            <div class="nav-content">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+                    <div class="flex items-center justify-between h-full">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <img class="h-8 w-auto" src="logo.png" alt="LeleFlix">
+                            </div>
+                            <div class="hidden md:block ml-10">
+                                <div class="flex space-x-4">
+                                    <a href="#hero-section" class="text-accent hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Home</a>
+                                    <a href="#movie-trend" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Film</a>
+                                    <a href="#tv-popular" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Serie TV</a>
+                                    <a href="#critics" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Più votati</a>
+                                    <a href="#new" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Nuovi</a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
+                        <div class="hidden md:block">
+                            <div class="ml-4 flex items-center">
+                                <div class="relative">
+                                    <input id="search-input" type="text" placeholder="Cerca Film o Serie TV..." 
+                                           class="bg-secondary bg-opacity-70 text-white px-4 py-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64 transition-all duration-300">
+                                    <button id="search-button" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                        <i class="fas fa-search text-gray-400 hover:text-primary transition-colors duration-300"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                                     <!-- Icona ricerca mobile -->
                 <div class="md:hidden flex items-center">
                     <button id="mobile-search-toggle" class="text-gray-300 hover:text-primary focus:outline-none">
                         <i class="fas fa-search text-2xl"></i>
@@ -73,47 +579,85 @@
             </div>
         </div>
         
-        <!-- Mobile search box -->
-        <div id="mobile-search-box" class="hidden md:hidden bg-secondary px-4 py-3 shadow-md">
+        <!-- Mobile search box - DEVE essere dentro il <nav> -->
+        <div id="mobile-search-box">
             <div class="relative">
                 <input id="mobile-search-input" type="text" placeholder="Cerca Film o Serie TV..." 
                        class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full">
                 <button id="mobile-search-button" class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <i class="fas fa-search text-gray-400"></i>
+                    <i class="fas fa-search text-gray-400 hover:text-primary"></i>
                 </button>
             </div>
         </div>
     </nav>
+         </div>
+    
+    <script>
+        // Inizializzazione effetto liquid glass avanzato
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbar = document.querySelector('.glass-nav');
+            
+            // Gestione scroll con effetto parallax
+            function handleScroll() {
+                const scrollY = window.scrollY;
+                const scrollRatio = Math.min(scrollY / 200, 1);
+                
+                if (scrollY > 10) {
+                    navbar.classList.add('scrolled');
+                    
+                    // Effetto parallax leggero
+                    navbar.style.transform = `translateZ(-${scrollRatio * 5}px)`;
+                } else {
+                    navbar.classList.remove('scrolled');
+                    navbar.style.transform = 'translateZ(0)';
+                }
+            }
+            
+            // Controllo iniziale
+            handleScroll();
+            
+            // Listener per scroll
+            window.addEventListener('scroll', handleScroll);
+            
+            // ... (resto del tuo JavaScript) ...
+        });
+    </script>
 
     <!-- Hero Section -->
-    <section id="hero-section" class="relative h-screen">
-        <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center"></div>
-        <div class="hero-gradient absolute inset-0"></div>
-        <div class="relative z-10 h-full flex items-center">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="hero-section" class="relative">
+    <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center"></div>
+    <div class="hero-gradient absolute inset-0"></div>
+    <div class="hero-fade"></div>
+    
+    <div class="relative z-10 h-full flex items-center">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div class="hero-content-container  from-black/80 via-black/50 to-transparent md:bg-none">
                 <div class="w-full lg:w-1/2">
-                    <h1 id="hero-title" class="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">Caricamento...</h1>
+                    <h1 id="hero-title" class="text-4xl md:text-5xl lg:text-6xl font-bold mb-4"></h1>
                     <div class="flex items-center mb-4">
-                        <span id="hero-rating" class="bg-primary text-white px-2 py-1 rounded-md text-sm font-bold mr-4">0.0</span>
-                        <span id="hero-year" class="text-gray-300 mr-4">2023</span>
-                        <span id="hero-runtime" class="text-gray-300">120 min</span>
+                        <span id="hero-rating" class="bg-primary text-white px-2 py-1 rounded-md text-sm font-bold mr-4"></span>
+                        <span id="hero-year" class="text-gray-300 mr-4"></span>
+                        <span id="hero-runtime" class="text-gray-300"></span>
                     </div>
-                    <p id="hero-overview" class="text-gray-300 mb-6 text-sm md:text-base">Caricamento descrizione Film...</p>
+                    <p id="hero-overview" class="text-gray-300 mb-6 text-sm md:text-base"></p>
                     <div class="flex space-x-4">
-                        <button id="play-button" class="bg-primary hover:bg-red-700 text-white px-6 py-2 rounded-md flex items-center">
+                    <div class="flex space-x-4">
+                        <button id="play-button" class="glass-button">
                             <i class="fas fa-play mr-2"></i> Play
                         </button>
-                        <button id="more-info-button" class="bg-gray-600 bg-opacity-70 hover:bg-opacity-90 text-white px-6 py-2 rounded-md flex items-center">
+                        <button id="more-info-button" class="glass-button">
                             <i class="fas fa-info-circle mr-2"></i> Info
                         </button>
+
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
     <!-- Main Content -->
-    <main class="relative z-20 -mt-20">
+    <main class="relative z-20 -mt-20 scrollbar-hide">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Trending Movies -->
             <section id="movie-trend" class="mb-12">
@@ -236,58 +780,210 @@
 
 
     <!-- Movie/TV Show Modal -->
-    <!-- Replace your existing movie-modal div with this updated version -->
-<div id="movie-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-    <div class="fixed inset-0 bg-black bg-opacity-75 transition-opacity" aria-hidden="true"></div>
-    
-    <div class="relative bg-secondary rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto transform transition-all">
-        <div class="p-6">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <h3 id="modal-title" class="text-2xl font-bold text-white mb-2">Titolo Film</h3>
-                    <div class="flex items-center mb-4">
-                        <span id="modal-rating" class="bg-primary text-white px-2 py-1 rounded-md text-sm font-bold mr-4">0.0</span>
-                        <span id="modal-year" class="text-gray-300 mr-4">2023</span>
-                        <span id="modal-runtime" class="text-gray-300">120 min</span>
+
+<div id="movie-modal" class="fixed inset-0 z-50 hidden overflow-hidden flex items-center justify-center glass-modal hidden opacity-0 scale-95 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center">
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+    <div class="relative max-w-[90%] max-h-[90vh] w-full overflow-hidden">
+        <div class="max-h-[90vh] overflow-y-auto scrollbar-hide p-5 bg-secondary/85 backdrop-blur-2xl rounded-xl border border-white/10">
+            <!-- Contenuto del modale -->
+          <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 id="modal-title" class="text-2xl font-bold text-white mb-2">Titolo Film</h3>
+                        <div class="flex items-center mb-4">
+                            <span id="modal-rating" class="bg-primary text-white px-2 py-1 rounded-md text-sm font-bold mr-4">0.0</span>
+                            <span id="modal-year" class="text-gray-300 mr-4">2023</span>
+                            <span id="modal-runtime" class="text-gray-300">120 min</span>
+                        </div>
                     </div>
+                    <button id="close-modal" class="text-gray-400 hover:text-white text-2xl transition-colors duration-300">
+                        &times;
+                    </button>
                 </div>
-                <button id="close-modal" class="text-gray-400 hover:text-white text-2xl">
-                    &times;
-                </button>
+                
+                <div class="flex flex-col md:flex-row gap-6">
+                     <div class="w-full md:w-1/3 p-4 flex justify-center">
+                <img id="modal-poster" 
+                     src="" 
+                     alt="Poster"
+                     class="max-h-[400px] md:max-h-none w-auto object-contain rounded-lg shadow-lg">
             </div>
-            
-            <div class="flex flex-col md:flex-row gap-6">
-                <div class="w-full md:w-1/3">
-                    <img id="modal-poster" src="" alt="Poster" class="w-full rounded-lg shadow-lg">
-                </div>
-                <div class="w-full md:w-2/3">
-                    <p id="modal-overview" class="text-gray-300 mb-4">Movie overview goes here...</p>
-                    
-                    <div class="mb-4">
-                        <h4 class="text-white font-semibold mb-2">Generi:</h4>
-                        <div id="modal-genres" class="flex flex-wrap gap-2">
-                            <!-- Genres will be added here -->
+                    <div class="w-full md:w-2/3">
+                        <p id="modal-overview" class="text-gray-300 mb-4">Movie overview goes here...</p>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-white font-semibold mb-2">Generi:</h4>
+                            <div id="modal-genres" class="flex flex-wrap gap-2">
+                                <!-- Genres will be added here -->
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-white font-semibold mb-2">Cast:</h4>
+                            <div id="modal-cast" class="flex flex-wrap gap-2">
+                                <!-- Cast will be added here -->
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-4 mt-6">
+                            <button id="modal-play-button" class="glass-button bg-red-700 text-white px-6 py-2 rounded-md flex items-center transition-colors duration-300">
+                                <i class="fas fa-play mr-2"></i> Play
+                            </button>
                         </div>
                     </div>
-                    
-                    <div class="mb-4">
-                        <h4 class="text-white font-semibold mb-2">Cast:</h4>
-                        <div id="modal-cast" class="flex flex-wrap gap-2">
-                            <!-- Cast will be added here -->
-                        </div>
-                    </div>
-                    
-                    <div class="flex space-x-4 mt-6">
-                        <button id="modal-play-button" class="bg-primary hover:bg-red-700 text-white px-6 py-2 rounded-md flex items-center">
-                            <i class="fas fa-play mr-2"></i> Play
-                        </button>
-                    </div>
                 </div>
+            </div>
             </div>
         </div>
     </div>
-</div>
 
+    <style>
+
+        /* Tailwind utility class */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+        @media (max-width: 768px) {
+  .glass-modal-content {
+    width: 95% !important;
+    max-width: 360px !important;
+    max-height: 85vh !important;
+    
+  }
+
+  /* Mobile-first responsive adjustments */
+
+    #modal-poster {
+        max-height: 300px !important; /* Altezza massima su mobile */
+        width: auto !important;
+        margin: 0 auto; /* Centratura */
+    }
+    
+    .glass-modal-content {
+        max-height: 90vh !important;
+    }
+
+
+
+
+
+
+
+  .glass-modal-content img {
+    max-width: 50%;
+    height: auto;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Nascondi completamente la scrollbar in tutti i browser */
+.glass-modal-content {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+/* WebKit (Chrome, Safari) */
+.glass-modal-content::-webkit-scrollbar {
+    display: none;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent;
+}
+
+/* Rimuovi lo stile personalizzato della scrollbar che potrebbe essere in conflitto */
+.glass-modal-content::-webkit-scrollbar-thumb {
+    display: none;
+}
+
+.glass-modal-content::-webkit-scrollbar-track {
+    display: none;
+}
+
+        /* Effetto glass per modali - versione più pronunciata */
+        .glass-modal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+
+        }
+
+        /* Classe per bloccare lo scroll del body */
+.body-lock-scroll {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+        
+        .glass-modal-content {
+            position: relative;
+            background: rgba(34, 31, 31, 0.65);
+            backdrop-filter: blur(24px) saturate(200%);
+            -webkit-backdrop-filter: blur(24px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.36);
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 90%;
+            max-height: 90vh;
+            transform-style: preserve-3d;
+            animation: modalAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow-y: auto; /* Abilita scroll solo nel modale se necessario */
+            
+
+        }
+        
+        .glass-modal-content::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.12) 0%,
+                rgba(255, 255, 255, 0.06) 50%,
+                rgba(255, 255, 255, 0.12) 100%
+            );
+            z-index: -1;
+            mix-blend-mode: overlay;
+            opacity: 0.9;
+        }
+        
+        .glass-modal-content::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.15) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            animation: shine 6s infinite;
+            z-index: -1;
+        }
+        
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
     <!-- Player Modal -->
     <div id="player-modal" class="fixed inset-0 z-50 overflow-hidden hidden bg-black">
     <div class="flex items-center justify-center min-h-screen p-4">
@@ -429,10 +1125,158 @@
         </div>
     </div>
 </div>
+<style>
+    /* Stile base del modale stagioni - uguale a quello film */
+.season-episode-selector {
+    position: fixed;
+    inset: 0;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    overflow-y: auto;
+    padding: 20px;
+}
 
+.selection-container {
+    position: relative;
+    background: rgba(34, 31, 31, 0.65);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.36);
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 90%;
+    max-height: 90vh;
+    width: 100%;
+    animation: modalAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Header del modale */
+.selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.0);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.selection-header h2 {
+    color: white;
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.close-selector {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close-selector:hover {
+    color: #E50914;
+}
+
+/* Contenuto scrollabile */
+#selectorContent {
+    padding: 1.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+#selectorContent::-webkit-scrollbar {
+    display: none;
+}
+
+/* Stile griglie stagioni/episodi */
+.seasons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.episodes-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+/* Stile card stagioni/episodi */
+.season-card, .episode-card {
+    background: rgba(20, 20, 20, 0.0);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    cursor: pointer;
+}
+
+.season-card:hover, .episode-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.season-poster, .episode-still {
+    width: 100%;
+    object-fit: cover;
+    background: #333;
+}
+
+.season-info, .episode-info {
+    padding: 0.75rem;
+}
+
+.season-info h3, .episode-info h3 {
+    color: white;
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+}
+
+.season-info p, .episode-info p {
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.episode-overview {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Pulsante torna indietro */
+.back-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(229, 9, 20, 0.2);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.back-button:hover {
+    background: rgba(229, 9, 20, 0.4);
+}
+</style>
 <!-- Season/Episode Selector Modal -->
-<div id="seasonEpisodeSelector" class="season-episode-selector" style="display: none;">
-    <div class="selection-container">
+<div id="seasonEpisodeSelector" class="season-episode-selector glass-modal" style="display: none;">
+    <div class="selection-container glass-modal-content">
         <div class="selection-header">
             <h2 id="selectorTitle">Seleziona Stagione</h2>
             <button class="close-selector" onclick="closeSeasonEpisodeSelector()">
@@ -492,6 +1336,7 @@
         </div>
     </footer>
 <!-- Aggiungi questo script prima del tuo script principale -->
+     
     <script src="js/player.js" defer></script>
     <script>
         // TMDB API Configuration
@@ -616,8 +1461,19 @@ async function showTVSeasons(tvId, type) {
     const selectorTitle = document.getElementById('selectorTitle');
     const selectorContent = document.getElementById('selectorContent');
     
-    // Show loading state
+    // Reset animation classes
+    selector.classList.remove('opacity-100', 'scale-100');
+    selector.classList.add('opacity-0', 'scale-95');
+    
+    // Show modal
     selector.style.display = 'flex';
+    
+    // Start animation
+    setTimeout(() => {
+        selector.classList.remove('opacity-0', 'scale-95');
+        selector.classList.add('opacity-100', 'scale-100');
+    }, 10);
+    
     selectorTitle.textContent = 'Caricamento...';
     selectorContent.innerHTML = `
         <div class="loading-state">
@@ -670,6 +1526,15 @@ async function showTVSeasons(tvId, type) {
             </div>
         `;
     }
+}
+
+function closeSeasonEpisodeSelector() {
+    const selector = document.getElementById('seasonEpisodeSelector');
+    selector.classList.add('opacity-0', 'scale-95');
+    setTimeout(() => {
+        selector.style.display = 'none';
+        selector.classList.remove('opacity-100', 'scale-100');
+    }, 300);
 }
 
 // Show episodes for selected season
@@ -947,13 +1812,34 @@ modalPlayButton.addEventListener('click', () => {
 
     playMovie(content);
 });
-            // Mobile search toggle
-            const mobileSearchToggle = document.getElementById('mobile-search-toggle');
+           const mobileSearchToggle = document.getElementById('mobile-search-toggle');
             const mobileSearchBox = document.getElementById('mobile-search-box');
             
-            mobileSearchToggle.addEventListener('click', () => {
-                mobileSearchBox.classList.toggle('hidden');
+            // 1. Gestione click sull'icona
+            mobileSearchToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                mobileSearchBox.classList.toggle('active');
+                
+                // Focus sull'input quando appare
+                if(mobileSearchBox.classList.contains('active')) {
+                    setTimeout(() => {
+                        document.getElementById('mobile-search-input').focus();
+                    }, 50);
+                }
             });
+            
+            // 2. Chiudi quando si clicca fuori
+            document.addEventListener('click', function(e) {
+                if(!mobileSearchBox.contains(e.target) && !mobileSearchToggle.contains(e.target)) {
+                    mobileSearchBox.classList.remove('active');
+                }
+            });
+            
+            // 3. Chiudi dopo la ricerca
+            document.getElementById('mobile-search-button').addEventListener('click', function() {
+                mobileSearchBox.classList.remove('active');
+            });
+
 
             modalPlayButton.addEventListener('click', () => {
     const content = {
@@ -1094,8 +1980,7 @@ async function getRandomHeroContent() {
     
     // Combine and filter available content
     const allContent = [
-        ...moviesData.results.map(item => ({ ...item, media_type: 'movie' })),
-        ...tvData.results.map(item => ({ ...item, media_type: 'tv' }))
+        ...moviesData.results.map(item => ({ ...item, media_type: 'movie' }))
     ];
     
     const availablePopularContent = allContent.filter(item => 
@@ -1120,9 +2005,36 @@ async function getRandomHeroContent() {
     displayHeroMovie(currentHeroMovie);
 }
 
+
 // Update displayHeroMovie to handle both types
 function displayHeroMovie(content) {
-    heroBackdropEl.style.backgroundImage = `url(${IMG_PATH}${content.backdrop_path})`;
+    const isMobile = window.innerWidth <= 768;
+
+    const clone = heroBackdropEl.cloneNode(true);
+    clone.style.backgroundImage = `url(${IMG_PATH}${content.backdrop_path})`;
+    clone.style.opacity = '0';
+    clone.style.transition = 'opacity 0.5s ease-in-out';
+    clone.style.position = 'absolute';
+    clone.style.top = '0';
+    clone.style.left = '0';
+    clone.style.width = '100%';
+    clone.style.height = '100%';
+    
+    // 2. Aggiungi il clone al DOM
+    heroBackdropEl.parentNode.appendChild(clone);
+    
+    // 3. Attiva la transizione
+    setTimeout(() => {
+        clone.style.opacity = '1';
+    }, 10);
+    
+    // 4. Al termine della transizione, aggiorna l'elemento originale e rimuovi il clone
+    clone.addEventListener('transitionend', () => {
+        heroBackdropEl.style.backgroundImage = `url(${IMG_PATH}${content.backdrop_path})`;
+        clone.remove();
+    }, { once: true });
+    
+    // Aggiorna il testo
     heroTitleEl.textContent = content.title || content.name;
     heroRatingEl.textContent = content.vote_average.toFixed(1);
     
@@ -1135,6 +2047,17 @@ function displayHeroMovie(content) {
     }
     
     heroOverviewEl.textContent = content.overview;
+    
+    // Aggiungi classi per mobile
+    if (isMobile) {
+        document.querySelector('.hero-gradient').classList.add('mobile-contrast');
+        heroTitleEl.classList.add('mobile-text-contrast');
+        heroOverviewEl.classList.add('mobile-text-contrast');
+    } else {
+        document.querySelector('.hero-gradient').classList.remove('mobile-contrast');
+        heroTitleEl.classList.remove('mobile-text-contrast');
+        heroOverviewEl.classList.remove('mobile-text-contrast');
+    }
 }
         
         // Get movie or TV show details
@@ -1170,65 +2093,89 @@ async function getMovieDetails(id, type = 'movie') {
         
         
         // Create movie card element
- function createMovieCard(item, type = 'movie') {
-    const card = document.createElement('div');
-    card.className = 'movie-card cursor-pointer';
+ function createMovieCard(item, type = "movie") {
+    const card = document.createElement("div");
+    card.className = "movie-card cursor-pointer";
     card.dataset.id = item.id;
     card.dataset.type = type;
     
+    // Aggiungi classe tv-card se è una serie TV
+    if (type === "tv") {
+        card.classList.add("tv-card");
+    }
+    
     card.innerHTML = `
-        <div class="relative overflow-hidden rounded-lg">
-            <img src="${POSTER_PATH}${item.poster_path}" alt="${item.title || item.name}" class="movie-poster w-full h-64 object-cover">
-            <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                <button class="play-button bg-primary hover:bg-red-700 text-white rounded-full p-3">
-                    <i class="fas fa-play"></i>
+        <div class="movie-card-content">
+            <div class="relative overflow-hidden rounded-lg h-64">
+                <img src="${POSTER_PATH}${item.poster_path}" 
+                     alt="${item.title || item.name}" 
+                     class="w-full h-full object-cover">
+                
+                <!-- Rating -->
+                <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-md text-xs font-bold">
+                    ${item.vote_average.toFixed(1)}
+                </div>
+                
+                <!-- Pulsante play con effetto glass -->
+                <button class="play-button-glass" data-id="${item.id}" data-type="${type}">
+                    <i class="fas fa-play text-white"></i>
                 </button>
             </div>
-            <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-md text-xs font-bold">
-                ${item.vote_average.toFixed(1)}
-            </div>
-            ${type === 'tv' ? '<div class="absolute top-2 left-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-md text-xs">TV</div>' : ''}
+            
+            <!-- Titolo e anno -->
+            <h3 class="mt-2 text-sm font-semibold truncate px-1">${item.title || item.name}</h3>
+            <p class="text-gray-400 text-xs px-1">
+                ${type === 'movie' ? 
+                    (item.release_date ? item.release_date.split('-')[0] : 'N/A') : 
+                    (item.first_air_date ? item.first_air_date.split('-')[0] : 'N/A')}
+            </p>
         </div>
-        <h3 class="mt-2 text-sm font-semibold truncate">${item.title || item.name}</h3>
-        <p class="text-gray-400 text-xs">
-            ${type === 'movie' ? 
-                (item.release_date ? item.release_date.split('-')[0] : 'N/A') : 
-                (item.first_air_date ? item.first_air_date.split('-')[0] : 'N/A')}
-        </p>
     `;
     
-    // Add click event to show details
-    card.addEventListener('click', async () => {
+    // Aggiungi gestore eventi al click sulla card
+    card.addEventListener("click", async () => {
         const details = await getMovieDetails(item.id, type);
-        if (type === 'tv') {
-            showTVSeasons(item.id, type);
-        } else {
-            showMovieDetails(details, type);
-        }
+        type === "tv" ? showTVSeasons(item.id, type) : showMovieDetails(details, type);
     });
     
-    // Add play button event
-    const playBtn = card.querySelector('.play-button');
-    playBtn.addEventListener('click', async (e) => {
+    // Aggiungi gestore eventi al pulsante play
+    const playButton = card.querySelector(".play-button-glass");
+    playButton.addEventListener("click", async (e) => {
         e.stopPropagation();
         const details = await getMovieDetails(item.id, type);
-        if (type === 'tv') {
-            showTVSeasons(item.id, type);
-        } else {
-            playMovie(details, type);
-        }
+        playMovie(details, type);
     });
     
     return card;
 }
-        
-        // Show movie details in modal
- async function showMovieDetails(content, type = null) {
+
+let scrollPosition = 0;
+
+function lockScroll() {
+    scrollPosition = window.pageYOffset;
+    document.body.classList.add('lock-scroll');
+    document.body.style.top = `-${scrollPosition}px`;
+}
+
+function unlockScroll() {
+    document.body.classList.remove('lock-scroll');
+    document.body.style.top = '';
+    window.scrollTo(0, scrollPosition);
+}
+
+
+
+
+async function showMovieDetails(content, type = null) {
     const contentType = content.media_type || type || 'movie';
     const movieModal = document.getElementById('movie-modal');
     
     // Show the modal immediately (skeleton)
     movieModal.classList.remove('hidden');
+            setTimeout(() => {
+        movieModal.classList.remove('opacity-0', 'scale-95');
+        movieModal.classList.add('opacity-100', 'scale-100');
+    }, 10);
     
     // Set basic info
     document.getElementById('modal-title').textContent = content.title || content.name || 'Untitled';
@@ -1299,26 +2246,39 @@ async function getMovieDetails(id, type = 'movie') {
     
     // Close modal handler
     document.getElementById('close-modal').addEventListener('click', () => {
-        movieModal.classList.add('hidden');
+                setTimeout(() => {
+            movieModal.classList.add('hidden');
+            // RIPRISTINA le classi di animazione
+            movieModal.classList.remove('opacity-100', 'scale-100');
+        }, 300);
     });
     
-    // Close when clicking outside
-    movieModal.addEventListener('click', (e) => {
-        if (e.target === movieModal) {
-            movieModal.classList.add('hidden');
-        }
-    });
     
     // Close with Escape key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && !movieModal.classList.contains('hidden')) {
+                            setTimeout(() => {
             movieModal.classList.add('hidden');
+            // RIPRISTINA le classi di animazione
+            movieModal.classList.remove('opacity-100', 'scale-100');
+        }, 300);
         }
     });
 }
-        
-       // Play movie with advanced player
 
+
+        
+        // Show movie details in modal
+ 
+        
     </script>
+
+      <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('✅ Service Worker registrato:', reg))
+      .catch(err => console.error('❌ Service Worker errore:', err));
+  }
+</script>
 </body>
 </html>
