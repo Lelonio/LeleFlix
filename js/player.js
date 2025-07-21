@@ -48,8 +48,9 @@ class VideoPlayer {
         this.content = content;
         this.updatePlayerTitle();
         this.playerModal.classList.remove('hidden');
+            this.showControlsTemporarily(); // Mostra i controlli immediatamente
+
         await this.initPlayer();
-        this.requestFullscreen();
     }
 
     updatePlayerTitle() {
@@ -94,9 +95,11 @@ class VideoPlayer {
                 
                 this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
     this.loadingOverlay.classList.add('hidden');
-    this.videoPlayer.play().then(() => {
-        setTimeout(() => this.requestFullscreen(), 100);
-    });
+                this.videoPlayer.play().catch(error => {
+                    console.error('Autoplay failed:', error);
+                    // Mostra i controlli per permettere all'utente di avviare manualmente
+                    this.showControlsTemporarily();
+                });
 
     this.setupQualityOptions();
 
@@ -417,15 +420,17 @@ handleMenuSelection(e) {
 }
 
 
-    showControlsTemporarily() {
-        this.controlsContainer.style.opacity = '1';
-        this.backButtonContainer.style.opacity = '1';
-        clearTimeout(this.controlsTimeout);
-        this.controlsTimeout = setTimeout(() => {
+showControlsTemporarily() {
+    this.controlsContainer.style.opacity = '1';
+    this.backButtonContainer.style.opacity = '1';
+    clearTimeout(this.controlsTimeout);
+    this.controlsTimeout = setTimeout(() => {
+        if (!this.isSeeking) { // Non nascondere se l'utente sta cercando
             this.controlsContainer.style.opacity = '0';
             this.backButtonContainer.style.opacity = '0';
-        }, 3000);
-    }
+        }
+    }, 3000);
+}
 
     handleKeyDown(e) {
         if (document.activeElement.tagName === 'INPUT') return;
