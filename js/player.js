@@ -6,6 +6,9 @@ class VideoPlayer {
         this.controlsTimeout = null;
         this.zoomLevel = 1;
         this.lastTapTime = 0;
+                this.currentStreamId = null;
+        this.abortController = null;
+        this.PROXY_BASE_URL = 'https://api.leleflix.store/proxy';
 
         // Riferimenti agli elementi del player
         this.videoPlayer = document.getElementById('videoPlayer');
@@ -54,24 +57,31 @@ class VideoPlayer {
     }
 
     updatePlayerTitle() {
-        let playerTitle = this.content.title || this.content.name || 'Senza Titolo';
-        
-        if (this.content.media_type === 'tv' && 
-            this.content.season_number && 
-            this.content.episode_number) {
-            const episodeTitle = this.content.episode_data?.name || 
-                               `Episodio ${this.content.episode_number}`;
-            playerTitle = `${this.content.name} - S${String(this.content.season_number).padStart(2, '0')}E${String(this.content.episode_number).padStart(2, '0')}: ${episodeTitle}`;
-        }
-        
-        document.getElementById('player-title').textContent = playerTitle;
+    let playerTitle = this.content.title || this.content.name || 'Senza Titolo';
+    
+    // Se è un episodio TV, formatta il titolo
+    if (this.content.media_type === 'tv' && 
+        this.content.season_number && 
+        this.content.episode_number) {
+        const episodeTitle = this.content.episode_data?.name || 
+                           `Episodio ${this.content.episode_number}`;
+        playerTitle = `${this.content.name} - S${String(this.content.season_number).padStart(2, '0')}E${String(this.content.episode_number).padStart(2, '0')}: ${episodeTitle}`;
     }
+    
+    document.getElementById('player-title').textContent = playerTitle;
+}
 
 
-    async initPlayer() {
-        this.loadingOverlay.classList.remove('hidden');
-        this.errorOverlay.classList.add('hidden');
-        
+   async initPlayer() {
+    this.loadingOverlay.classList.remove('hidden');
+    this.errorOverlay.classList.add('hidden');
+    
+    // Genera un nuovo streamId e abort controller
+    this.currentStreamId = this.generateStreamId();
+    this.abortController = new AbortController();
+    
+    try {
+        // Costruisci l'URL del proxy con lo streamId
         let proxyUrl = `${PROXY_URL}${this.content.media_type}/${this.content.id}`;
         
         if (this.content.media_type === 'tv' && 
@@ -80,99 +90,129 @@ class VideoPlayer {
             proxyUrl = `${PROXY_URL}series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}`;
         }
         
-        try {
-            const proxyResponse = await fetch(proxyUrl);
-            if (!proxyResponse.ok) throw new Error('Failed to fetch stream URL');
+        // Aggiungi lo streamId alla richiesta
+        proxyUrl += `?streamId=${this.currentStreamId}`;
+        
+        // Effettua la richiesta con l'abort controller
+        const proxyResponse = await fetch(proxyUrl, {
+            signal: this.abortController.signal
+        });
+        
+        if (!proxyResponse.ok) throw new Error('Failed to fetch stream URL');
+        
+        const { url } = await proxyResponse.json();
+        
+        if (Hls.isSupported()) {
+            if (this.hls) this.hls.destroy();
             
-            const { url } = await proxyResponse.json();
+            this.hls = new Hls();
             
-            if (Hls.isSupported()) {
-                if (this.hls) this.hls.destroy();
+            // Gestione errori HLS
+            this.hls.on(Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    this.showError('Failed to load video stream. Please try again later.');
+                    // Annulla la richiesta se c'è un errore fatale
+                    if (this.abortController) {
+                        this.abortController.abort();
+                    }
+                }
+            });
+            
+            this.hls.loadSource(url);
+            this.hls.attachMedia(this.videoPlayer);
+            
+            this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                // Forza 1080p se presente
+                const lvl = this.hls.levels.findIndex(l => l.height === 1080);
+                if (lvl >= 0) this.hls.currentLevel = lvl;
                 
-                this.hls = new Hls();
-                this.hls.loadSource(url);
-                this.hls.attachMedia(this.videoPlayer);
-                
-                this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-    this.loadingOverlay.classList.add('hidden');
+                this.loadingOverlay.classList.add('hidden');
                 this.videoPlayer.play().catch(error => {
                     console.error('Autoplay failed:', error);
-                    // Mostra i controlli per permettere all'utente di avviare manualmente
                     this.showControlsTemporarily();
                 });
 
-    this.setupQualityOptions();
+                this.setupQualityOptions();
 
-    // AUDIO TRACKS
-    const audioOptions = document.querySelector('.audio-options');
-    audioOptions.innerHTML = '';
-    if (data.audioTracks && data.audioTracks.length > 0) {
-        data.audioTracks.forEach((track, index) => {
-            const option = document.createElement('div');
-            option.className = 'audio-option px-4 py-2 cursor-pointer flex items-center justify-between';
-            option.dataset.audio = index;
-            option.innerHTML = `
-                <span>${track.name || track.lang || 'Track ' + (index + 1)}</span>
-                <i class="fas fa-check text-primary ${this.hls.audioTrack === index ? '' : 'hidden'}"></i>
-            `;
-            audioOptions.appendChild(option);
-        });
-    }
+                // AUDIO TRACKS
+                const audioOptions = document.querySelector('.audio-options');
+                audioOptions.innerHTML = '';
+                if (data.audioTracks && data.audioTracks.length > 0) {
+                    data.audioTracks.forEach((track, index) => {
+                        const option = document.createElement('div');
+                        option.className = 'audio-option px-4 py-2 cursor-pointer flex items-center justify-between';
+                        option.dataset.audio = index;
+                        option.innerHTML = `
+                            <span>${track.name || track.lang || 'Track ' + (index + 1)}</span>
+                            <i class="fas fa-check text-primary ${this.hls.audioTrack === index ? '' : 'hidden'}"></i>
+                        `;
+                        audioOptions.appendChild(option);
+                    });
+                }
 
-    // SUBTITLES
-    const subtitleOptions = document.querySelector('.subtitle-options');
-    subtitleOptions.innerHTML = '';
-    const noneOption = document.createElement('div');
-    noneOption.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
-    noneOption.dataset.subtitle = 'none';
-    noneOption.innerHTML = `
-        <span>None</span>
-        <i class="fas fa-check text-primary ${this.hls.subtitleTrack === -1 ? '' : 'hidden'}"></i>
-    `;
-    subtitleOptions.appendChild(noneOption);
+                // SUBTITLES
+                const subtitleOptions = document.querySelector('.subtitle-options');
+                subtitleOptions.innerHTML = '';
+                const noneOption = document.createElement('div');
+                noneOption.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
+                noneOption.dataset.subtitle = 'none';
+                noneOption.innerHTML = `
+                    <span>None</span>
+                    <i class="fas fa-check text-primary ${this.hls.subtitleTrack === -1 ? '' : 'hidden'}"></i>
+                `;
+                subtitleOptions.appendChild(noneOption);
 
-    if (data.subtitleTracks && data.subtitleTracks.length > 0) {
-        data.subtitleTracks.forEach((track, index) => {
-            const option = document.createElement('div');
-            option.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
-            option.dataset.subtitle = index;
-            option.innerHTML = `
-                <span>${track.name || track.lang || 'Subtitle ' + (index + 1)}</span>
-                <i class="fas fa-check text-primary ${this.hls.subtitleTrack === index ? '' : 'hidden'}"></i>
-            `;
-            subtitleOptions.appendChild(option);
-        });
-    }
+                if (data.subtitleTracks && data.subtitleTracks.length > 0) {
+                    data.subtitleTracks.forEach((track, index) => {
+                        const option = document.createElement('div');
+                        option.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
+                        option.dataset.subtitle = index;
+                        option.innerHTML = `
+                            <span>${track.name || track.lang || 'Subtitle ' + (index + 1)}</span>
+                            <i class="fas fa-check text-primary ${this.hls.subtitleTrack === index ? '' : 'hidden'}"></i>
+                        `;
+                        subtitleOptions.appendChild(option);
+                    });
+                }
 
-    this.showControlsTemporarily();
-});
-
-                
-                this.hls.on(Hls.Events.ERROR, (event, data) => {
-                    if (data.fatal) {
-                        this.showError('Failed to load video stream. Please try again later.');
-                    }
-                });
-            } else if (this.videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-                this.videoPlayer.src = url;
-                this.videoPlayer.addEventListener('loadedmetadata', () => {
-                    this.loadingOverlay.classList.add('hidden');
-                    this.videoPlayer.play();
-                });
-            } else {
-                this.showError('Your browser does not support this video format.');
-            }
-        } catch (error) {
+                this.showControlsTemporarily();
+            });
+        } else if (this.videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+            this.videoPlayer.src = url;
+            this.videoPlayer.addEventListener('loadedmetadata', () => {
+                this.loadingOverlay.classList.add('hidden');
+                this.videoPlayer.play();
+            });
+        } else {
+            this.showError('Your browser does not support this video format.');
+        }
+    } catch (error) {
+        if (error.name !== 'AbortError') {
             console.error('Error fetching stream:', error);
             this.showError('Failed to load video stream. Please try again later.');
         }
+        // Se l'errore è un abort, non mostrare messaggi di errore
     }
+}
 
-    showError(message) {
-        this.loadingOverlay.classList.add('hidden');
-        this.errorOverlay.classList.remove('hidden');
-        this.errorText.textContent = message;
+// Aggiungi questo metodo alla classe VideoPlayer
+generateStreamId() {
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15);
+}
+
+showError(message) {
+    this.loadingOverlay.classList.add('hidden');
+    this.errorOverlay.classList.remove('hidden');
+    this.errorText.textContent = message;
+    
+    // Resetta lo stato di riproduzione
+    this.currentStreamId = null;
+    if (this.abortController) {
+        this.abortController.abort();
+        this.abortController = null;
     }
+}
 
     initEventListeners() {
         // Retry button
@@ -287,19 +327,26 @@ class VideoPlayer {
         this.progressBar.style.width = `${progressPercent}%`;
     }
 
-    startSeek(e) {
-        this.isSeeking = true;
-        this.handleSeek(e);
-    }
+startSeek(e) {
+    if (!this.videoPlayer.duration || isNaN(this.videoPlayer.duration)) return;
+    this.isSeeking = true;
+    this.handleSeek(e);
+}
 
     handleSeek(e) {
-        if (!this.isSeeking) return;
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-        if (clientX) {
-            const pos = (clientX - this.progressContainer.getBoundingClientRect().left) / this.progressContainer.offsetWidth;
-            this.videoPlayer.currentTime = pos * this.videoPlayer.duration;
+    if (!this.isSeeking || !this.videoPlayer.duration || isNaN(this.videoPlayer.duration)) return;
+    
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    if (clientX) {
+        const rect = this.progressContainer.getBoundingClientRect();
+        const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        const seekTime = pos * this.videoPlayer.duration;
+        
+        if (!isNaN(seekTime) && isFinite(seekTime)) {
+            this.videoPlayer.currentTime = seekTime;
         }
     }
+}
 
     endSeek() {
         this.isSeeking = false;
@@ -489,20 +536,54 @@ showControlsTemporarily() {
         }
     }
 
-    closePlayer() {
+     async closePlayer() {
+        // 1. Annulla eventuali richieste in corso lato client
+        if (this.abortController) {
+            this.abortController.abort();
+        }
+        
+        // 2. Notifica il server di interrompere il flusso
+        if (this.currentStreamId) {
+            try {
+                await fetch(`${this.PROXY_BASE_URL}/stream/stop?streamId=${this.currentStreamId}`, {
+                    method: 'GET',
+                    keepalive: false
+                });
+            } catch (err) {
+                console.log('Flusso già terminato:', err);
+            }
+        }
+        
+        // 3. Pulizia HLS e video
         if (this.hls) {
             this.hls.destroy();
             this.hls = null;
         }
+        
         this.videoPlayer.pause();
         this.videoPlayer.removeAttribute('src');
         this.videoPlayer.load();
+        
+        // 4. Reset dello stato
+        this.currentStreamId = null;
+        this.abortController = null;
         this.playerModal.classList.add('hidden');
         
+        // 5. Uscita dal fullscreen
         if (document.fullscreenElement) {
             document.exitFullscreen();
         }
+        
+        // 6. Sblocco orientamento
+        if (screen.orientation?.unlock) {
+            try {
+                screen.orientation.unlock();
+            } catch (err) {
+                console.warn('Sblocco orientamento fallito:', err);
+            }
+        }
     }
+
 
 setupQualityOptions() {
     const container = this.settingsMenu.querySelector('.quality-options');
@@ -573,11 +654,92 @@ setupSubtitleOptions() {
 // Crea un'istanza globale del player
 const videoPlayerInstance = new VideoPlayer();
 
-// Funzione globale per avviare la riproduzione
+// Funzione globale unificata per avviare la riproduzione
 function playMovie(content, type = null) {
-    const playerContent = {
-        ...content,
-        media_type: content.media_type || type || 'movie'
-    };
-    videoPlayerInstance.play(playerContent);
+    // Se content è un ID numerico, crea un oggetto content di base
+    if (typeof content === 'number') {
+        content = {
+            id: content,
+            media_type: type || 'movie'
+        };
+    }
+    
+    // Se content è una stringa (ID episodio), gestisci il caso TV
+    if (typeof content === 'string' && content.includes('-')) {
+        const [tvId, season, episode] = content.split('-');
+        const episodeData = episodeMap.get(content);
+        
+        if (!episodeData) {
+            console.error('Dati episodio non trovati');
+            return;
+        }
+
+        
+        content = {
+            id: parseInt(tvId),
+            media_type: 'tv',
+            name: episodeData.tvData.name,
+            title: episodeData.tvData.name,
+            season_number: parseInt(season),
+            episode_number: parseInt(episode),
+            episode_data: episodeData.episodeData,
+            tv_data: episodeData.tvData,
+            vote_average: episodeData.tvData.vote_average,
+            overview: episodeData.tvData.overview,
+            poster_path: episodeData.tvData.poster_path,
+            backdrop_path: episodeData.tvData.backdrop_path,
+            first_air_date: episodeData.tvData.first_air_date
+        };
+    }
+
+    // Assicurati che il titolo sia sempre impostato
+    if (!content.title && content.name) {
+        content.title = content.name;
+    }
+
+    // Se è un episodio TV, formatta il titolo correttamente
+    if (content.media_type === 'tv' && content.season_number && content.episode_number) {
+        const episodeTitle = content.episode_data?.name || `Episodio ${content.episode_number}`;
+        content.title = `${content.name} - S${String(content.season_number).padStart(2, '0')}E${String(content.episode_number).padStart(2, '0')}: ${episodeTitle}`;
+    }
+    
+    // Assicurati che content sia un oggetto valido
+    if (!content || typeof content !== 'object') {
+        console.error('Contenuto non valido per la riproduzione');
+        return;
+    }
+    
+    // Normalizza il tipo di media
+    content.media_type = content.media_type || type || 'movie';
+    
+    // Se è una serie TV senza numero di stagione/episodio, mostra il selettore
+    if (content.media_type === 'tv' && (!content.season_number || !content.episode_number)) {
+        showTVSeasons(content.id, 'tv');
+        return;
+    }
+    
+    // Avvia la riproduzione con l'istanza del player
+    videoPlayerInstance.play(content);
+    
+    // Se è una serie TV, salva le info per tornare alla selezione episodi
+    if (content.media_type === 'tv') {
+        window.lastPlayedTV = {
+            id: content.id,
+            season: content.season_number
+        };
+    }
+    
+    // Gestione fullscreen e orientamento
+    const container = document.getElementById('videoContainer');
+    if (container.requestFullscreen) {
+        container.requestFullscreen().then(() => {
+            if (screen.orientation?.lock) {
+                screen.orientation.lock('landscape').catch(err => {
+                    console.warn('Orientation lock failed:', err);
+                });
+            }
+        });
+    } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+    }
 }
