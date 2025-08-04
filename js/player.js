@@ -660,7 +660,8 @@ function playMovie(content, type = null) {
     if (typeof content === 'number') {
         content = {
             id: content,
-            media_type: type || 'movie'
+            media_type: type || 'movie',
+            title: 'Film' // Default title
         };
     }
     
@@ -702,6 +703,7 @@ function playMovie(content, type = null) {
         const episodeTitle = content.episode_data?.name || `Episodio ${content.episode_number}`;
         content.title = `${content.name} - S${String(content.season_number).padStart(2, '0')}E${String(content.episode_number).padStart(2, '0')}: ${episodeTitle}`;
     }
+
     
     // Assicurati che content sia un oggetto valido
     if (!content || typeof content !== 'object') {
