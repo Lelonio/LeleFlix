@@ -1346,7 +1346,7 @@
     <script src="js/player.js" defer></script>
     <script>
         // TMDB API Configuration
-        const API_KEY = '1e8c9083f94c62dd66fb2105cd7b613b'; // Public API key for demo
+        const API_KEY = '1e8c9083f94c62dd66fb2105cd7b613b';
         const API_URL = 'https://api.themoviedb.org/3';
         const IMG_PATH = 'https://image.tmdb.org/t/p/w1280';
         const POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
@@ -2098,9 +2098,6 @@ async function getMovieDetails(id, type = 'movie') {
                 </div>
                 
                 <!-- Pulsante play con effetto glass -->
-                <button class="play-button-glass" data-id="${item.id}" data-type="${type}">
-                    <i class="fas fa-play text-white"></i>
-                </button>
             </div>
             
             <!-- Titolo e anno -->
