@@ -523,45 +523,40 @@
         }
 
 
-        /* Mobile controls adaptation */
+/* Mobile portrait specific styles */
 @media (max-width: 768px) and (orientation: portrait) {
-    #controlsContainer {
-        padding-bottom: 60px !important;
+    #videoContainer:not(.fullscreen) #controlsContainer {
+        padding-bottom: 70px;
+        flex-direction: column-reverse;
     }
     
-    #controlsContainer > div {
-        flex-direction: column-reverse !important;
-        gap: 10px !important;
+    #videoContainer:not(.fullscreen) .progress-container {
+        width: 100%;
+        margin: 10px 0;
     }
     
-    .progress-container {
-        width: 100% !important;
-        margin-bottom: 10px !important;
-    }
-    
-    #fullscreenBtn {
-        position: absolute !important;
-        right: 10px !important;
-        bottom: 10px !important;
-        background: rgba(0,0,0,0.7) !important;
-        border-radius: 50% !important;
-        width: 40px !important;
-        height: 40px !important;
+    #videoContainer:not(.fullscreen) #fullscreenBtn {
+        position: fixed;
+        right: 15px;
+        bottom: 80px;
+        background: rgba(0,0,0,0.8);
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
         display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
+        z-index: 100;
     }
     
-    #backButtonContainer {
-        top: 10px !important;
-        left: 10px !important;
-        background: none !important;
-        padding: 0 !important;
-    }
-    
-    #player-title {
-        font-size: 1rem !important;
-        max-width: 70% !important;
+    #videoContainer:not(.fullscreen) #mobileFullscreenBtn {
+        display: flex;
+        position: fixed;
+        right: 15px;
+        bottom: 20px;
+        background: rgba(229,9,20,0.9);
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        z-index: 100;
     }
 }
     </style>
