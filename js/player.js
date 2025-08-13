@@ -18,6 +18,7 @@ class VideoPlayer {
         this.errorText = document.getElementById('errorText');
         this.controlsContainer = document.getElementById('controlsContainer');
         this.backButtonContainer = document.getElementById('backButtonContainer');
+        this.nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
 
         // Controlli del player
         this.retryButton = document.getElementById('retryButton');
@@ -36,6 +37,7 @@ class VideoPlayer {
         this.skipForward = document.getElementById('skipForward');
         this.skipBackward = document.getElementById('skipBackward');
 
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         // Menu e impostazioni
         this.settingsBtn = document.getElementById('settingsBtn');
         this.audioTrackBtn = document.getElementById('audioTrackBtn');
@@ -47,12 +49,122 @@ class VideoPlayer {
         this.initEventListeners();
     }
 
+
+toggleNextEpisodeButton() {
+    if (this.content.media_type === 'tv' && 
+        this.content.season_number && 
+        this.content.episode_number) {
+        // Verifica se esiste un episodio successivo
+        const hasNextEpisode = this.checkNextEpisodeExists();
+        
+        // Mostra/nascondi con animazione
+        if (hasNextEpisode) {
+            this.nextEpisodeBtn.style.display = 'flex';
+            this.nextEpisodeBtn.style.animation = 'fadeIn 0.3s ease';
+        } else {
+            this.nextEpisodeBtn.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => {
+                this.nextEpisodeBtn.style.display = 'none';
+            }, 300);
+        }
+    } else {
+        this.nextEpisodeBtn.style.display = 'none';
+    }
+}
+
+    // Aggiungi questo metodo per verificare l'esistenza del prossimo episodio
+    checkNextEpisodeExists() {
+        if (!this.content.tv_data || !this.content.tv_data.seasons) {
+            return false;
+        }
+        
+        const currentSeason = this.content.tv_data.seasons.find(
+            s => s.season_number === this.content.season_number
+        );
+        
+        if (!currentSeason) return false;
+        
+        // Controlla se c'è un episodio successivo nella stagione
+        if (this.content.episode_number < currentSeason.episode_count) {
+            return true;
+        }
+        
+        // Controlla se c'è una stagione successiva
+        const nextSeasonNumber = this.content.season_number + 1;
+        const hasNextSeason = this.content.tv_data.seasons.some(
+            s => s.season_number === nextSeasonNumber
+        );
+        
+        return hasNextSeason;
+    }
+
+    // Aggiungi questo metodo per gestire il passaggio al prossimo episodio
+async playNextEpisode() {
+    // Salva lo stato del fullscreen
+    const wasFullscreen = !!document.fullscreenElement;
+    
+    if (!this.content.tv_data) return;
+    
+    let nextSeason = this.content.season_number;
+    let nextEpisode = this.content.episode_number + 1;
+    
+    // Verifica se siamo all'ultimo episodio della stagione
+    const currentSeason = this.content.tv_data.seasons.find(
+        s => s.season_number === this.content.season_number
+    );
+    
+    if (nextEpisode > currentSeason.episode_count) {
+        // Passa alla stagione successiva, episodio 1
+        nextSeason++;
+        nextEpisode = 1;
+        
+        // Verifica se esiste la stagione successiva
+        const hasNextSeason = this.content.tv_data.seasons.some(
+            s => s.season_number === nextSeason
+        );
+        
+        if (!hasNextSeason) {
+            // Nessun altro episodio disponibile
+            return;
+        }
+    }
+    
+    // NON chiudiamo il player completamente, ma solo la riproduzione corrente
+    if (this.hls) {
+        this.hls.destroy();
+        this.hls = null;
+    }
+    
+    this.videoPlayer.pause();
+    this.videoPlayer.removeAttribute('src');
+    this.videoPlayer.load();
+    
+    // Crea il nuovo contenuto per il prossimo episodio
+    const nextContent = {
+        ...this.content,
+        season_number: nextSeason,
+        episode_number: nextEpisode,
+        episode_data: null // Sarà caricato quando necessario
+    };
+    
+    // Aggiorna il contenuto senza chiudere il modal
+    this.content = nextContent;
+    this.updatePlayerTitle();
+    this.toggleNextEpisodeButton();
+    
+    // Inizializza il nuovo player mantenendo il fullscreen
+    await this.initPlayer();
+    
+    // Se era in fullscreen, non serve rientrare perché non siamo mai usciti
+    // Il container è lo stesso e mantiene lo stato
+}
+
     async play(content) {
         this.content = content;
         this.updatePlayerTitle();
         this.playerModal.classList.remove('hidden');
             this.showControlsTemporarily(); // Mostra i controlli immediatamente
-
+        this.toggleNextEpisodeButton();
         await this.initPlayer();
     }
 
@@ -71,6 +183,38 @@ class VideoPlayer {
     document.getElementById('player-title').textContent = playerTitle;
 }
 
+showNextEpisodePrompt() {
+    const prompt = document.createElement('div');
+    prompt.className = 'next-episode-prompt';
+    prompt.innerHTML = `
+        <div class="prompt-content">
+            <p>Vuoi passare al prossimo episodio?</p>
+            <div class="prompt-buttons">
+                <button id="confirmNextEpisode">Sì</button>
+                <button id="cancelNextEpisode">No</button>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('player-modal').appendChild(prompt);
+    
+    document.getElementById('confirmNextEpisode').addEventListener('click', () => {
+        this.playNextEpisode();
+        prompt.remove();
+    });
+    
+    document.getElementById('cancelNextEpisode').addEventListener('click', () => {
+        prompt.remove();
+    });
+    
+    // Nascondi automaticamente dopo 30 secondi
+    setTimeout(() => {
+        if (prompt.parentNode) {
+            prompt.remove();
+        }
+    }, 30000);
+}
+
 
    async initPlayer() {
     this.loadingOverlay.classList.remove('hidden');
@@ -79,6 +223,13 @@ class VideoPlayer {
     // Genera un nuovo streamId e abort controller
     this.currentStreamId = this.generateStreamId();
     this.abortController = new AbortController();
+
+        this.videoPlayer.addEventListener('ended', () => {
+        if (this.content.media_type === 'tv' && this.checkNextEpisodeExists()) {
+            // Mostra un messaggio che chiede se passare al prossimo episodio
+            this.showNextEpisodePrompt();
+        }
+    });
     
     try {
         // Costruisci l'URL del proxy con lo streamId
@@ -237,6 +388,9 @@ showError(message) {
         document.addEventListener('touchmove', (e) => this.handleSeek(e));
         document.addEventListener('mouseup', () => this.endSeek());
         document.addEventListener('touchend', () => this.endSeek());
+
+                
+        this.nextEpisodeBtn.addEventListener('click', () => this.playNextEpisode());
         
         // Touch controls
         this.videoPlayer.addEventListener('touchstart', (e) => this.handleTouchStart(e));
@@ -423,18 +577,26 @@ doSkipBackward() {
     }
 
     toggleFullscreen() {
-        if (!document.fullscreenElement) {
-            this.videoPlayer.requestFullscreen()
-                .then(() => {
-                    this.fullscreenBtn.innerHTML = '<i class="fas fa-compress text-lg"></i>';
-                })
-                .catch(err => {
-                    console.error(`Error attempting to enable fullscreen: ${err.message}`);
+
+        const container = document.getElementById('videoContainer');
+    if (container.requestFullscreen) {
+        container.requestFullscreen().then(() => {
+            this.fullscreenBtn.innerHTML = '<i class="fas fa-compress text-lg"></i>';
+            if (screen.orientation?.lock) {
+                screen.orientation.lock('landscape').catch(err => {
+                    console.warn('Orientation lock failed:', err);
                 });
-        } else {
-            document.exitFullscreen();
+            }
+        });
+    } else if (container.webkitRequestFullscreen) {
+        container.webkitRequestFullscreen();
+    }
+
+    else {
+            container.exitFullscreen();
             this.fullscreenBtn.innerHTML = '<i class="fas fa-expand text-lg"></i>';
         }
+    
     }
 
     toggleMenu(menuType) {
@@ -479,6 +641,17 @@ handleMenuSelection(e) {
 }
 
 showControlsTemporarily() {
+
+        if (this.isMobile && !document.fullscreenElement) {
+        // Layout speciale per mobile verticale
+        this.controlsContainer.style.flexDirection = 'column-reverse';
+        this.controlsContainer.style.paddingBottom = '60px';
+        
+        // Posiziona il pulsante fullscreen in basso a destra
+        this.fullscreenBtn.style.position = 'absolute';
+        this.fullscreenBtn.style.right = '10px';
+        this.fullscreenBtn.style.bottom = '10px';
+    }
     // Aggiungi classi
     this.controlsContainer.classList.add('visible');
     this.backButtonContainer.classList.add('visible');
