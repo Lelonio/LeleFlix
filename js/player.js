@@ -640,17 +640,28 @@ handleMenuSelection(e) {
     }
 }
 
-showControlsTemporarily() {
+// Sostituisci tutte le verifiche document.fullscreenElement con:
+isFullscreen() {
+    const container = document.getElementById('videoContainer');
+    return !!(
+        document.fullscreenElement === container ||
+        document.webkitFullscreenElement === container ||
+        document.mozFullScreenElement === container ||
+        document.msFullscreenElement === container
+    );
+}
 
-        if (this.isMobile && !document.fullscreenElement) {
-        // Layout speciale per mobile verticale
-        this.controlsContainer.style.flexDirection = 'column-reverse';
-        this.controlsContainer.style.paddingBottom = '60px';
+showControlsTemporarily() {
+    const container = document.getElementById('videoContainer');
+
+    // Mostra sempre i controlli in mobile portrait
+    if (this.isMobile && !this.isFullscreen() && window.innerHeight > window.innerWidth) {
+        this.controlsContainer.style.opacity = '1';
+        this.backButtonContainer.style.opacity = '1';
         
-        // Posiziona il pulsante fullscreen in basso a destra
-        this.fullscreenBtn.style.position = 'absolute';
-        this.fullscreenBtn.style.right = '10px';
-        this.fullscreenBtn.style.bottom = '10px';
+        // Layout speciale per mobile verticale
+        this.controlsContainer.classList.add('mobile-portrait');
+        return;
     }
     // Aggiungi classi
     this.controlsContainer.classList.add('visible');
