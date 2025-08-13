@@ -521,6 +521,49 @@
                 background-position: 100% 100%;
             }
         }
+
+
+        /* Mobile controls adaptation */
+@media (max-width: 768px) and (orientation: portrait) {
+    #controlsContainer {
+        padding-bottom: 60px !important;
+    }
+    
+    #controlsContainer > div {
+        flex-direction: column-reverse !important;
+        gap: 10px !important;
+    }
+    
+    .progress-container {
+        width: 100% !important;
+        margin-bottom: 10px !important;
+    }
+    
+    #fullscreenBtn {
+        position: absolute !important;
+        right: 10px !important;
+        bottom: 10px !important;
+        background: rgba(0,0,0,0.7) !important;
+        border-radius: 50% !important;
+        width: 40px !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    #backButtonContainer {
+        top: 10px !important;
+        left: 10px !important;
+        background: none !important;
+        padding: 0 !important;
+    }
+    
+    #player-title {
+        font-size: 1rem !important;
+        max-width: 70% !important;
+    }
+}
     </style>
 </head>
 <body class="bg-dark text-accent " >
@@ -1034,7 +1077,78 @@
                         </button>
                     </div>
                 </div>
-                
+<style>
+/* Stile per il pulsante prossimo episodio */
+.next-episode-btn {
+    display: none;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 20px;
+    color: white;
+    padding: 6px 12px 6px 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+
+.next-episode-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.next-episode-text {
+    margin-right: 6px;
+}
+
+.next-episode-btn i {
+    font-size: 16px;
+}
+
+/* Animazioni */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(10px); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.prompt-content {
+    text-align: center;
+}
+
+.prompt-content p {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.prompt-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.prompt-buttons button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.prompt-buttons button:hover {
+    background: #e50914;
+    color: white;
+}
+</style>                
                 <!-- Controls -->
                 <div class="controls-container" id="controlsContainer">
                     <!-- Progress bar -->
@@ -1068,6 +1182,13 @@
                         
                         <!-- Right controls -->
                         <div class="flex items-center space-x-4">
+                            <!-- Aggiungi questo accanto agli altri controlli del player -->
+                            <button id="nextEpisodeBtn" class="next-episode-btn" title="Prossimo Episodio">
+                                <span class="next-episode-text">Prossimo episodio</span>
+                                <i class="fas fa-step-forward"></i>
+                            </button>
+
+                                
                             <div class="relative">
                                 <button class="text-white hover:text-primary transition relative" id="captionsBtn">
                                     <i class="fas fa-closed-captioning text-lg"></i>
