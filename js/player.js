@@ -884,17 +884,6 @@ showControlsTemporarily() {
         this.abortController.abort();
     }
     
-    // 2. Notifica il server di interrompere il flusso
-    if (this.currentStreamId) {
-        try {
-            await fetch(`${this.PROXY_BASE_URL}/stream/stop?streamId=${this.currentStreamId}`, {
-                method: 'GET',
-                keepalive: false
-            });
-        } catch (err) {
-            console.log('Flusso già terminato:', err);
-        }
-    }
     
     // 3. Pulizia HLS e video
     if (this.hls) {
