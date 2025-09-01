@@ -1,6 +1,11 @@
 // js/player.js
+
+const PROGRESS_API_URL = 'https://api.leleflix.store/progress/save';
 class VideoPlayer {
     constructor() {
+        this.lastProgressSave = 0;
+this.lastSavedTime = 0;
+
         this.hls = null;
         this.isSeeking = false;
         this.controlsTimeout = null;
@@ -49,7 +54,90 @@ class VideoPlayer {
         this.initEventListeners();
     }
 
+async savePlaybackProgress() {
+    // Salva solo se è passato almeno 1 secondo dall'ultimo salvataggio
+    const now = Date.now();
+    if (now - this.lastProgressSave < 1000) {
+        return;
+    }
+    
+    if (!this.content || !this.videoPlayer.duration || this.videoPlayer.duration <= 0) {
+        return;
+    }
+    
+    const currentTime = this.videoPlayer.currentTime;
+    const duration = this.videoPlayer.duration;
+    
+    // Salva solo se ha guardato almeno il 5% ma non più del 95%
+    const progressPercentage = (currentTime / duration) * 100;
+    if (progressPercentage < 5 || progressPercentage > 95) {
+        return;
+    }
+    
+    try {
+        const ip = await this.getClientIP();
+        
+        const progressData = {
+            ip: ip,
+            tmdbId: this.content.id,
+            contentType: this.content.media_type || 'movie',
+            season: this.content.season_number || null,
+            episode: this.content.episode_number || null,
+            currentTime: currentTime,
+            duration: duration,
+            title: this.content.title || this.content.name || 'Senza titolo'
+        };
+        
+        // Invia i dati al proxy (non attendere la risposta per non bloccare l'UI)
+        fetch(PROGRESS_API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(progressData),
+            keepalive: true // Assicura che la richiesta venga completata anche se la pagina viene chiusa
+        }).catch(error => {
+            console.error('Errore nel salvataggio del progresso:', error);
+        });
+        
+        this.lastProgressSave = now;
+        console.log('Progresso salvato:', Math.round(progressPercentage) + '%');
+    } catch (error) {
+        console.error('Errore nel salvataggio del progresso:', error);
+    }
+}
 
+// Aggiungi questo metodo per ottenere l'IP del client
+async getClientIP() {
+    try {
+        const response = await fetch('https://api.ipify.org?format=json');
+        const data = await response.json();
+        return data.ip;
+    } catch (error) {
+        // Fallback: genera un ID univoco basato su user agent e timestamp
+        return `anon-${navigator.userAgent.substring(0, 10)}-${Date.now()}`;
+    }
+}
+
+// Aggiungi questo metodo per salvare il progresso periodicamente durante la riproduzione
+setupProgressTracking() {
+    // Salva il progresso ogni 30 secondi durante la riproduzione
+    this.videoPlayer.addEventListener('timeupdate', () => {
+        if (!this.videoPlayer.paused) {
+            const currentTime = Math.floor(this.videoPlayer.currentTime);
+            // Salva ogni 30 secondi
+            if (currentTime % 30 === 0 && currentTime !== this.lastSavedTime) {
+                this.savePlaybackProgress();
+                this.lastSavedTime = currentTime;
+            }
+        }
+    });
+    
+    // Salva anche quando l'utente mette in pausa
+    this.videoPlayer.addEventListener('pause', () => {
+        this.savePlaybackProgress();
+    });
+}
 toggleNextEpisodeButton() {
     if (this.content.media_type === 'tv' && 
         this.content.season_number && 
@@ -159,14 +247,80 @@ async playNextEpisode() {
     // Il container è lo stesso e mantiene lo stato
 }
 
-    async play(content) {
-        this.content = content;
-        this.updatePlayerTitle();
-        this.playerModal.classList.remove('hidden');
-            this.showControlsTemporarily(); // Mostra i controlli immediatamente
-        this.toggleNextEpisodeButton();
-        await this.initPlayer();
+async play(content) {
+    this.content = content;
+    this.updatePlayerTitle();
+    this.playerModal.classList.remove('hidden');
+    this.showControlsTemporarily(); // Mostra i controlli immediatamente
+    this.toggleNextEpisodeButton();
+    await this.initPlayer();
+    
+    // Se c'è un punto di ripresa, imposta il tempo dopo che il video è pronto
+    if (this.content.resumeTime) {
+        const video = this.videoPlayer;
+        const checkReady = () => {
+            if (video.readyState > 0 && video.duration > 0) {
+                video.currentTime = this.content.resumeTime;
+                
+                // Mostra un prompt per chiedere se continuare da dove si era interrotto
+                this.showResumePrompt(this.content.resumeTime, video.duration);
+                video.removeEventListener('canplay', checkReady);
+            }
+        };
+        
+        video.addEventListener('canplay', checkReady);
     }
+}
+
+// Aggiungi questo metodo per mostrare il prompt di ripresa
+showResumePrompt(resumeTime, duration) {
+    const minutes = Math.floor(resumeTime / 60);
+    const seconds = Math.floor(resumeTime % 60);
+    
+    const prompt = document.createElement('div');
+    prompt.className = 'resume-prompt';
+    prompt.innerHTML = `
+        <div class="prompt-content">
+            <p>Vuoi continuare da ${minutes}:${seconds.toString().padStart(2, '0')} o ricominciare dall'inizio?</p>
+            <div class="prompt-buttons">
+                <button class="resume-yes" style=" background: #E50914;">Continua</button>
+                <button class="resume-no">Ricomincia</button>
+            </div>
+        </div>
+    `;
+    
+    // Stili per il prompt
+    prompt.style.position = 'absolute';
+    prompt.style.top = '50%';
+    prompt.style.left = '50%';
+    prompt.style.transform = 'translate(-50%, -50%)';
+    prompt.style.background = 'rgba(42, 42, 42, 1)';
+    prompt.style.padding = '20px';
+    prompt.style.borderRadius = '8px';
+    prompt.style.zIndex = '1000';
+    prompt.style.color = 'white';
+
+    
+    const videoContainer = document.getElementById('videoContainer');
+    videoContainer.appendChild(prompt);
+    
+    // Gestisci i click sui pulsanti
+    prompt.querySelector('.resume-yes').addEventListener('click', () => {
+        prompt.remove();
+    });
+    
+    prompt.querySelector('.resume-no').addEventListener('click', () => {
+        this.videoPlayer.currentTime = 0;
+        prompt.remove();
+    });
+    
+    // Rimuovi il prompt dopo 10 secondi
+    setTimeout(() => {
+        if (prompt.parentNode) {
+            prompt.remove();
+        }
+    }, 10000);
+}
 
     updatePlayerTitle() {
     let playerTitle = this.content.title || this.content.name || 'Senza Titolo';
@@ -368,7 +522,8 @@ showError(message) {
     initEventListeners() {
         // Retry button
         this.retryButton.addEventListener('click', () => this.initPlayer());
-        
+            this.setupProgressTracking();
+
         // Play/Pause
         this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
         this.videoPlayer.addEventListener('play', () => this.updatePlayIcon(true));
@@ -721,52 +876,55 @@ showControlsTemporarily() {
     }
 
      async closePlayer() {
-        // 1. Annulla eventuali richieste in corso lato client
-        if (this.abortController) {
-            this.abortController.abort();
-        }
-        
-        // 2. Notifica il server di interrompere il flusso
-        if (this.currentStreamId) {
-            try {
-                await fetch(`${this.PROXY_BASE_URL}/stream/stop?streamId=${this.currentStreamId}`, {
-                    method: 'GET',
-                    keepalive: false
-                });
-            } catch (err) {
-                console.log('Flusso già terminato:', err);
-            }
-        }
-        
-        // 3. Pulizia HLS e video
-        if (this.hls) {
-            this.hls.destroy();
-            this.hls = null;
-        }
-        
-        this.videoPlayer.pause();
-        this.videoPlayer.removeAttribute('src');
-        this.videoPlayer.load();
-        
-        // 4. Reset dello stato
-        this.currentStreamId = null;
-        this.abortController = null;
-        this.playerModal.classList.add('hidden');
-        
-        // 5. Uscita dal fullscreen
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
-        }
-        
-        // 6. Sblocco orientamento
-        if (screen.orientation?.unlock) {
-            try {
-                screen.orientation.unlock();
-            } catch (err) {
-                console.warn('Sblocco orientamento fallito:', err);
-            }
+    // Salva il progresso prima di chiudere
+    await this.savePlaybackProgress();
+    
+    // 1. Annulla eventuali richieste in corso lato client
+    if (this.abortController) {
+        this.abortController.abort();
+    }
+    
+    // 2. Notifica il server di interrompere il flusso
+    if (this.currentStreamId) {
+        try {
+            await fetch(`${this.PROXY_BASE_URL}/stream/stop?streamId=${this.currentStreamId}`, {
+                method: 'GET',
+                keepalive: false
+            });
+        } catch (err) {
+            console.log('Flusso già terminato:', err);
         }
     }
+    
+    // 3. Pulizia HLS e video
+    if (this.hls) {
+        this.hls.destroy();
+        this.hls = null;
+    }
+    
+    this.videoPlayer.pause();
+    this.videoPlayer.removeAttribute('src');
+    this.videoPlayer.load();
+    
+    // 4. Reset dello stato
+    this.currentStreamId = null;
+    this.abortController = null;
+    this.playerModal.classList.add('hidden');
+    
+    // 5. Uscita dal fullscreen
+    if (document.fullscreenElement) {
+        document.exitFullscreen();
+    }
+    
+    // 6. Sblocco orientamento
+    if (screen.orientation?.unlock) {
+        try {
+            screen.orientation.unlock();
+        } catch (err) {
+            console.warn('Sblocco orientamento fallito:', err);
+        }
+    }
+}
 
 
 setupQualityOptions() {
@@ -839,6 +997,7 @@ setupSubtitleOptions() {
 const videoPlayerInstance = new VideoPlayer();
 
 // Funzione globale unificata per avviare la riproduzione
+// Modifica la funzione playMovie per supportare il resume
 function playMovie(content, type = null) {
     // Se content è un ID numerico, crea un oggetto content di base
     if (typeof content === 'number') {
