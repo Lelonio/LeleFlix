@@ -162,29 +162,35 @@ toggleNextEpisodeButton() {
 
     // Aggiungi questo metodo per verificare l'esistenza del prossimo episodio
     checkNextEpisodeExists() {
-        if (!this.content.tv_data || !this.content.tv_data.seasons) {
-            return false;
-        }
-        
-        const currentSeason = this.content.tv_data.seasons.find(
-            s => s.season_number === this.content.season_number
-        );
-        
-        if (!currentSeason) return false;
-        
-        // Controlla se c'è un episodio successivo nella stagione
-        if (this.content.episode_number < currentSeason.episode_count) {
-            return true;
-        }
-        
-        // Controlla se c'è una stagione successiva
-        const nextSeasonNumber = this.content.season_number + 1;
-        const hasNextSeason = this.content.tv_data.seasons.some(
-            s => s.season_number === nextSeasonNumber
-        );
-        
-        return hasNextSeason;
+    if (!this.content || this.content.media_type !== 'tv') {
+        return false;
     }
+    
+    // Se non ci sono dati della serie TV, non mostrare il pulsante
+    if (!this.content.tv_data || !this.content.tv_data.seasons) {
+        console.log('Dati serie TV non disponibili');
+        return false;
+    }
+    
+    const currentSeason = this.content.tv_data.seasons.find(
+        s => s.season_number === this.content.season_number
+    );
+    
+    if (!currentSeason) return false;
+    
+    // Controlla se c'è un episodio successivo nella stagione
+    if (this.content.episode_number < currentSeason.episode_count) {
+        return true;
+    }
+    
+    // Controlla se c'è una stagione successiva
+    const nextSeasonNumber = this.content.season_number + 1;
+    const nextSeason = this.content.tv_data.seasons.find(
+        s => s.season_number === nextSeasonNumber
+    );
+    
+    return !!nextSeason && nextSeason.episode_count > 0;
+}
 
     // Aggiungi questo metodo per gestire il passaggio al prossimo episodio
 async playNextEpisode() {
@@ -216,7 +222,7 @@ async playNextEpisode() {
             return;
         }
     }
-    
+        
     // NON chiudiamo il player completamente, ma solo la riproduzione corrente
     if (this.hls) {
         this.hls.destroy();
@@ -247,11 +253,26 @@ async playNextEpisode() {
     // Il container è lo stesso e mantiene lo stato
 }
 
+// Modifica il metodo deleteCurrentProgress per utilizzare l'endpoint DELETE
+
+
 async play(content) {
     this.content = content;
     this.updatePlayerTitle();
     this.playerModal.classList.remove('hidden');
-    this.showControlsTemporarily(); // Mostra i controlli immediatamente
+    this.showControlsTemporarily();
+    
+    // SE È UNA SERIE TV MA MANCANO I DATI COMPLETI, CARICALI
+    if (this.content.media_type === 'tv' && !this.content.tv_data) {
+        try {
+            const tvResponse = await fetch(`${API_URL}/tv/${this.content.id}?api_key=${API_KEY}&language=it-IT`);
+            const tvData = await tvResponse.json();
+            this.content.tv_data = tvData;
+        } catch (tvError) {
+            console.error('Errore nel caricamento dati serie TV:', tvError);
+        }
+    }
+    
     this.toggleNextEpisodeButton();
     await this.initPlayer();
     
@@ -270,7 +291,7 @@ async play(content) {
         
         video.addEventListener('canplay', checkReady);
     }
-}
+} 
 
 // Aggiungi questo metodo per mostrare il prompt di ripresa
 showResumePrompt(resumeTime, duration) {
