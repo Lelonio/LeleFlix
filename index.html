@@ -44,6 +44,7 @@
 
 <style>
 /* Stili specifici per la sezione Continua a guardare */
+
 #continue-watching {
     position: relative;
     z-index: 10;
@@ -1854,20 +1855,30 @@ async function displayContinueWatching() {
                     </div>
                 `;
                 
-                card.addEventListener('click', () => {
-                    const content = {
-                        id: item.tmdbId,
-                        media_type: item.contentType,
-                        title: item.title,
-                        name: item.title,
-                        season_number: item.season,
-                        episode_number: item.episode,
-                        resumeTime: item.currentTime
-                    };
-                    
-                    playMovie(content);
-                });
-                
+card.addEventListener('click', async () => {
+    const content = {
+        id: item.tmdbId,
+        media_type: item.contentType,
+        title: item.title,
+        name: item.title,
+        season_number: item.season,
+        episode_number: item.episode,
+        resumeTime: item.currentTime
+    };
+    
+    // SE È UNA SERIE TV, CARICA I DATI COMPLETI PRIMA DI RIPRODURRE
+    if (item.contentType === 'tv') {
+        try {
+            const tvResponse = await fetch(`${API_URL}/tv/${item.tmdbId}?api_key=${API_KEY}&language=it-IT`);
+            const tvData = await tvResponse.json();
+            content.tv_data = tvData; // Aggiungi i dati completi della serie
+        } catch (tvError) {
+            console.error('Errore nel caricamento dati serie TV:', tvError);
+        }
+    }
+    
+    playMovie(content);
+});
                 grid.appendChild(card);
             } catch (error) {
                 console.error('Errore nel creare la card per:', item.tmdbId, error);
@@ -2038,6 +2049,17 @@ async function handleResultClick(id, type, itemData = null) {
         // Aggiungi dati mancanti per la riproduzione
         if (!detail.title) detail.title = detail.name || 'Senza Titolo';
         if (!detail.backdrop_path) detail.backdrop_path = detail.poster_path;
+
+        // SE È UNA SERIE TV, CARICA I DATI COMPLETI DELLA SERIE
+        if (type === 'tv') {
+            try {
+                const tvResponse = await fetch(`${API_URL}/tv/${id}?api_key=${API_KEY}&language=it-IT`);
+                const tvData = await tvResponse.json();
+                detail.tv_data = tvData; // Aggiungi i dati completi della serie
+            } catch (tvError) {
+                console.error('Errore nel caricamento dati serie TV:', tvError);
+            }
+        }
 
         if (type === 'tv') {
             showTVSeasons(id, type);
