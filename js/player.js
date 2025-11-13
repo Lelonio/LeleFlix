@@ -5,7 +5,9 @@ class VideoPlayer {
     constructor() {
         this.lastProgressSave = 0;
 this.lastSavedTime = 0;
+this.lastSeekTime = 0; 
 
+this.seekTooltip = document.getElementById('seekTooltip');
     this.centerControls = document.getElementById('centerControls');
     this.playCenterBtn = document.getElementById('playCenterBtn');
     this.skipForwardCenter = document.getElementById('skipForwardCenter');
@@ -399,6 +401,10 @@ showNextEpisodePrompt() {
    async initPlayer() {
     this.loadingOverlay.classList.remove('hidden');
     this.errorOverlay.classList.add('hidden');
+
+    this.progressBar.style.width = '0%';
+    this.currentTime.textContent = '0:00';
+    this.duration.textContent = '0:00';
     
     // Genera un nuovo streamId e abort controller
     this.currentStreamId = this.generateStreamId();
@@ -666,43 +672,84 @@ updatePlayIcon(isPlaying) {
     }
 
     updateTimeDisplay() {
-        const currentMinutes = Math.floor(this.videoPlayer.currentTime / 60);
-        const currentSeconds = Math.floor(this.videoPlayer.currentTime % 60);
-        this.currentTime.textContent = 
-            `${currentMinutes}:${currentSeconds < 10 ? '0' + currentSeconds : currentSeconds}`;
-        
-        const durationMinutes = Math.floor(this.videoPlayer.duration / 60);
-        const durationSeconds = Math.floor(this.videoPlayer.duration % 60);
-        this.duration.textContent = 
-            `${durationMinutes}:${durationSeconds < 10 ? '0' + durationSeconds : durationSeconds}`;
-        
-        const progressPercent = (this.videoPlayer.currentTime / this.videoPlayer.duration) * 100;
-        this.progressBar.style.width = `${progressPercent}%`;
+    if (this.isSeeking) return; 
+
+    // Se è NaN (Not a Number) o non è finito (come all'inizio del caricamento),
+    // imposta la barra a 0% e il tempo a 0:00.
+    if (!this.videoPlayer.duration || !isFinite(this.videoPlayer.duration)) {
+        this.progressBar.style.width = '0%';
+        this.currentTime.textContent = '0:00';
+        this.duration.textContent = '0:00';
+        return; // Esce dalla funzione
     }
+
+    // (Questo codice viene eseguito solo se la durata è valida)
+    const currentMinutes = Math.floor(this.videoPlayer.currentTime / 60);
+    const currentSeconds = Math.floor(this.videoPlayer.currentTime % 60);
+    this.currentTime.textContent = 
+        `${currentMinutes}:${currentSeconds < 10 ? '0' + currentSeconds : currentSeconds}`;
+
+    const durationMinutes = Math.floor(this.videoPlayer.duration / 60);
+    const durationSeconds = Math.floor(this.videoPlayer.duration % 60);
+    this.duration.textContent = 
+        `${durationMinutes}:${durationSeconds < 10 ? '0' + durationSeconds : durationSeconds}`;
+
+    const progressPercent = (this.videoPlayer.currentTime / this.videoPlayer.duration) * 100;
+    this.progressBar.style.width = `${progressPercent}%`;
+}
 
 startSeek(e) {
-    if (!this.videoPlayer.duration || isNaN(this.videoPlayer.duration)) return;
-    this.isSeeking = true;
-    this.handleSeek(e);
-}
+        if (!this.videoPlayer.duration || isNaN(this.videoPlayer.duration)) return;
+        this.isSeeking = true;
+        if (this.seekTooltip) this.seekTooltip.style.opacity = '1'; 
+        this.handleSeek(e);
+    }
 
     handleSeek(e) {
-    if (!this.isSeeking || !this.videoPlayer.duration || isNaN(this.videoPlayer.duration)) return;
-    
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    if (clientX) {
-        const rect = this.progressContainer.getBoundingClientRect();
-        const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-        const seekTime = pos * this.videoPlayer.duration;
+        if (!this.isSeeking || !this.videoPlayer.duration || isNaN(this.videoPlayer.duration)) return;
         
-        if (!isNaN(seekTime) && isFinite(seekTime)) {
-            this.videoPlayer.currentTime = seekTime;
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        if (clientX) {
+            const rect = this.progressContainer.getBoundingClientRect();
+            const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            const seekTime = pos * this.videoPlayer.duration;
+            
+            if (!isNaN(seekTime) && isFinite(seekTime)) {
+                
+                // 1. Aggiorna la UI della barra di progresso
+                const progressPercent = pos * 100;
+                this.progressBar.style.width = `${progressPercent}%`;
+                
+                // 2. Formatta il testo del tempo
+                const currentMinutes = Math.floor(seekTime / 60);
+                const currentSeconds = Math.floor(seekTime % 60);
+                const seekTimeString = `${currentMinutes}:${currentSeconds < 10 ? '0' + currentSeconds : currentSeconds}`;
+                
+                // 3. Aggiorna il tempo corrente visibile
+                this.currentTime.textContent = seekTimeString;
+                
+                // 4. Salva il tempo per applicarlo al rilascio
+                this.lastSeekTime = seekTime;
+
+                // 5. Aggiorna il Tooltip (TESTO e POSIZIONE)
+                if (this.seekTooltip) {
+                    this.seekTooltip.textContent = seekTimeString;
+                    this.seekTooltip.style.left = `${progressPercent}%`; // Sposta il tooltip
+                }
+            }
         }
     }
-}
-
-    endSeek() {
+endSeek() {
+        if (!this.isSeeking) return; // Evita esecuzioni multiple
+        
         this.isSeeking = false;
+
+        if (this.seekTooltip) this.seekTooltip.style.opacity = '0'; // <-- AGGIUNGI QUESTO
+        
+        // Applica il tempo al video SOLO al rilascio
+        if (!isNaN(this.lastSeekTime) && isFinite(this.lastSeekTime)) {
+            this.videoPlayer.currentTime = this.lastSeekTime;
+        }
     }
 
     handleTouchStart(e) {
@@ -864,8 +911,12 @@ showControlsTemporarily() {
         this.controlsContainer.classList.add('mobile-portrait');
         return;
     }
+
+
     
-    // Mostra tutti i controlli
+    this.controlsContainer.offsetHeight;
+    
+    // Poi mostra i controlli
     this.controlsContainer.classList.add('visible');
     this.backButtonContainer.classList.add('visible');
     this.centerControls.classList.remove('hidden');
