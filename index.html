@@ -70,11 +70,9 @@
 
 #continue-watching-grid .movie-card {
     background: #221F1F;
-    border-radius: 0.5rem;
     overflow: hidden;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
     transform-style: preserve-3d;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 #continue-watching-grid .movie-card:hover {
@@ -311,10 +309,6 @@ main .max-w-7xl {
 }
 
 /* Assicurati che i controlli siano visibili all'inizio */
-.controls-container {
-    opacity: 1 !important;
-    background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
-}
 
 /* Stile per il container del video */
 .video-container {
@@ -1411,6 +1405,7 @@ main .max-w-7xl {
                 <div class="controls-container" id="controlsContainer">
                     <!-- Progress bar -->
                     <div class="progress-container" id="progressContainer">
+                        <div class="seek-tooltip" id="seekTooltip">00:00</div>
                         <div class="progress-bar" id="progressBar"></div>
                     </div>
                     
@@ -1838,7 +1833,7 @@ async function displayContinueWatching() {
                 card.className = 'movie-card cursor-pointer relative';
                 card.innerHTML = `
                     <div class="movie-card-content">
-                        <div class="relative overflow-hidden rounded-lg h-64">
+                        <div class="relative overflow-hidden bg-opacity-0 h-64">
                             <img src="${posterUrl}" 
                                  alt="${title}" 
                                  class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
