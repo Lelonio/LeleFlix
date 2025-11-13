@@ -402,6 +402,9 @@ showNextEpisodePrompt() {
     this.loadingOverlay.classList.remove('hidden');
     this.errorOverlay.classList.add('hidden');
 
+        this.centerControls.classList.remove('hidden');
+    this.controlsContainer.classList.remove('hidden');
+
     this.progressBar.style.width = '0%';
     this.currentTime.textContent = '0:00';
     this.duration.textContent = '0:00';
@@ -539,6 +542,8 @@ generateStreamId() {
 }
 
 showError(message) {
+    this.centerControls.classList.add('hidden');
+    this.controlsContainer.classList.add('hidden');
     this.loadingOverlay.classList.add('hidden');
     this.errorOverlay.classList.remove('hidden');
     this.errorText.textContent = message;
