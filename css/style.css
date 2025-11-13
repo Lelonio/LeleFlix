@@ -36,8 +36,8 @@
     color: white;
     cursor: pointer;
     transition: all 0.3s ease;
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
     box-shadow: 
         0 8px 32px rgba(0, 0, 0, 0.3),
         inset 0 1px 0 rgba(255, 255, 255, 0.2),
@@ -177,7 +177,7 @@
 
 @keyframes glassFadeIn {
     from {
-        opacity: 0;
+        opacity: 0.01; /* <-- CORREZIONE: Forza il rendering del blur */
         transform: translate(-50%, -50%) scale(0.9);
         filter: blur(10px);
     }
@@ -224,9 +224,77 @@
     }
 }
 
+.progress-container {
+    height: 6px;
+    background-color: rgba(255,255,255,0.2);
+    border-radius: 3px;
+    cursor: pointer;
+    margin-bottom: 0; /* Modificato da 10px a 0 */
+}
+
+
+.controls-container {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%; 
+    max-width: 800px; 
+    
+    background: rgba(34, 31, 31, 0.45);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-radius: 16px; 
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+    /* Modificato: 
+      - 0.75rem (12px) sopra (sopra la barra di progresso)
+      - 1rem (16px) ai lati
+      - 0.5rem (8px) sotto (sotto i pulsanti)
+    */
+    padding: 0.75rem 1rem 0.5rem; 
+    
+    transition: opacity 0.3s ease;
+    opacity: 0;
+    touch-action: manipulation;
+    
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; 
+}
+
+
+.seek-tooltip {
+    position: absolute;
+    bottom: 1rem; /* 16px (sopra la barra di progresso di 6px) */
+    left: 0; /* La posizione 'left' sarà gestita da JavaScript */
+    transform: translateX(-50%); /* Centra il popup sulla posizione */
+    
+    /* Stile Liquid Glass */
+    background: rgba(34, 31, 31, 0.7);
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    z-index: 10;
+    
+    /* Nascosto di default */
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none; /* Non deve intercettare il mouse */
+}
+
         html {
   scroll-behavior: smooth;
 }
+
+
 
 /* Nasconde la scrollbar su tutti i browser */
 html {
@@ -427,22 +495,10 @@ h2[trending] {
     height: 100%;
 }
 
-.controls-container {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
-    padding: 1.5rem;
-    transition: opacity 0.3s ease;
-    opacity: 0;
-    touch-action: manipulation;
-}
+
 
 @media (max-width: 768px) {
-    .controls-container {
-        padding: 1.2rem;
-    }
+
     
     .progress-container {
         height: 10px;
@@ -488,13 +544,7 @@ h2[trending] {
     opacity: 1;
 }
 
-.progress-container {
-    height: 6px;
-    background-color: rgba(255,255,255,0.2);
-    border-radius: 3px;
-    cursor: pointer;
-    margin-bottom: 10px;
-}
+
 
 .progress-bar {
     height: 100%;
@@ -517,6 +567,8 @@ h2[trending] {
     transition: opacity 0.2s;
 }
 
+/* Mostra la pallina quando i controlli sono visibili O in hover */
+#controlsContainer.visible .progress-bar::after,
 .progress-container:hover .progress-bar::after {
     opacity: 1;
 }
@@ -535,14 +587,22 @@ h2[trending] {
     position: absolute;
     bottom: 60px;
     right: 10px;
-    background-color: rgba(0,0,0,0.8);
-    border-radius: 4px;
+    
+    /* Stile Liquid Glass */
+    background: rgba(34, 31, 31, 0.45);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    
+    border-radius: 8px; /* Arrotondamento coerente */
     padding: 8px 0;
     min-width: 150px;
     transform: translateY(20px);
     opacity: 0;
     pointer-events: none;
     transition: all 0.2s ease;
+    overflow: hidden; /* Necessario per il border-radius */
 }
 
 .settings-menu.active {
@@ -610,9 +670,7 @@ h2[trending] {
 }
 
 /* For fullscreen mode */
-:fullscreen .controls-container {
-    padding-bottom: 2.5rem;
-}
+
 
 .logo{
     width: 50%;
@@ -623,9 +681,7 @@ h2[trending] {
 
 /* Larger controls for TV */
 @media (min-width: 1024px) and (hover: none) and (pointer: coarse) {
-    .controls-container {
-        padding: 2rem;
-    }
+
     
     button {
         font-size: 1.2rem;
@@ -636,10 +692,7 @@ h2[trending] {
         height: 12px;
     }
     
-    .settings-menu {
-        min-width: 200px;
-        font-size: 1.1rem;
-    }
+
 }
 
         body {
@@ -779,16 +832,22 @@ backdrop-filter: blur(12.5px);
 
 }
 
-        #mobile-search-box {
-            display: none; /* Nascosto di default */
-            padding: 10px;
-            background: #221F1F;
-            position: absolute;
-            width: 100%;
-            top: 60px; /* Altezza della navbar */
-            left: 0;
-            z-index: 40;
-        }
+#mobile-search-box {
+    display: none; /* Nascosto di default */
+    padding: 10px;
+    
+    /* Stile Liquid Glass (lo stesso della navbar) */
+    background: rgba(34, 31, 31, 0.45);
+    backdrop-filter: blur(16px) saturate(200%);
+    -webkit-backdrop-filter: blur(16px) saturate(200%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    
+    position: absolute;
+    width: 100%;
+    top: 4rem; /* Allineato all'altezza della .glass-nav */
+    left: 0;
+    z-index: 40;
+}
         
         #mobile-search-box.active {
             display: block; /* Mostrato quando attivo */
@@ -852,8 +911,11 @@ backdrop-filter: blur(12.5px);
         /* Stile freccia back */
         #close-player {
             color: white;
-            background: rgba(0,0,0,0.5);
-            border: none;
+            background: rgba(34, 31, 31, 0.45);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             width: 40px;
             height: 40px;
             border-radius: 50%;
