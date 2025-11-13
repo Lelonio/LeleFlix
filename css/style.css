@@ -5,6 +5,225 @@
 
         /* Season/Episode Selector Styles */
 
+        /* Controlli centrali con effetto glass - senza tinte rosse */
+.center-controls {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    z-index: 50;
+    transition: opacity 0.3s ease;
+    pointer-events: auto;
+}
+
+.center-controls.hidden {
+    display: none;
+}
+
+/* Stile base per tutti i pulsanti - nessuna tinta rossa */
+.center-control-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Effetto di luce interno per tutti i pulsanti */
+.center-control-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(255, 255, 255, 0.05) 100%
+    );
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.center-control-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+    box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.center-control-btn:active {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.center-control-btn i {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    position: relative;
+    z-index: 1;
+}
+
+/* Pulsante play centrale - stesso stile degli altri, solo più grande */
+.center-control-btn.play-btn {
+    width: 90px;
+    height: 90px;
+    /* Nessun background rosso */
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+}
+
+/* Nessun gradient rosso per il play button */
+.center-control-btn.play-btn::before {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(255, 255, 255, 0.05) 100%
+    );
+}
+
+.center-control-btn.play-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.center-control-btn.play-btn i {
+    font-size: 2.5rem;
+    margin-left: 4px;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+}
+
+.center-control-btn.play-btn .fa-pause {
+    margin-left: 0;
+}
+
+/* Pulsanti skip - stile identico agli altri */
+.center-control-btn.skip-forward,
+.center-control-btn.skip-backward {
+    /* Stile identico al base */
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.center-control-btn.skip-forward:hover,
+.center-control-btn.skip-backward:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Animazioni per i pulsanti skip */
+.center-control-btn.skip-forward i {
+    margin-left: 3px;
+}
+
+.center-control-btn.skip-backward i {
+    margin-right: 3px;
+}
+
+/* Effetto di ripple al click - per tutti i pulsanti */
+.center-control-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.3) 0%,
+        rgba(255, 255, 255, 0) 70%
+    );
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.center-control-btn:active::after {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 1;
+    transition: transform 0.2s ease, opacity 0.1s ease;
+}
+
+/* Animazione di apparizione */
+.center-controls {
+    animation: glassFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes glassFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+        filter: blur(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        filter: blur(0);
+    }
+}
+
+/* Media query per dispositivi mobili */
+@media (max-width: 768px) {
+    .center-controls {
+        gap: 30px;
+    }
+    
+    .center-control-btn {
+        width: 60px;
+        height: 60px;
+        backdrop-filter: blur(15px) saturate(180%);
+        -webkit-backdrop-filter: blur(15px) saturate(180%);
+    }
+    
+    .center-control-btn i {
+        font-size: 1.5rem;
+    }
+    
+    .center-control-btn.play-btn {
+        width: 75px;
+        height: 75px;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+    }
+    
+    .center-control-btn.play-btn i {
+        font-size: 2rem;
+    }
+}
+
+/* Supporto per browser che non supportano backdrop-filter */
+@supports not (backdrop-filter: blur(20px)) {
+    .center-control-btn {
+        background: rgba(42, 42, 42, 0.95);
+    }
+}
+
         html {
   scroll-behavior: smooth;
 }
