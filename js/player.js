@@ -6,6 +6,11 @@ class VideoPlayer {
         this.lastProgressSave = 0;
 this.lastSavedTime = 0;
 
+    this.centerControls = document.getElementById('centerControls');
+    this.playCenterBtn = document.getElementById('playCenterBtn');
+    this.skipForwardCenter = document.getElementById('skipForwardCenter');
+    this.skipBackwardCenter = document.getElementById('skipBackwardCenter');
+
         this.hls = null;
         this.isSeeking = false;
         this.controlsTimeout = null;
@@ -546,7 +551,6 @@ showError(message) {
             this.setupProgressTracking();
 
         // Play/Pause
-        this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
         this.videoPlayer.addEventListener('play', () => this.updatePlayIcon(true));
         this.videoPlayer.addEventListener('pause', () => this.updatePlayIcon(false));
         
@@ -564,6 +568,23 @@ showError(message) {
         document.addEventListener('touchmove', (e) => this.handleSeek(e));
         document.addEventListener('mouseup', () => this.endSeek());
         document.addEventListener('touchend', () => this.endSeek());
+
+            // Controlli centrali
+    this.playCenterBtn.addEventListener('click', () => {
+        this.togglePlayPause();
+        this.showControlsTemporarily(); // Mantieni i controlli visibili dopo il click
+    });
+    
+    this.skipForwardCenter.addEventListener('click', () => {
+        this.doSkipForward();
+        this.showControlsTemporarily(); // Mantieni i controlli visibili dopo lo skip
+    });
+    
+    this.skipBackwardCenter.addEventListener('click', () => {
+        this.doSkipBackward();
+        this.showControlsTemporarily(); // Mantieni i controlli visibili dopo lo skip
+    });
+
 
                 
         this.nextEpisodeBtn.addEventListener('click', () => this.playNextEpisode());
@@ -617,9 +638,11 @@ showError(message) {
         }
     }
 
-    updatePlayIcon(isPlaying) {
-        this.playIcon.className = isPlaying ? 'fas fa-pause text-xl' : 'fas fa-play text-xl';
-    }
+updatePlayIcon(isPlaying) {
+    // Aggiorna il pulsante centrale
+    const centerIcon = this.playCenterBtn.querySelector('i');
+    centerIcon.className = isPlaying ? 'fas fa-pause text-4xl' : 'fas fa-play text-4xl';
+}
 
     toggleMute() {
         if (this.videoPlayer.volume === 0) {
@@ -834,14 +857,19 @@ showControlsTemporarily() {
     if (this.isMobile && !this.isFullscreen() && window.innerHeight > window.innerWidth) {
         this.controlsContainer.style.opacity = '1';
         this.backButtonContainer.style.opacity = '1';
+        this.centerControls.style.opacity = '0'; // Nascondi controlli centrali in verticale
+        this.centerControls.classList.add('hidden');
         
         // Layout speciale per mobile verticale
         this.controlsContainer.classList.add('mobile-portrait');
         return;
     }
-    // Aggiungi classi
+    
+    // Mostra tutti i controlli
     this.controlsContainer.classList.add('visible');
     this.backButtonContainer.classList.add('visible');
+    this.centerControls.classList.remove('hidden');
+    this.centerControls.style.opacity = '1';
     
     // Rimuovi qualsiasi stile inline che potrebbe sovrascrivere
     this.controlsContainer.style.removeProperty('opacity');
@@ -851,11 +879,15 @@ showControlsTemporarily() {
     
     this.controlsTimeout = setTimeout(() => {
         if (!this.videoPlayer.paused && !this.isSeeking) {
-            // Rimuovi classi invece di modificare lo stile
+            // Nascondi tutto quando il timeout scade
             this.controlsContainer.classList.remove('visible');
             this.backButtonContainer.classList.remove('visible');
-            
-            console.log('Controlli nascosti con successo'); // Debug
+            this.centerControls.style.opacity = '0';
+            setTimeout(() => {
+                if (this.centerControls.style.opacity === '0') {
+                    this.centerControls.classList.add('hidden');
+                }
+            }, 300);
         }
     }, 3000);
 }
