@@ -1281,6 +1281,20 @@ main .max-w-7xl {
     <div class="flex items-center justify-center min-h-screen p-4">
         <div class="w-full max-w-5xl rounded-lg overflow-hidden shadow-2xl">
             <div class="video-container aspect-video group" id="videoContainer">
+                <!-- Aggiungi questo dentro #videoContainer -->
+<div id="centerControls" class="center-controls hidden">
+    <button id="skipBackwardCenter" class="center-control-btn skip-backward" title="Indietro 10s">
+        <i class="fas fa-backward"></i>
+    </button>
+    
+    <button id="playCenterBtn" class="center-control-btn play-btn" title="Riproduci/Pausa">
+        <i class="fas fa-play"></i>
+    </button>
+    
+    <button id="skipForwardCenter" class="center-control-btn skip-forward" title="Avanti 10s">
+        <i class="fas fa-forward"></i>
+    </button>
+</div>
                 <!-- Back button and title -->
                 <div class="absolute top-0 left-0 z-10 p-4 flex items-center space-x-3 opacity-0 transition-opacity" id="backButtonContainer">
                     <button id="close-player" class="transition">
@@ -1404,9 +1418,7 @@ main .max-w-7xl {
                     <div class="flex items-center justify-between">
                         <!-- Left controls -->
                         <div class="flex items-center space-x-4">
-                            <button class="text-white hover:text-primary transition" id="playPauseBtn">
-                                <i class="fas fa-play text-xl" id="playIcon"></i>
-                            </button>
+
                             
                             <div class="flex items-center">
                                 <button class="text-white hover:text-primary transition mr-2" id="volumeBtn">
