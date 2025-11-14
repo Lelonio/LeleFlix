@@ -1,6 +1,5 @@
 
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-        
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');        
         /* Add these styles to your existing style section */
 
         /* Season/Episode Selector Styles */
@@ -306,10 +305,10 @@ html::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
 }
 
-/* Mantieni la funzionalità di scroll */
 body {
-    -webkit-overflow-scrolling: touch;
-    overflow-y: scroll; /* Assicura che lo scroll sia sempre abilitato */
+    font-family: 'Inter', sans-serif;
+    background-color: #141414;
+    color: #fff;
 }
 
 h2[trending] {
@@ -695,15 +694,227 @@ h2[trending] {
 
 }
 
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: #141414;
-            color: #fff;
-        }
         
-        .hero-gradient {
-            background: linear-gradient(to right, rgba(20, 20, 20, 0.9) 0%, rgba(20, 20, 20, 0.6) 100%);
-        }
+
+.carousel-row {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 1.5rem;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  
+  /* AGGIUNTA: Aggiungi padding laterale (Tailwind: px-4) 
+    per dare spazio alla prima e all'ultima card.
+  */
+  padding-left: 1rem;
+  padding-right: 1rem;
+  
+  /* AGGIUNTA: Impedisce al padding di essere "mangiato" 
+    dallo scorrimento.
+  */
+  clip-path: inset(0 0 0 0);
+}
+
+/* Modifica la card per rimuovere il margine destro sull'ultima */
+.carousel-row .movie-card,
+.carousel-row .animate-pulse {
+  flex: 0 0 auto;
+  margin-right: 0.75rem;
+  width: 40%;
+}
+
+.carousel-row .movie-card:last-child,
+.carousel-row .animate-pulse:last-child {
+  margin-right: 0;
+}
+
+@media (min-width: 640px) {
+  /* Ripeti il padding per coerenza */
+  .carousel-row {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  .carousel-row .movie-card,
+  .carousel-row .animate-pulse {
+    width: 28%;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Ripeti il padding per coerenza */
+  .carousel-row {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  .carousel-row .movie-card,
+  .carousel-row .animate-pulse {
+    width: 18%;
+  }
+}
+
+
+/* ASSEGNAZIONE GERARCHIA Z-INDEX 
+  (Barra mobile: 50, Modali Info: 100, Player: 1000)
+*/
+
+/* La barra di navigazione mobile (#mobile-nav) 
+  ha già 'z-50' (z-index: 50) da Tailwind. 
+*/
+
+/* Assicura che i modali info e stagioni stiano SOPRA 
+  la barra di navigazione.
+*/
+.glass-modal,
+.season-episode-selector {
+  z-index: 100; /* Superiore a 50 */
+}
+
+/* Il #player-modal è stato impostato a z-[1000] 
+  nell'HTML per avere la priorità massima.
+*/
+
+/* --- STILE FRECCE CAROSELLO --- */
+
+.carousel-btn {
+  position: absolute;
+  
+  /* Allinea i pulsanti verticalmente al centro delle immagini (h-64).
+     8rem è la metà di h-64 (16rem). */
+  top: 8rem;
+  /* translateY(-50%) centra il pulsante su quell'asse */
+  transform: translateY(-50%); 
+  z-index: 10;
+  
+  /* Stile Glass scuro */
+  background: rgba(20, 20, 20, 0.7);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  
+  /* Dimensioni (Tailwind: w-11 h-11) */
+  width: 44px;
+  height: 44px;
+  
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  /* Nascosti di default */
+  opacity: 0;
+  pointer-events: none; /* Non cliccabile se non visibile */
+}
+
+/* Mostra i pulsanti quando si passa sopra al *contenitore* (non solo sulla freccia) */
+.carousel-container:hover .carousel-btn {
+  opacity: 1;
+  pointer-events: all; /* Rendi cliccabile */
+}
+
+.carousel-btn:hover {
+  background: rgba(20, 20, 20, 1); /* Sfondo più solido all'hover */
+  transform: translateY(-50%) scale(1.1); /* Leggero ingrandimento */
+}
+
+/* Posiziona i pulsanti 'prev' e 'next' */
+.carousel-btn.prev { left: 0.5rem; }
+.carousel-btn.next { right: 0.5rem; }
+
+/* Nasconde le frecce su mobile (dove si usa lo swipe) */
+@media (max-width: 768px) {
+  .carousel-btn {
+    display: none !important; /* Forza la scomparsa */
+  }
+}
+/* --- BARRA DI NAVIGAZIONE MOBILE --- */
+
+/* Applica lo sfondo "glass" alla barra */
+#mobile-nav {
+  background: rgba(34, 31, 31, 0.45);
+  backdrop-filter: blur(16px) saturate(200%);
+  -webkit-backdrop-filter: blur(16px) saturate(200%);
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.36);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Stile per i singoli link */
+.mobile-nav-link {
+  flex: 1; /* Occupa spazio uguale */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #A0A0A0; /* Grigio (non attivo) */
+  font-size: 0.7rem;
+  transition: all 0.2s ease;
+}
+
+.mobile-nav-link i {
+  font-size: 1.2rem;
+  margin-bottom: 2px;
+}
+
+/* Colore per il link attivo (rosso primario) */
+.mobile-nav-link:hover,
+.mobile-nav-link.active {
+  color: white;
+  text-shadow: 0 0 8px rgba(229, 9, 20, 0.5);
+}
+
+/*
+  FONDAMENTALE: Aggiungi padding-bottom al body 
+  per evitare che la barra fissa copra l'ultimo carosello!
+*/
+@media (max-width: 768px) {
+  body {
+    /* h-16 della barra mobile + mb-12 dell'ultima sezione */
+    padding-bottom: calc(4rem + 3rem); 
+  }
+}
+
+/* --- OTTIMIZZAZIONE HERO MOBILE --- */
+@media (max-width: 640px) {
+  #hero-section {
+    height: 90vh; /* Leggermente più bassa per far vedere che c'è contenuto sotto */
+  }
+
+  /* Riduci la dimensione del titolo */
+  #hero-title {
+    font-size: 2.25rem; /* 36px */
+    line-height: 2.5rem; /* 40px */
+    /* Aggiunge un'ombra per staccare il testo dallo sfondo */
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Limita la descrizione a 3 righe */
+  #hero-overview {
+    font-size: 0.875rem; /* 14px */
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    
+    /* Codice per troncare il testo a 3 righe */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+  }
+  
+  /* Aumenta la dimensione dei pulsanti per il tocco */
+  #play-button,
+  #more-info-button {
+    padding: 0.75rem 1.25rem; /* Più padding verticale */
+    font-size: 1rem;
+  }
+}
+/* Nuovo stile suggerito */
+.hero-gradient {
+    /* Parte da un nero più solido e sfuma più velocemente */
+    background: linear-gradient(to right, 
+                  rgba(20, 20, 20, 1) 0%, 
+                  rgba(20, 20, 20, 0.9) 25%,
+                  rgba(20, 20, 20, 0) 60%);
+}
         
         .movie-card:hover .movie-poster {
             transform: scale(1.05);
