@@ -882,6 +882,60 @@ main .max-w-7xl {
          </div>
     
     <script>
+
+/**
+ * Funzione per rimuovere un elemento da "Continua a guardare".
+ * @param {string} key - La chiave di progresso (es. "ip-id-tipo-...")
+ * @param {HTMLElement} cardElement - L'elemento card da rimuovere dalla UI
+ */
+async function removeWatchProgress(key, cardElement) {
+    if (!key || !cardElement) return;
+
+    // 1. Chiedi conferma all'utente
+    const confirmed = confirm("Sei sicuro di voler rimuovere questo titolo da 'Continua a guardare'?");
+
+    if (confirmed) {
+        try {
+            // 2. Chiama l'endpoint DELETE del tuo backend
+            const response = await fetch(`https://api.leleflix.store/progress/${key}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Errore dal server');
+            }
+
+            const result = await response.json();
+
+            if (result.success) {
+                // 3. Rimuovi la card dall'interfaccia con un'animazione
+                cardElement.classList.add('removing');
+                cardElement.addEventListener('transitionend', () => {
+                    cardElement.remove();
+                    
+                    // 4. Se il carosello è vuoto, nascondi l'intera sezione
+                    const grid = document.getElementById('continue-watching-grid');
+                    if (grid && grid.children.length === 0) {
+                        const continueSection = document.getElementById('continue-watching');
+                        if (continueSection) {
+                            continueSection.style.display = 'none';
+                        }
+                    }
+                });
+            } else {
+                alert("Impossibile rimuovere il titolo. Riprova.");
+            }
+        } catch (error) {
+            console.error('Errore durante la rimozione:', error);
+            alert("Si è verificato un errore. Riprova.");
+        }
+    }
+}
+
+
+
+
+
         // Inizializzazione effetto liquid glass avanzato
         document.addEventListener('DOMContentLoaded', function() {
             
@@ -1021,6 +1075,29 @@ function initializeMobileNavDynamics() {
 // ...
 initializeCarouselButtons(); // (Questa l'hai aggiunta prima)
 initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
+
+// i click sui futuri pulsanti "X"
+// --- AGGIUNGI QUESTO BLOCCO --- (NUOVA VERSIONE)
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+        mainElement.addEventListener('click', (e) => {
+            // Cerca il pulsante "X" più vicino all'elemento cliccato
+            const removeButton = e.target.closest('.remove-progress-btn');
+            
+            if (removeButton) {
+                // FONDAMENTALE: Ferma il click qui!
+                e.preventDefault();  // Impedisce qualsiasi azione predefinita (come seguire un link)
+                e.stopPropagation(); // Impedisce al click di "risalire" alla card
+                
+                const key = removeButton.dataset.key;
+                const card = removeButton.closest('.movie-card');
+                
+                // Chiama la funzione di rimozione
+                removeWatchProgress(key, card);
+            }
+        });
+    }
+    // --- FINE BLOCCO DA AGGIUNGERE ---
         });
     </script>
 
@@ -1984,6 +2061,13 @@ async function displayContinueWatching() {
                 const card = document.createElement('div');
                 card.className = 'movie-card cursor-pointer relative';
                 card.innerHTML = `
+                    <button 
+                      class="remove-progress-btn" 
+                      data-key="${item.id}" 
+                      aria-label="Rimuovi dalla lista">
+                        <i class="fas fa-times"></i>
+                    </button>
+
                     <div class="movie-card-content">
                         <div class="relative overflow-hidden bg-opacity-0 h-64">
                             <img src="${posterUrl}" 
@@ -1991,22 +2075,11 @@ async function displayContinueWatching() {
                                  class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                                  onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSI0NTAiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2Ij5OZXNzdW5hIGltbWFnaW5lPC90ZXh0Pjwvc3ZnPg=='">
                             
-                            <!-- Progress bar -->
                             <div class="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-50 h-1">
                                 <div class="bg-primary h-full" style="width: ${item.progressPercentage || 0}%"></div>
                             </div>
                             
-                            <!-- Pulsante play -->
                             
-                            <!-- Badge progresso -->
-                            <div class="absolute top-2 left-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-md text-xs font-bold">
-                                ${item.progressPercentage || 0}%
-                            </div>
-                            
-                            <!-- Badge tipo contenuto -->
-                            <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-md text-xs">
-                                ${item.contentType === 'movie' ? 'Film' : 'Serie'}
-                            </div>
                         </div>
                         
                         <h3 class="mt-2 text-sm font-semibold truncate px-1 text-white">${title}</h3>
@@ -2014,30 +2087,45 @@ async function displayContinueWatching() {
                     </div>
                 `;
                 
-card.addEventListener('click', async () => {
-    const content = {
-        id: item.tmdbId,
-        media_type: item.contentType,
-        title: item.title,
-        name: item.title,
-        season_number: item.season,
-        episode_number: item.episode,
-        resumeTime: item.currentTime
-    };
-    
-    // SE È UNA SERIE TV, CARICA I DATI COMPLETI PRIMA DI RIPRODURRE
-    if (item.contentType === 'tv') {
-        try {
-            const tvResponse = await fetch(`${API_URL}/tv/${item.tmdbId}?api_key=${API_KEY}&language=it-IT`);
-            const tvData = await tvResponse.json();
-            content.tv_data = tvData; // Aggiungi i dati completi della serie
-        } catch (tvError) {
-            console.error('Errore nel caricamento dati serie TV:', tvError);
-        }
-    }
-    
-    playMovie(content);
-});
+// (Questa è la NUOVA versione)
+                card.addEventListener('click', async (e) => { // <-- Aggiunto (e)
+                    
+                    // --- INIZIO MODIFICA ---
+                    // Controlla se l'elemento che ha iniziato il click
+                    // (e.target) è il pulsante "X" o un suo figlio (l'icona <i>).
+                    if (e.target.closest('.remove-progress-btn')) {
+                        // Se sì, è un click per rimuovere.
+                        // NON fare nulla e lascia che l'evento
+                        // "risalga" (bubble up) fino al listener su 'main' 
+                        // che gestirà la rimozione.
+                        return; 
+                    }
+                    // --- FINE MODIFICA ---
+
+                    // Se il codice arriva qui, il click NON era sulla "X".
+                    // Procedi normalmente con la riproduzione:
+                    const content = {
+                        id: item.tmdbId,
+                        media_type: item.contentType,
+                        title: item.title,
+                        name: item.title,
+                        season_number: item.season,
+                        episode_number: item.episode,
+                        resumeTime: item.currentTime
+                    };
+                    
+                    if (item.contentType === 'tv') {
+                        try {
+                            const tvResponse = await fetch(`${API_URL}/tv/${item.tmdbId}?api_key=${API_KEY}&language=it-IT`);
+                            const tvData = await tvResponse.json();
+                            content.tv_data = tvData; 
+                        } catch (tvError) {
+                            console.error('Errore nel caricamento dati serie TV:', tvError);
+                        }
+                    }
+                    
+                    playMovie(content);
+                });
                 grid.appendChild(card);
             } catch (error) {
                 console.error('Errore nel creare la card per:', item.tmdbId, error);
