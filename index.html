@@ -26,8 +26,7 @@
                         dark: '#141414',
                     },
                     fontFamily: {
-                        sans: ['Netflix Sans', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
-                    },
+sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],                    },
                     backdropBlur: {
                         glass: '16px',
                     },
@@ -57,7 +56,7 @@
 
 #continue-watching h2 {
     color: #F5F5F1;
-    font-family: 'Netflix Sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    font-family: 'Inter', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
     font-weight: 700;
     letter-spacing: 0.5px;
     margin-left: 0.5rem;
@@ -177,14 +176,14 @@
 /* Text styling */
 #continue-watching-grid .movie-card h3 {
     color: #F5F5F1;
-    font-family: 'Netflix Sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    font-family: 'Inter', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
     font-weight: 600;
     line-height: 1.3;
 }
 
 #continue-watching-grid .movie-card p {
     color: #A0A0A0;
-    font-family: 'Netflix Sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
+    font-family: 'Inter', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif;
     font-weight: 400;
 }
 
@@ -634,6 +633,10 @@ main .max-w-7xl {
             position: relative;
             height: 100vh;
             overflow: hidden;
+
+    /* Aggiungi questa linea per il parallax */
+    background-attachment: fixed; /* <-- MODIFICATO */
+
         }
 
         #hero-backdrop {
@@ -881,6 +884,7 @@ main .max-w-7xl {
     <script>
         // Inizializzazione effetto liquid glass avanzato
         document.addEventListener('DOMContentLoaded', function() {
+            
             const navbar = document.querySelector('.glass-nav');
             
             // Gestione scroll con effetto parallax
@@ -905,7 +909,71 @@ main .max-w-7xl {
             // Listener per scroll
             window.addEventListener('scroll', handleScroll);
             
-            // ... (resto del tuo JavaScript) ...
+            // Aggiungi questa funzione all'interno del tuo listener 
+// document.addEventListener('DOMContentLoaded', async () => { ... });
+
+// Sostituisci la vecchia funzione con questa NUOVA versione
+function initializeMobileNavDynamics() {
+    const mobileLinks = document.querySelectorAll('#mobile-nav a.mobile-nav-link');
+    const sections = document.querySelectorAll('#hero-section, #movie-trend, #tv-popular, #critics, #new');
+
+    if (!mobileLinks.length || !sections.length) return;
+
+    let userClicked = false; // Flag per tracciare il click dell'utente
+    let clickTimer = null;   // Riferimento al nostro timer
+
+    // ----- 1. Feedback immediato al CLICK (Modificato) -----
+    mobileLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            // 1. Imposta il flag per dire all'observer di fermarsi
+            userClicked = true;
+
+            // 2. Pulisci qualsiasi timer precedente e impostane uno nuovo
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => {
+                userClicked = false; // Riattiva l'observer dopo 1 sec
+            }, 1000); // 1000ms (1 secondo) è la durata dello smooth scroll
+
+            // 3. Imposta manualmente la classe 'active' (come prima)
+            mobileLinks.forEach(l => l.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+        });
+    });
+
+    // ----- 2. Feedback dinamico allo SCROLL (Modificato) -----
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.5 // 50% di visibilità
+    };
+
+    const observerCallback = (entries) => {
+        // Se il flag userClicked è true, ignora l'evento di scroll
+        if (userClicked) return;
+
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                const correspondingLink = document.querySelector(`#mobile-nav a[href="#${id}"]`);
+
+                if (correspondingLink) {
+                    mobileLinks.forEach(l => l.classList.remove('active'));
+                    correspondingLink.classList.add('active');
+                }
+            }
+        });
+    };
+
+    // Crea e avvia l'observer
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    sections.forEach(section => observer.observe(section));
+}
+
+// ...
+// Chiamata alla funzione (sempre dentro DOMContentLoaded)
+// ...
+initializeCarouselButtons(); // (Questa l'hai aggiunta prima)
+initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         });
     </script>
 
@@ -946,37 +1014,36 @@ main .max-w-7xl {
     <main class="relative z-20 -mt-20 scrollbar-hide">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Trending Movies -->
-            <section id="movie-trend" class="mb-12">
-                <h2   id="trending" class="text-xl font-bold mb-4">Film in tendenza</h2>
-                <div id="trending-movies" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    <!-- Loading skeleton -->
-                    <div class="animate-pulse">
-                        <div class="bg-gray-800 rounded-lg h-64"></div>
-                        <div class="h-4 bg-gray-800 rounded mt-2 w-3/4"></div>
-                    </div>
-                    <div class="animate-pulse">
-                        <div class="bg-gray-800 rounded-lg h-64"></div>
-                        <div class="h-4 bg-gray-800 rounded mt-2 w-3/4"></div>
-                    </div>
-                    <div class="animate-pulse">
-                        <div class="bg-gray-800 rounded-lg h-64"></div>
-                        <div class="h-4 bg-gray-800 rounded mt-2 w-3/4"></div>
-                    </div>
-                    <div class="animate-pulse">
-                        <div class="bg-gray-800 rounded-lg h-64"></div>
-                        <div class="h-4 bg-gray-800 rounded mt-2 w-3/4"></div>
-                    </div>
-                    <div class="animate-pulse">
-                        <div class="bg-gray-800 rounded-lg h-64"></div>
-                        <div class="h-4 bg-gray-800 rounded mt-2 w-3/4"></div>
-                    </div>
-                </div>
-            </section>
+<section id="movie-trend" class="mb-12">
+    <h2 id="trending" class="text-xl font-bold mb-4">Film in tendenza</h2>
+    
+    <div class="carousel-container relative">
+        
+        <div id="trending-movies" class="carousel-row">
+            <div class="animate-pulse">
+                <div class="bg-gray-800 rounded-lg h-64"></div>
+                <div class="h-4 bg-gray-800 rounded mt-2 w-3/4"></div>
+            </div>
+            <div class="animate-pulse">
+                <div class="bg-gray-800 rounded-lg h-64"></div>
+                <div class="h-4 bg-gray-800 rounded mt-2 w-3/4"></div>
+            </div>
+            </div>
+
+        <button class="carousel-btn prev" data-target="trending-movies" aria-label="Precedente">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="carousel-btn next" data-target="trending-movies" aria-label="Successivo">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        
+    </div>
+</section>
 
             <!-- Popular TV Shows -->
             <section id="tv-popular" class="mb-12">
                 <h2 class="text-xl font-bold mb-4">Serie TV popolari</h2>
-                <div id="popular-tv" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div id="popular-tv" class="carousel-row sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     <!-- Loading skeleton -->
                     <div class="animate-pulse">
                         <div class="bg-gray-800 rounded-lg h-64"></div>
@@ -1004,7 +1071,7 @@ main .max-w-7xl {
             <!-- Top Rated Movies -->
             <section id="critics" class="mb-12">
                 <h2 class="text-xl font-bold mb-4">Film più votati</h2>
-                <div id="top-rated-movies" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div id="top-rated-movies" class="carousel-row sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     <!-- Loading skeleton -->
                     <div class="animate-pulse">
                         <div class="bg-gray-800 rounded-lg h-64"></div>
@@ -1032,7 +1099,7 @@ main .max-w-7xl {
             <!-- Upcoming Movies -->
             <section id="new" class="mb-12">
                 <h2 class="text-xl font-bold mb-4">Film al cinema</h2>
-                <div id="upcoming-movies" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                <div id="upcoming-movies" class="carousel-row sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     <!-- Loading skeleton -->
                     <div class="animate-pulse">
                         <div class="bg-gray-800 rounded-lg h-64"></div>
@@ -1067,8 +1134,7 @@ main .max-w-7xl {
 
     <!-- Movie/TV Show Modal -->
 
-<div id="movie-modal" class="fixed inset-0 z-50 hidden overflow-hidden flex items-center justify-center glass-modal hidden opacity-0 scale-95 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center">
-    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+<div id="movie-modal" class="fixed inset-0 hidden overflow-hidden flex items-center justify-center glass-modal hidden opacity-0 scale-95 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center">    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
     <div class="relative max-w-[90%] max-h-[90vh] w-full overflow-hidden">
         <div class="max-h-[90vh] overflow-y-auto scrollbar-hide p-5 bg-secondary/85 backdrop-blur-2xl rounded-xl border border-white/10">
             <!-- Contenuto del modale -->
@@ -1714,6 +1780,45 @@ main .max-w-7xl {
         </div>
     </footer>
 <script>
+
+
+// Funzione per attivare i pulsanti del carosello
+function initializeCarouselButtons() {
+  const buttons = document.querySelectorAll('.carousel-btn');
+
+  buttons.forEach(button => {
+    button.addEventListener('click', () => {
+      // 1. Trova l'ID della riga target dal data-attribute
+      const targetId = button.dataset.target;
+      if (!targetId) {
+        console.error('Pulsante carosello senza data-target:', button);
+        return;
+      }
+
+      // 2. Trova l'elemento riga che scorre
+      const row = document.getElementById(targetId);
+      if (!row) {
+        console.error('Elemento carosello non trovato:', targetId);
+        return;
+      }
+
+      // 3. Calcola quanto scorrere (es. 80% della larghezza visibile)
+      const scrollAmount = row.clientWidth * 0.8;
+      
+      // 4. Determina la direzione
+      const direction = button.classList.contains('prev') ? -1 : 1;
+
+      // 5. Esegui lo scorrimento fluido
+      row.scrollBy({ 
+        left: scrollAmount * direction, 
+        behavior: 'smooth' 
+      });
+    });
+  });
+}
+
+// Assicurati di chiamare questa funzione dopo che il DOM è caricato
+document.addEventListener('DOMContentLoaded', initializeCarouselButtons);
 // Cache per i poster già recuperati
 const posterCache = new Map();
 
@@ -1771,7 +1876,7 @@ async function displayContinueWatching() {
             continueSection.innerHTML = `
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <h2 class="text-xl font-bold mb-4">Continua a guardare</h2>
-                    <div id="continue-watching-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+                    <div id="continue-watching-grid" class="carousel-row"></div>
                 </div>
             `;
             
@@ -2588,12 +2693,28 @@ async function getRandomHeroContent() {
     // Get a random item from the available ones
     const randomIndex = Math.floor(Math.random() * availablePopularContent.length);
     const content = availablePopularContent[randomIndex];
-    
-    // Get full details
     const contentDetails = await getMovieDetails(content.id, content.media_type);
-    
+
+    // --- INIZIO OTTIMIZZAZIONE LCP ---
+    const backdropUrl = `${IMG_PATH}${contentDetails.backdrop_path}`;
+
+    // 1. Crea un link preload
+    const preloadLink = document.createElement('link');
+    preloadLink.rel = 'preload';
+    preloadLink.as = 'image';
+    preloadLink.href = backdropUrl;
+
+    // 2. Dagli alta priorità
+    preloadLink.setAttribute('fetchpriority', 'high'); 
+
+    // 3. Aggiungilo all'head
+    document.head.appendChild(preloadLink);
+    // --- FINE OTTIMIZZAZIONE LCP ---
+
     currentHeroMovie = { ...contentDetails, media_type: content.media_type };
-    displayHeroMovie(currentHeroMovie);
+
+    // 4. Ora imposta l'immagine
+    displayHeroMovie(currentHeroMovie, backdropUrl); // Passa l'URL per evitare duplicazioni
 }
 
 
@@ -2618,6 +2739,7 @@ function displayHeroMovie(content) {
     setTimeout(() => {
         clone.style.opacity = '1';
     }, 10);
+
     
     // 4. Al termine della transizione, aggiorna l'elemento originale e rimuovi il clone
     clone.addEventListener('transitionend', () => {
@@ -2700,7 +2822,7 @@ async function getMovieDetails(id, type = 'movie') {
             <div class="relative overflow-hidden rounded-lg h-64">
                 <img src="${POSTER_PATH}${item.poster_path}" 
                      alt="${item.title || item.name}" 
-                     class="w-full h-full object-cover">
+                     class="w-full h-full object-cover" loading="lazy">
                 
                 <!-- Rating -->
                 <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-md text-xs font-bold">
@@ -2879,5 +3001,32 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
       .catch(err => console.error('❌ Service Worker errore:', err));
   }
 </script>
+<nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 h-16 z-50">
+    <div class="glass-filter"></div>
+    
+    <div class="nav-content flex justify-around items-center h-full">
+        
+        <a href="#hero-section" class="mobile-nav-link">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        
+        <a href="#movie-trend" class="mobile-nav-link">
+            <i class="fas fa-film"></i>
+            <span>Film</span>
+        </a>
+        
+        <a href="#tv-popular" class="mobile-nav-link">
+            <i class="fas fa-tv"></i>
+            <span>Serie TV</span>
+        </a>
+        
+        <a href="#critics" class="mobile-nav-link">
+            <i class="fas fa-star"></i>
+            <span>Più votati</span>
+        </a>
+
+    </div>
+</nav>
 </body>
 </html>
