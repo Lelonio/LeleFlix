@@ -909,53 +909,101 @@ main .max-w-7xl {
             // Listener per scroll
             window.addEventListener('scroll', handleScroll);
             
-            // Aggiungi questa funzione all'interno del tuo listener 
-// document.addEventListener('DOMContentLoaded', async () => { ... });
 
 // Sostituisci la vecchia funzione con questa NUOVA versione
+
+// Aggiungi questa funzione per gestire il reset completo della pagina
+function resetToHomeView() {
+    // 1. Nascondi i risultati di ricerca
+    document.body.classList.remove('show-search-results');
+    document.getElementById("search-results-section").classList.add("hidden");
+    
+    // 2. Pulisci i campi di ricerca
+    document.getElementById("search-input").value = "";
+    document.getElementById("mobile-search-input").value = "";
+    
+    // 3. Nascondi la casella di ricerca mobile se aperta
+    document.getElementById("mobile-search-box").classList.remove("active");
+    
+    // 4. Scrolla verso l'hero section
+    const heroSection = document.getElementById('hero-section');
+    if (heroSection) {
+        heroSection.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // 5. Ricarica i contenuti principali se necessario
+    setTimeout(() => {
+        getRandomHeroContent();
+    }, 300);
+}
+
+// Modifica la funzione initializeMobileNavDynamics per usare resetToHomeView
 function initializeMobileNavDynamics() {
     const mobileLinks = document.querySelectorAll('#mobile-nav a.mobile-nav-link');
     const sections = document.querySelectorAll('#hero-section, #movie-trend, #tv-popular, #critics, #new');
+    
+    // Prendiamo l'elemento dei risultati di ricerca
+    const searchResultsEl = document.getElementById('search-results-section');
 
     if (!mobileLinks.length || !sections.length) return;
 
-    let userClicked = false; // Flag per tracciare il click dell'utente
-    let clickTimer = null;   // Riferimento al nostro timer
+    let userClicked = false;
+    let clickTimer = null;
 
     // ----- 1. Feedback immediato al CLICK (Modificato) -----
     mobileLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            // 1. Imposta il flag per dire all'observer di fermarsi
-            userClicked = true;
+            e.preventDefault(); // Blocca sempre lo scorrimento predefinito
+            const href = e.currentTarget.getAttribute('href');
 
-            // 2. Pulisci qualsiasi timer precedente e impostane uno nuovo
+            // --- NUOVA LOGICA SEMPLIFICATA ---
+            if (href === '#hero-section') {
+                // Controlla se i risultati della ricerca sono VISIBILI
+                const isSearchActive = searchResultsEl && !searchResultsEl.classList.contains('hidden');
+                
+                if (isSearchActive) {
+                    // Se la ricerca è attiva, resetta alla home
+                    resetToHomeView();
+                    return; // Esce dalla funzione
+                }
+            }
+            // --- FINE NUOVA LOGICA ---
+
+            // (Codice esistente per il flag e il timer)
+            userClicked = true;
             clearTimeout(clickTimer);
             clickTimer = setTimeout(() => {
-                userClicked = false; // Riattiva l'observer dopo 1 sec
-            }, 1000); // 1000ms (1 secondo) è la durata dello smooth scroll
+                userClicked = false;
+            }, 1000); 
 
-            // 3. Imposta manualmente la classe 'active' (come prima)
+            // (Codice esistente per la classe 'active')
             mobileLinks.forEach(l => l.classList.remove('active'));
             e.currentTarget.classList.add('active');
+            
+            // (Codice esistente per lo scorrimento manuale)
+            const targetSection = document.querySelector(href);
+            if (targetSection) {
+                targetSection.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
         });
     });
 
-    // ----- 2. Feedback dinamico allo SCROLL (Modificato) -----
+    // ----- 2. Feedback dinamico allo SCROLL (Invariato) -----
     const observerOptions = {
         root: null,
         rootMargin: '0px',
-        threshold: 0.5 // 50% di visibilità
+        threshold: 0.75
     };
 
     const observerCallback = (entries) => {
-        // Se il flag userClicked è true, ignora l'evento di scroll
         if (userClicked) return;
-
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const id = entry.target.id;
                 const correspondingLink = document.querySelector(`#mobile-nav a[href="#${id}"]`);
-
                 if (correspondingLink) {
                     mobileLinks.forEach(l => l.classList.remove('active'));
                     correspondingLink.classList.add('active');
@@ -964,7 +1012,6 @@ function initializeMobileNavDynamics() {
         });
     };
 
-    // Crea e avvia l'observer
     const observer = new IntersectionObserver(observerCallback, observerOptions);
     sections.forEach(section => observer.observe(section));
 }
@@ -1127,7 +1174,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     </main>
 
     <section id="search-results-section" class="hidden px-4 sm:px-6 lg:px-8 py-8">
-  <h2 class="text-xl font-bold mb-4">Risultati per: <span id="search-query-text" class="text-primary"></span></h2>
+  <h2 class="text-xl font-bold mb-4 mt-10">Risultati per: <span id="search-query-text" class="text-primary"></span></h2>
   <div id="search-results-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
 </section>
 
