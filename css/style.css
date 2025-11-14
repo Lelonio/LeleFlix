@@ -694,6 +694,60 @@ h2[trending] {
 
 }
 
+/* --- STILE PULSANTE "X" PER "CONTINUA A GUARDARE" --- */
+
+.remove-progress-btn {
+  position: absolute;
+  top: 0.5rem;   /* Tailwind: top-2 */
+  right: 0.5rem;  /* Tailwind: right-2 */
+  z-index: 20; /* Sopra tutto il resto della card */
+  
+  /* Stile Glass/Trasparente */
+  background: rgba(34, 31, 31, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  width: 28px;  /* Dimensione piccola */
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem; /* Icona 'X' piccola */
+  cursor: pointer;
+  
+  opacity: 0; /* Nascosto di default */
+  transform: scale(0.8);
+  transition: all 0.2s ease;
+}
+
+/* Appare solo quando si passa sopra la card (su desktop) */
+.movie-card:hover .remove-progress-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.remove-progress-btn:hover {
+  background: #E50914; /* Colore rosso all'hover */
+  border-color: #E50914;
+}
+
+/* Su mobile (dove non c'è hover), lo rendiamo sempre visibile */
+@media (max-width: 768px) {
+  .remove-progress-btn {
+    opacity: 0.8; /* Leggermente trasparente per non essere invadente */
+    transform: scale(1);
+  }
+}
+
+/* Animazione di rimozione card */
+.movie-card.removing {
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: scale(0.9);
+}
         
 
 .carousel-row {
