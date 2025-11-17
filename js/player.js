@@ -6,7 +6,7 @@ class VideoPlayer {
         this.lastProgressSave = 0;
 this.lastSavedTime = 0;
 this.lastSeekTime = 0; 
-
+this.wakeLock = null; 
 this.seekTooltip = document.getElementById('seekTooltip');
     this.centerControls = document.getElementById('centerControls');
     this.playCenterBtn = document.getElementById('playCenterBtn');
@@ -59,6 +59,33 @@ this.seekTooltip = document.getElementById('seekTooltip');
         this.captionsMenu = document.getElementById('captionsMenu');
 
         this.initEventListeners();
+    }
+
+    async requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                this.wakeLock = await navigator.wakeLock.request('screen');
+                console.log('Wake Lock attivo: lo schermo non si spegnerà');
+                
+                // Ri-acquisisci il lock se la pagina torna visibile (es. cambio tab)
+                document.addEventListener('visibilitychange', async () => {
+                    if (this.wakeLock !== null && document.visibilityState === 'visible') {
+                        this.wakeLock = await navigator.wakeLock.request('screen');
+                    }
+                });
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        }
+    }
+
+    // Aggiungi questo metodo per rilasciare il lock
+    async releaseWakeLock() {
+        if (this.wakeLock !== null) {
+            await this.wakeLock.release();
+            this.wakeLock = null;
+            console.log('Wake Lock rilasciato');
+        }
     }
 
 async savePlaybackProgress() {
@@ -445,8 +472,19 @@ showNextEpisodePrompt() {
         if (Hls.isSupported()) {
             if (this.hls) this.hls.destroy();
             
-            this.hls = new Hls();
-            
+this.hls = new Hls({
+                    // Abilita il worker per non bloccare il thread principale UI
+                    enableWorker: true, 
+                    // Buffer ridotto per mobile per risparmiare RAM e CPU
+                    maxBufferLength: 30, 
+                    maxMaxBufferLength: 60, 
+                    // Strategia di buffer aggressiva per evitare stalli
+                    backBufferLength: 90,
+                    // Fondamentale per Android: aiuta a mantenere il sync A/V
+                    enableSoftwareAES: false, 
+                    // Riduce il carico in caso di errori
+                    manifestLoadingTimeOut: 20000,
+                });            
             // Gestione errori HLS
             this.hls.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) {
@@ -465,7 +503,7 @@ showNextEpisodePrompt() {
                 // Forza 1080p se presente
                 const lvl = this.hls.levels.findIndex(l => l.height === 1080);
                 if (lvl >= 0) this.hls.currentLevel = lvl;
-                
+                this.requestWakeLock();
                 this.loadingOverlay.classList.add('hidden');
                 this.videoPlayer.play().catch(error => {
                     console.error('Autoplay failed:', error);
@@ -999,6 +1037,7 @@ showControlsTemporarily() {
         this.hls.destroy();
         this.hls = null;
     }
+         this.releaseWakeLock();
     
     this.videoPlayer.pause();
     this.videoPlayer.removeAttribute('src');
