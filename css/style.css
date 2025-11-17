@@ -5,6 +5,24 @@
         /* Season/Episode Selector Styles */
 
         /* Controlli centrali con effetto glass - senza tinte rosse */
+
+
+/* Ottimizzazione Video per Android */
+#videoPlayer {
+    /* Isola il video in un layer GPU separato */
+    transform: translateZ(0);
+    will-change: transform, opacity;
+    /* Impedisce scatti durante il ridimensionamento UI */
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* Ottimizzazione contenitore video */
+.video-container {
+    background-color: black; /* Evita flash bianchi */
+    contain: strict; /* Migliora performance rendering */
+}
+
 .center-controls {
     position: absolute;
     top: 50%;
