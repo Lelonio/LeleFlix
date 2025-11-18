@@ -6,7 +6,10 @@ class VideoPlayer {
         this.lastProgressSave = 0;
 this.lastSavedTime = 0;
 this.lastSeekTime = 0; 
-this.wakeLock = null; 
+this.refreshLoopId = null;
+        this.dummyElement = document.createElement('div');
+        this.initDummyElement();
+
 this.seekTooltip = document.getElementById('seekTooltip');
     this.centerControls = document.getElementById('centerControls');
     this.playCenterBtn = document.getElementById('playCenterBtn');
@@ -61,30 +64,44 @@ this.seekTooltip = document.getElementById('seekTooltip');
         this.initEventListeners();
     }
 
-    async requestWakeLock() {
-        if ('wakeLock' in navigator) {
-            try {
-                this.wakeLock = await navigator.wakeLock.request('screen');
-                console.log('Wake Lock attivo: lo schermo non si spegnerà');
-                
-                // Ri-acquisisci il lock se la pagina torna visibile (es. cambio tab)
-                document.addEventListener('visibilitychange', async () => {
-                    if (this.wakeLock !== null && document.visibilityState === 'visible') {
-                        this.wakeLock = await navigator.wakeLock.request('screen');
-                    }
-                });
-            } catch (err) {
-                console.error(`${err.name}, ${err.message}`);
-            }
-        }
+    initDummyElement() {
+        // Crea un elemento invisibile che useremo per forzare il rendering
+        this.dummyElement.style.position = 'fixed';
+        this.dummyElement.style.top = '0';
+        this.dummyElement.style.left = '0';
+        this.dummyElement.style.width = '1px';
+        this.dummyElement.style.height = '1px';
+        this.dummyElement.style.opacity = '0.01'; // Non 0, altrimenti il browser lo ignora
+        this.dummyElement.style.pointerEvents = 'none';
+        this.dummyElement.style.zIndex = '-1';
+        document.body.appendChild(this.dummyElement);
     }
 
-    // Aggiungi questo metodo per rilasciare il lock
-    async releaseWakeLock() {
-        if (this.wakeLock !== null) {
-            await this.wakeLock.release();
-            this.wakeLock = null;
-            console.log('Wake Lock rilasciato');
+    forceHighRefreshRate(enable) {
+        if (enable) {
+            if (this.refreshLoopId) return; // Già attivo
+
+            console.log("🚀 Forzatura High Refresh Rate ATTIVATA");
+            let state = 0;
+            
+            const loop = () => {
+                // Modifica una proprietà CSS impercettibile ogni frame
+                // Questo costringe Android a mantenere lo schermo a 60/120Hz
+                state = state === 0 ? 1 : 0;
+                
+                // Usiamo translateZ per forzare l'uso della GPU
+                this.dummyElement.style.transform = `translateZ(${state * 0.0001}px)`;
+                
+                this.refreshLoopId = requestAnimationFrame(loop);
+            };
+            
+            this.refreshLoopId = requestAnimationFrame(loop);
+        } else {
+            if (this.refreshLoopId) {
+                console.log("🛑 Forzatura High Refresh Rate DISATTIVATA");
+                cancelAnimationFrame(this.refreshLoopId);
+                this.refreshLoopId = null;
+            }
         }
     }
 
@@ -472,19 +489,8 @@ showNextEpisodePrompt() {
         if (Hls.isSupported()) {
             if (this.hls) this.hls.destroy();
             
-this.hls = new Hls({
-                    // Abilita il worker per non bloccare il thread principale UI
-                    enableWorker: true, 
-                    // Buffer ridotto per mobile per risparmiare RAM e CPU
-                    maxBufferLength: 30, 
-                    maxMaxBufferLength: 60, 
-                    // Strategia di buffer aggressiva per evitare stalli
-                    backBufferLength: 90,
-                    // Fondamentale per Android: aiuta a mantenere il sync A/V
-                    enableSoftwareAES: false, 
-                    // Riduce il carico in caso di errori
-                    manifestLoadingTimeOut: 20000,
-                });            
+            this.hls = new Hls();
+            
             // Gestione errori HLS
             this.hls.on(Hls.Events.ERROR, (event, data) => {
                 if (data.fatal) {
@@ -503,7 +509,7 @@ this.hls = new Hls({
                 // Forza 1080p se presente
                 const lvl = this.hls.levels.findIndex(l => l.height === 1080);
                 if (lvl >= 0) this.hls.currentLevel = lvl;
-                this.requestWakeLock();
+                
                 this.loadingOverlay.classList.add('hidden');
                 this.videoPlayer.play().catch(error => {
                     console.error('Autoplay failed:', error);
@@ -598,7 +604,22 @@ showError(message) {
         // Retry button
         this.retryButton.addEventListener('click', () => this.initPlayer());
             this.setupProgressTracking();
+    this.videoPlayer.addEventListener('play', () => {
+            this.updatePlayIcon(true);
+            this.forceHighRefreshRate(true); // <--- ATTIVA QUI
+        });
 
+        this.videoPlayer.addEventListener('pause', () => {
+            this.updatePlayIcon(false);
+            this.showControlsTemporarily();
+            this.forceHighRefreshRate(false); // <--- DISATTIVA QUI
+        });
+
+        // Importante: spegni tutto se chiudi il player
+        this.closePlayerBtn.addEventListener('click', () => {
+            this.forceHighRefreshRate(false); // <--- DISATTIVA QUI
+            this.closePlayer();
+        });
         // Play/Pause
         this.videoPlayer.addEventListener('play', () => this.updatePlayIcon(true));
         this.videoPlayer.addEventListener('pause', () => this.updatePlayIcon(false));
@@ -1037,7 +1058,6 @@ showControlsTemporarily() {
         this.hls.destroy();
         this.hls = null;
     }
-         this.releaseWakeLock();
     
     this.videoPlayer.pause();
     this.videoPlayer.removeAttribute('src');
