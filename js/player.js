@@ -6,9 +6,8 @@ class VideoPlayer {
         this.lastProgressSave = 0;
 this.lastSavedTime = 0;
 this.lastSeekTime = 0; 
-this.refreshLoopId = null;
-        this.dummyElement = document.createElement('div');
-        this.initDummyElement();
+this.refreshInterval = null;
+    this.refreshKeeperEl = document.getElementById('refresh-keeper');
 
 this.seekTooltip = document.getElementById('seekTooltip');
     this.centerControls = document.getElementById('centerControls');
@@ -64,46 +63,40 @@ this.seekTooltip = document.getElementById('seekTooltip');
         this.initEventListeners();
     }
 
-    initDummyElement() {
-        // Crea un elemento invisibile che useremo per forzare il rendering
-        this.dummyElement.style.position = 'fixed';
-        this.dummyElement.style.top = '0';
-        this.dummyElement.style.left = '0';
-        this.dummyElement.style.width = '1px';
-        this.dummyElement.style.height = '1px';
-        this.dummyElement.style.opacity = '0.01'; // Non 0, altrimenti il browser lo ignora
-        this.dummyElement.style.pointerEvents = 'none';
-        this.dummyElement.style.zIndex = '-1';
-        document.body.appendChild(this.dummyElement);
-    }
-
-    forceHighRefreshRate(enable) {
-        if (enable) {
-            if (this.refreshLoopId) return; // Già attivo
-
-            console.log("🚀 Forzatura High Refresh Rate ATTIVATA");
-            let state = 0;
-            
-            const loop = () => {
-                // Modifica una proprietà CSS impercettibile ogni frame
-                // Questo costringe Android a mantenere lo schermo a 60/120Hz
-                state = state === 0 ? 1 : 0;
-                
-                // Usiamo translateZ per forzare l'uso della GPU
-                this.dummyElement.style.transform = `translateZ(${state * 0.0001}px)`;
-                
-                this.refreshLoopId = requestAnimationFrame(loop);
-            };
-            
-            this.refreshLoopId = requestAnimationFrame(loop);
-        } else {
-            if (this.refreshLoopId) {
-                console.log("🛑 Forzatura High Refresh Rate DISATTIVATA");
-                cancelAnimationFrame(this.refreshLoopId);
-                this.refreshLoopId = null;
-            }
+    startRefreshKeeper() {
+    if (!this.refreshKeeperEl) return;
+    
+    // Ferma eventuali loop precedenti
+    this.stopRefreshKeeper();
+    
+    console.log("Forzatura 120Hz attiva");
+    let toggle = false;
+    
+    // Usa requestAnimationFrame per agganciarsi al refresh rate del display
+    const loop = () => {
+        if (this.videoPlayer.paused) {
+            this.stopRefreshKeeper();
+            return;
         }
-    }
+
+        // Modifica una proprietà che forza il compositing ma è invisibile all'occhio
+        // Alterna tra transform translateZ(0) e translateZ(1px)
+        // Questo dice alla GPU: "C'è un cambiamento 3D, stai sveglia!"
+        toggle = !toggle;
+        this.refreshKeeperEl.style.transform = toggle ? 'translateZ(0.1px)' : 'translateZ(0)';
+        
+        this.refreshInterval = requestAnimationFrame(loop);
+    };
+    
+    this.refreshInterval = requestAnimationFrame(loop);
+}
+
+stopRefreshKeeper() {
+    if (this.refreshInterval) {
+        cancelAnimationFrame(this.refreshInterval);
+        this.refreshInterval = null;
+        console.log("Forzatura 120Hz fermata");
+    }}
 
 async savePlaybackProgress() {
     // Salva solo se è passato almeno 1 secondo dall'ultimo salvataggio
@@ -604,22 +597,16 @@ showError(message) {
         // Retry button
         this.retryButton.addEventListener('click', () => this.initPlayer());
             this.setupProgressTracking();
-    this.videoPlayer.addEventListener('play', () => {
-            this.updatePlayIcon(true);
-            this.forceHighRefreshRate(true); // <--- ATTIVA QUI
-        });
+// Dentro initEventListeners()
+this.videoPlayer.addEventListener('play', () => {
+    this.updatePlayIcon(true);
+    this.startRefreshKeeper(); // <--- AGGIUNGI QUI
+});
 
-        this.videoPlayer.addEventListener('pause', () => {
-            this.updatePlayIcon(false);
-            this.showControlsTemporarily();
-            this.forceHighRefreshRate(false); // <--- DISATTIVA QUI
-        });
-
-        // Importante: spegni tutto se chiudi il player
-        this.closePlayerBtn.addEventListener('click', () => {
-            this.forceHighRefreshRate(false); // <--- DISATTIVA QUI
-            this.closePlayer();
-        });
+this.videoPlayer.addEventListener('pause', () => {
+    this.updatePlayIcon(false);
+    this.stopRefreshKeeper(); // <--- AGGIUNGI QUI
+});
         // Play/Pause
         this.videoPlayer.addEventListener('play', () => this.updatePlayIcon(true));
         this.videoPlayer.addEventListener('pause', () => this.updatePlayIcon(false));
@@ -701,6 +688,7 @@ showError(message) {
 
     // Metodi per la gestione del player
     togglePlayPause() {
+        this.startRefreshKeeper(); 
         if (this.videoPlayer.paused) {
             this.videoPlayer.play();
         } else {
@@ -1051,7 +1039,7 @@ showControlsTemporarily() {
     if (this.abortController) {
         this.abortController.abort();
     }
-    
+    this.stopRefreshKeeper();
     
     // 3. Pulizia HLS e video
     if (this.hls) {
