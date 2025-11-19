@@ -914,4 +914,301 @@ h2[trending] {
 .mobile-nav-link:hover,
 .mobile-nav-link.active {
   color: white;
-  text-shadow: 0 0 8px rgba(229, 9, 20
+  text-shadow: 0 0 8px rgba(229, 9, 20, 0.5);
+}
+
+/*
+  FONDAMENTALE: Aggiungi padding-bottom al body 
+  per evitare che la barra fissa copra l'ultimo carosello!
+*/
+@media (max-width: 768px) {
+  body {
+    /* h-16 della barra mobile + mb-12 dell'ultima sezione */
+    padding-bottom: calc(4rem + 3rem); 
+  }
+}
+
+/* --- OTTIMIZZAZIONE HERO MOBILE --- */
+@media (max-width: 640px) {
+  #hero-section {
+    height: 90vh; /* Leggermente più bassa per far vedere che c'è contenuto sotto */
+  }
+
+  /* Riduci la dimensione del titolo */
+  #hero-title {
+    font-size: 2.25rem; /* 36px */
+    line-height: 2.5rem; /* 40px */
+    /* Aggiunge un'ombra per staccare il testo dallo sfondo */
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  }
+
+  /* Limita la descrizione a 3 righe */
+  #hero-overview {
+    font-size: 0.875rem; /* 14px */
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+    
+    /* Codice per troncare il testo a 3 righe */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;  
+    overflow: hidden;
+  }
+  
+  /* Aumenta la dimensione dei pulsanti per il tocco */
+  #play-button,
+  #more-info-button {
+    padding: 0.75rem 1.25rem; /* Più padding verticale */
+    font-size: 1rem;
+  }
+}
+/* Nuovo stile suggerito */
+.hero-gradient {
+    /* Parte da un nero più solido e sfuma più velocemente */
+    background: linear-gradient(to right, 
+                  rgba(20, 20, 20, 1) 0%, 
+                  rgba(20, 20, 20, 0.9) 25%,
+                  rgba(20, 20, 20, 0) 60%);
+}
+        
+        .movie-card:hover .movie-poster {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .movie-poster {
+            transition: all 0.3s ease;
+        }
+        
+        .loader {
+            border-top-color: #E50914;
+            animation: spinner 1.5s linear infinite;
+        }
+        
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .movie-modal {
+            transition: opacity 0.3s ease;
+            overflow-y: auto; /* Abilita scroll solo nel modale se necessario */
+
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #141414;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #E50914;
+            border-radius: 4px;
+        }
+
+        body.show-search-results #hero-section,
+body.show-search-results main,
+body.show-search-results footer {
+  display: none;
+}
+
+body.show-search-results #search-results-section {
+  display: block !important;
+}
+
+.show-search-results main,
+.show-search-results footer {
+    display: none;
+}
+#search-results-section {
+  top: 100px; /* o quanto basta per scendere sotto la navbar */
+}
+
+
+.bg-secondary{
+
+/* From https://css.glass */
+background: rgba(255, 255, 255, 0.27);
+border-radius: 16px;
+box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+backdrop-filter: blur(12.5px);
+-webkit-backdrop-filter: blur(12.5px);
+}
+
+.bg-primary{
+
+/* From https://css.glass */
+background: rgba(255, 255, 255, 0.27);
+border-radius: 16px;
+box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+backdrop-filter: blur(12.5px);
+-webkit-backdrop-filter: blur(12.5px);
+}
+
+/* Aggiungi questo al tuo CSS */
+@media (max-width: 768px) {
+    .hero-gradient {
+        background: linear-gradient(to right, 
+            rgba(20, 20, 20, 0.95) 0%, 
+            rgba(20, 20, 20, 0.7) 50%,
+            rgba(20, 20, 20, 0.4) 100%);
+    }
+    
+    .hero-fade {
+        height: 150px;
+        background: linear-gradient(to bottom, 
+            transparent 0%, 
+            rgba(20, 20, 20, 0.6) 30%,
+            rgba(20, 20, 20, 0.9) 70%,
+            rgba(20, 20, 20, 1) 100%);
+    }
+}
+
+/* Stili per migliorare la leggibilità su mobile */
+@media (max-width: 768px) {
+    .mobile-contrast {
+        background-color: rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .mobile-text-contrast {
+        color: #fff !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    
+    #hero-section .relative.z-10 h1 {
+        font-size: 2rem;
+        line-height: 1.2;
+    }
+    
+    #hero-section .relative.z-10 p {
+        font-size: 1rem;
+        line-height: 1.4;
+    }
+    
+    #hero-rating {
+        background-color: rgba(229, 9, 20, 0.9) !important;
+        padding: 0.25rem 0.5rem;
+    }
+
+
+}
+
+#mobile-search-box {
+    display: none; /* Nascosto di default */
+    padding: 10px;
+    
+    /* Stile Liquid Glass (lo stesso della navbar) */
+    background: rgba(34, 31, 31, 0.45);
+    backdrop-filter: blur(16px) saturate(200%);
+    -webkit-backdrop-filter: blur(16px) saturate(200%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    
+    position: absolute;
+    width: 100%;
+    top: 4rem; /* Allineato all'altezza della .glass-nav */
+    left: 0;
+    z-index: 40;
+}
+        
+        #mobile-search-box.active {
+            display: block; /* Mostrato quando attivo */
+        }
+        
+        .search-input-container {
+            position: relative;
+        }
+        
+        #mobile-search-input {
+            width: 100%;
+            padding: 8px 40px 8px 15px;
+            border-radius: 4px;
+            border: none;
+            background: #333;
+            color: white;
+        }
+        
+        #mobile-search-button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #E50914;
+        }
+        /* Player Modal - Correzione per mobile */
+        #player-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: black;
+            z-index: 1000;
+            overflow: hidden;
+        }
+        
+        /* Contenitore header */
+        #backButtonContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        /* Mostra header al passaggio del mouse o al tap */
+        #videoContainer:hover #backButtonContainer,
+        #videoContainer:focus-within #backButtonContainer {
+            opacity: 1;
+        }
+        
+        /* Stile freccia back */
+        #close-player {
+            color: white;
+            background: rgba(34, 31, 31, 0.45);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+        
+        /* Stile titolo */
+        #player-title {
+            color: white;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 70%;
+        }
+/* FORZA la visibilità solo quando la classe 'visible' è presente */
+#controlsContainer:not(.visible),
+#backButtonContainer:not(.visible) {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 0.3s ease !important;
+}
+
+#controlsContainer.visible,
+#backButtonContainer.visible {
+    opacity: 1 !important;
+    pointer-events: all !important;
+}
