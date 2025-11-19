@@ -6,6 +6,8 @@ class VideoPlayer {
         this.lastProgressSave = 0;
 this.lastSavedTime = 0;
 this.lastSeekTime = 0; 
+this.refreshInterval = null;
+    this.refreshKeeperEl = document.getElementById('refresh-keeper');
 
 this.seekTooltip = document.getElementById('seekTooltip');
     this.centerControls = document.getElementById('centerControls');
@@ -60,6 +62,41 @@ this.seekTooltip = document.getElementById('seekTooltip');
 
         this.initEventListeners();
     }
+
+    startRefreshKeeper() {
+    if (!this.refreshKeeperEl) return;
+    
+    // Ferma eventuali loop precedenti
+    this.stopRefreshKeeper();
+    
+    console.log("Forzatura 120Hz attiva");
+    let toggle = false;
+    
+    // Usa requestAnimationFrame per agganciarsi al refresh rate del display
+    const loop = () => {
+        if (this.videoPlayer.paused) {
+            this.stopRefreshKeeper();
+            return;
+        }
+
+        // Modifica una proprietà che forza il compositing ma è invisibile all'occhio
+        // Alterna tra transform translateZ(0) e translateZ(1px)
+        // Questo dice alla GPU: "C'è un cambiamento 3D, stai sveglia!"
+        toggle = !toggle;
+        this.refreshKeeperEl.style.transform = toggle ? 'translateZ(0.1px)' : 'translateZ(0)';
+        
+        this.refreshInterval = requestAnimationFrame(loop);
+    };
+    
+    this.refreshInterval = requestAnimationFrame(loop);
+}
+
+stopRefreshKeeper() {
+    if (this.refreshInterval) {
+        cancelAnimationFrame(this.refreshInterval);
+        this.refreshInterval = null;
+        console.log("Forzatura 120Hz fermata");
+    }}
 
 async savePlaybackProgress() {
     // Salva solo se è passato almeno 1 secondo dall'ultimo salvataggio
@@ -560,7 +597,16 @@ showError(message) {
         // Retry button
         this.retryButton.addEventListener('click', () => this.initPlayer());
             this.setupProgressTracking();
+// Dentro initEventListeners()
+this.videoPlayer.addEventListener('play', () => {
+    this.updatePlayIcon(true);
+    this.startRefreshKeeper(); // <--- AGGIUNGI QUI
+});
 
+this.videoPlayer.addEventListener('pause', () => {
+    this.updatePlayIcon(false);
+    this.stopRefreshKeeper(); // <--- AGGIUNGI QUI
+});
         // Play/Pause
         this.videoPlayer.addEventListener('play', () => this.updatePlayIcon(true));
         this.videoPlayer.addEventListener('pause', () => this.updatePlayIcon(false));
@@ -642,6 +688,7 @@ showError(message) {
 
     // Metodi per la gestione del player
     togglePlayPause() {
+        this.startRefreshKeeper(); 
         if (this.videoPlayer.paused) {
             this.videoPlayer.play();
         } else {
@@ -992,7 +1039,7 @@ showControlsTemporarily() {
     if (this.abortController) {
         this.abortController.abort();
     }
-    
+    this.stopRefreshKeeper();
     
     // 3. Pulizia HLS e video
     if (this.hls) {
