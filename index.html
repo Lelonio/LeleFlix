@@ -807,6 +807,8 @@ main .max-w-7xl {
     </style>
 </head>
 <body class="bg-dark text-accent " >
+    <div id="hr-keeper"></div>
+
     <!-- Filtro SVG per l'effetto liquido avanzato -->
     <svg style="display: none">
         <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
@@ -1133,7 +1135,6 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </div>
     </div>
 </section>
-
     <!-- Main Content -->
     <main class="relative z-20 -mt-20 scrollbar-hide">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -1871,6 +1872,8 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
                     </a>
         </div>
     </footer>
+
+
 <script>
 
 
@@ -3131,6 +3134,28 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
 
     </div>
 </nav>
-<div id="refresh-keeper" style="position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0.01; pointer-events: none; z-index: -1;"></div>
+<div id="vlc-prompt" class="fixed inset-0 hidden flex items-center justify-center bg-black/90 backdrop-blur-sm" style="z-index: 9999 !important;">
+        <div class="bg-secondary p-6 rounded-xl max-w-sm w-full text-center border border-white/10 shadow-2xl transform transition-all scale-100 relative">
+        <div class="mb-4 text-primary text-4xl">
+            <i class="fas fa-play-circle"></i>
+        </div>
+        <h3 class="text-xl font-bold mb-2 text-white">Opzioni di Riproduzione</h3>
+        <p class="text-gray-400 mb-6 text-sm">Dove preferisci guardare questo video?</p>
+        
+        <div class="flex flex-col gap-3">
+            <button id="btn-play-internal" class="bg-primary hover:bg-red-700 text-white py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2">
+                <i class="fas fa-desktop"></i> Player Integrato
+            </button>
+            
+            <button id="btn-play-vlc" class="bg-[#ff8800] hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2">
+                <i class="fas fa-cone"></i> Apri in VLC
+            </button>
+            
+            <button id="btn-cancel-prompt" class="mt-2 text-gray-400 hover:text-white text-sm py-2">
+                Annulla
+            </button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
