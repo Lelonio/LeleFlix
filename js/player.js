@@ -452,79 +452,111 @@ showNextEpisodePrompt() {
             const btnVlc = document.getElementById('btn-play-vlc');
             const btnCancel = document.getElementById('btn-cancel-prompt');
             
-            // Tasto copia link (facoltativo, utile per debug)
+            // --- AGGIUNTA: Creazione Pulsante Copia Link ---
             let btnCopy = document.getElementById('btn-copy-link');
             if (!btnCopy) {
-                // ... codice creazione tasto copy se vuoi mantenerlo ...
-                // Se lo crei, fagli copiare il vlcUrl calcolato sotto, non streamUrl!
+                // Crea il pulsante se non esiste
+                btnCopy = document.createElement('button');
+                btnCopy.id = 'btn-copy-link';
+                // Stile grigio per differenziarlo
+                btnCopy.className = 'bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 mt-2';
+                btnCopy.innerHTML = '<i class="fas fa-copy"></i> Copia Link Stream';
+                
+                // Inseriscilo prima del tasto "Annulla"
+                if (btnCancel && btnCancel.parentNode) {
+                    btnCancel.parentNode.insertBefore(btnCopy, btnCancel);
+                }
             }
+            // -----------------------------------------------
 
             prompt.classList.remove('hidden');
-
             const cleanup = () => prompt.classList.add('hidden');
 
-            // 1. PLAYER INTERNO (Usa streamUrl standard)
+            // 1. PLAYER INTERNO
             btnInternal.onclick = () => {
                 cleanup();
-                // Attiva fullscreen ecc...
                 const container = document.getElementById('videoContainer');
                 if (container && container.requestFullscreen) {
-                     container.requestFullscreen().catch(console.warn);
+                     container.requestFullscreen().catch(() => {});
                      if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => {});
                 }
                 resolve('internal');
             };
 
-            // 2. VLC (Usa URL STATICO per il Resume!)
+            // 2. VLC
             btnVlc.onclick = () => {
-                this.saveVLCStart();
                 cleanup();
+                this.saveVLCStart(); // Salva nei "Continua a guardare"
                 
-                // COSTRUZIONE URL STATICO
-                // Assumiamo che PROXY_URL sia tipo 'https://api.leleflix.store/proxy'
-                // Dobbiamo ottenere la base 'https://api.leleflix.store' o usare quella del tuo server proxy
-                // Se usi l'IP locale nel proxy.js (https://api.leleflix.store), usa quello.
-                
-                // Opzione A: Se il proxy è sullo stesso dominio/IP
-                // const baseUrl = 'https://api.leleflix.store'; 
-                
-                // Opzione B: Derivato dalla config esistente (più sicuro)
-                // Se PROXY_URL è '.../proxy', togliamo '/proxy'
-const baseUrl = 'https://api.leleflix.store'; 
-                
+                const baseUrl = window.location.origin; // es: https://api.leleflix.store
                 let vlcStaticUrl = '';
                 
-                // FIX 2: Aggiungiamo .m3u8 alla fine dell'URL
                 if (this.content.media_type === 'movie') {
                     vlcStaticUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
                 } else {
                     vlcStaticUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
                 }
 
+                console.log('VLC URL:', vlcStaticUrl);
+
                 const isAndroid = /Android/i.test(navigator.userAgent);
                 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
                 if (isAndroid) {
-                    // Android Intent con URL Statico
-                    // Nota: type=video/* aiuta VLC a capire
-                    const intentUrl = `intent://${vlcStaticUrl.replace(/^https?:\/\//, '')}#Intent;scheme=http;package=org.videolan.vlc;type=video/*;end`;
+                    const intentUrl = `intent://${vlcStaticUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;end`;
                     window.location.href = intentUrl;
                 } else {
-                    // iOS / Desktop
                     window.location.href = `vlc://${vlcStaticUrl}`;
-                    
                     if (!isIOS) {
                         setTimeout(() => {
-                            alert(`Se VLC non si apre, apri VLC > File > Apri Rete e incolla:\n${vlcStaticUrl}`);
+                            // Se non si apre, mostra alert con il link da copiare
                             prompt.classList.remove('hidden');
+                            alert(`Se VLC non si apre automaticamente:\n1. Copia il link dal pulsante qui sotto.\n2. Apri VLC > Media > Apri flusso di rete.\n3. Incolla.`);
                         }, 1000);
-                        return; // Non risolviamo per permettere copia
+                        return;
                     }
                 }
                 resolve('vlc');
             };
 
-            // 3. Annulla
+            // 3. COPIA LINK (Logica del nuovo pulsante)
+            btnCopy.onclick = async () => {
+                // Calcoliamo lo stesso URL statico usato per VLC
+                const baseUrl = window.location.origin;
+                let vlcStaticUrl = '';
+                if (this.content.media_type === 'movie') {
+                    vlcStaticUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
+                } else {
+                    vlcStaticUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(vlcStaticUrl);
+                    
+                    // Feedback visivo
+                    const originalText = btnCopy.innerHTML;
+                    btnCopy.innerHTML = '<i class="fas fa-check"></i> Link Copiato!';
+                    btnCopy.classList.remove('bg-gray-700', 'hover:bg-gray-600');
+                    btnCopy.classList.add('bg-green-600', 'hover:bg-green-500');
+                    
+                    // Ripristina dopo 2 secondi
+                    setTimeout(() => {
+                        btnCopy.innerHTML = originalText;
+                        btnCopy.classList.remove('bg-green-600', 'hover:bg-green-500');
+                        btnCopy.classList.add('bg-gray-700', 'hover:bg-gray-600');
+                    }, 2000);
+                    
+                    // Opzionale: Salva anche come "Iniziato" se l'utente copia il link
+                    this.saveVLCStart(); 
+
+                } catch (err) {
+                    console.error('Errore copia:', err);
+                    // Fallback per browser vecchi o senza permessi
+                    window.prompt('Copia questo link manualmente:', vlcStaticUrl);
+                }
+            };
+
+            // 4. ANNULLA
             btnCancel.onclick = () => {
                 cleanup();
                 resolve('cancel');
