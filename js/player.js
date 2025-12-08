@@ -63,40 +63,55 @@ this.seekTooltip = document.getElementById('seekTooltip');
         this.initEventListeners();
     }
 
-    startRefreshKeeper() {
-    if (!this.refreshKeeperEl) return;
-    
-    // Ferma eventuali loop precedenti
-    this.stopRefreshKeeper();
-    
-    console.log("Forzatura 120Hz attiva");
-    let toggle = false;
-    
-    // Usa requestAnimationFrame per agganciarsi al refresh rate del display
-    const loop = () => {
-        if (this.videoPlayer.paused) {
-            this.stopRefreshKeeper();
-            return;
-        }
+startRefreshKeeper() {
+    const el = document.getElementById("hr-keeper");
+    if (!el) return;
 
-        // Modifica una proprietà che forza il compositing ma è invisibile all'occhio
-        // Alterna tra transform translateZ(0) e translateZ(1px)
-        // Questo dice alla GPU: "C'è un cambiamento 3D, stai sveglia!"
-        toggle = !toggle;
-        this.refreshKeeperEl.style.transform = toggle ? 'translateZ(0.1px)' : 'translateZ(0)';
-        
-        this.refreshInterval = requestAnimationFrame(loop);
-    };
-    
-    this.refreshInterval = requestAnimationFrame(loop);
+    el.style.animationPlayState = "running";
 }
 
 stopRefreshKeeper() {
-    if (this.refreshInterval) {
-        cancelAnimationFrame(this.refreshInterval);
-        this.refreshInterval = null;
-        console.log("Forzatura 120Hz fermata");
-    }}
+    const el = document.getElementById("hr-keeper");
+    if (!el) return;
+
+    el.style.animationPlayState = "paused";
+}
+
+// Metodo per salvare l'inizio della riproduzione su VLC
+    async saveVLCStart() {
+        if (!this.content) return;
+        
+        try {
+            // Recupera l'IP (usiamo la funzione già esistente)
+            const ip = await this.getClientIP();
+            
+            // Creiamo un payload che simula l'inizio del film (1% di progresso)
+            // Questo basta per attivare la voce "Continua a guardare"
+            const progressData = {
+                ip: ip,
+                tmdbId: this.content.id,
+                contentType: this.content.media_type || 'movie',
+                season: this.content.season_number || null,
+                episode: this.content.episode_number || null,
+                currentTime: 15,    // Diciamo che siamo a 15 secondi
+                duration: 1500,     // Su una durata fittizia che dia l'1%
+                title: this.content.title || this.content.name || 'VLC Playback'
+            };
+            
+            // Inviamo i dati al proxy senza aspettare la risposta (fire and forget)
+            fetch(PROGRESS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(progressData),
+                keepalive: true // Importante: assicura l'invio anche se la pagina cambia/chiude
+            }).catch(e => console.warn('Salvataggio start VLC fallito', e));
+            
+            console.log("Salvataggio inizio VLC inviato");
+            
+        } catch (error) {
+            console.error('Errore preparazione salvataggio VLC:', error);
+        }
+    }
 
 async savePlaybackProgress() {
     // Salva solo se è passato almeno 1 secondo dall'ultimo salvataggio
@@ -301,41 +316,37 @@ async playNextEpisode() {
 
 
 async play(content) {
-    this.content = content;
-    this.updatePlayerTitle();
-    this.playerModal.classList.remove('hidden');
-    this.showControlsTemporarily();
-    
-    // SE È UNA SERIE TV MA MANCANO I DATI COMPLETI, CARICALI
-    if (this.content.media_type === 'tv' && !this.content.tv_data) {
+        this.content = content;
+        this.updatePlayerTitle();
+        
+        // --- MODIFICA FONDAMENTALE ---
+        // NON mostriamo più il playerModal qui. Rimane nascosto.
+        // this.playerModal.classList.remove('hidden'); <--- RIMOSSO
+        // this.showControlsTemporarily(); <--- RIMOSSO
+        
+        if (this.content.media_type === 'tv' && !this.content.tv_data) {
+            try {
+                const tvResponse = await fetch(`${API_URL}/tv/${this.content.id}?api_key=${API_KEY}&language=it-IT`);
+                const tvData = await tvResponse.json();
+                this.content.tv_data = tvData;
+            } catch (tvError) {
+                console.error('Errore dati TV:', tvError);
+            }
+        }
+        
+        this.toggleNextEpisodeButton();
+        
+        // Mostra cursore di attesa mentre recuperiamo l'URL
+        document.body.style.cursor = 'wait';
+        
         try {
-            const tvResponse = await fetch(`${API_URL}/tv/${this.content.id}?api_key=${API_KEY}&language=it-IT`);
-            const tvData = await tvResponse.json();
-            this.content.tv_data = tvData;
-        } catch (tvError) {
-            console.error('Errore nel caricamento dati serie TV:', tvError);
+            await this.initPlayer();
+        } catch(e) {
+            console.error(e);
+        } finally {
+            document.body.style.cursor = 'default';
         }
     }
-    
-    this.toggleNextEpisodeButton();
-    await this.initPlayer();
-    
-    // Se c'è un punto di ripresa, imposta il tempo dopo che il video è pronto
-    if (this.content.resumeTime) {
-        const video = this.videoPlayer;
-        const checkReady = () => {
-            if (video.readyState > 0 && video.duration > 0) {
-                video.currentTime = this.content.resumeTime;
-                
-                // Mostra un prompt per chiedere se continuare da dove si era interrotto
-                this.showResumePrompt(this.content.resumeTime, video.duration);
-                video.removeEventListener('canplay', checkReady);
-            }
-        };
-        
-        video.addEventListener('canplay', checkReady);
-    }
-} 
 
 // Aggiungi questo metodo per mostrare il prompt di ripresa
 showResumePrompt(resumeTime, duration) {
@@ -433,85 +444,178 @@ showNextEpisodePrompt() {
         }
     }, 30000);
 }
-
-
-   async initPlayer() {
-    this.loadingOverlay.classList.remove('hidden');
-    this.errorOverlay.classList.add('hidden');
-
-        this.centerControls.classList.remove('hidden');
-    this.controlsContainer.classList.remove('hidden');
-
-    this.progressBar.style.width = '0%';
-    this.currentTime.textContent = '0:00';
-    this.duration.textContent = '0:00';
-    
-    // Genera un nuovo streamId e abort controller
-    this.currentStreamId = this.generateStreamId();
-    this.abortController = new AbortController();
-
-        this.videoPlayer.addEventListener('ended', () => {
-        if (this.content.media_type === 'tv' && this.checkNextEpisodeExists()) {
-            // Mostra un messaggio che chiede se passare al prossimo episodio
-            this.showNextEpisodePrompt();
-        }
-    });
-    
-    try {
-        // Costruisci l'URL del proxy con lo streamId
-        let proxyUrl = `${PROXY_URL}${this.content.media_type}/${this.content.id}`;
-        
-        if (this.content.media_type === 'tv' && 
-            this.content.season_number && 
-            this.content.episode_number) {
-            proxyUrl = `${PROXY_URL}series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}`;
-        }
-        
-        // Aggiungi lo streamId alla richiesta
-        proxyUrl += `?streamId=${this.currentStreamId}`;
-        
-        // Effettua la richiesta con l'abort controller
-        const proxyResponse = await fetch(proxyUrl, {
-            signal: this.abortController.signal
-        });
-        
-        if (!proxyResponse.ok) throw new Error('Failed to fetch stream URL');
-        
-        const { url } = await proxyResponse.json();
-        
-        if (Hls.isSupported()) {
-            if (this.hls) this.hls.destroy();
+// Metodo per gestire la scelta del player (Aggiungi questo dentro la classe VideoPlayer)
+    askPlayMethod(streamUrl) {
+        return new Promise((resolve) => {
+            const prompt = document.getElementById('vlc-prompt');
+            const btnInternal = document.getElementById('btn-play-internal');
+            const btnVlc = document.getElementById('btn-play-vlc');
+            const btnCancel = document.getElementById('btn-cancel-prompt');
             
-            this.hls = new Hls();
-            
-            // Gestione errori HLS
-            this.hls.on(Hls.Events.ERROR, (event, data) => {
-                if (data.fatal) {
-                    this.showError('Failed to load video stream. Please try again later.');
-                    // Annulla la richiesta se c'è un errore fatale
-                    if (this.abortController) {
-                        this.abortController.abort();
+            // Tasto copia link (facoltativo, utile per debug)
+            let btnCopy = document.getElementById('btn-copy-link');
+            if (!btnCopy) {
+                // ... codice creazione tasto copy se vuoi mantenerlo ...
+                // Se lo crei, fagli copiare il vlcUrl calcolato sotto, non streamUrl!
+            }
+
+            prompt.classList.remove('hidden');
+
+            const cleanup = () => prompt.classList.add('hidden');
+
+            // 1. PLAYER INTERNO (Usa streamUrl standard)
+            btnInternal.onclick = () => {
+                cleanup();
+                // Attiva fullscreen ecc...
+                const container = document.getElementById('videoContainer');
+                if (container && container.requestFullscreen) {
+                     container.requestFullscreen().catch(console.warn);
+                     if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => {});
+                }
+                resolve('internal');
+            };
+
+            // 2. VLC (Usa URL STATICO per il Resume!)
+            btnVlc.onclick = () => {
+                this.saveVLCStart();
+                cleanup();
+                
+                // COSTRUZIONE URL STATICO
+                // Assumiamo che PROXY_URL sia tipo 'https://api.leleflix.store/proxy'
+                // Dobbiamo ottenere la base 'https://api.leleflix.store' o usare quella del tuo server proxy
+                // Se usi l'IP locale nel proxy.js (https://api.leleflix.store), usa quello.
+                
+                // Opzione A: Se il proxy è sullo stesso dominio/IP
+                // const baseUrl = 'https://api.leleflix.store'; 
+                
+                // Opzione B: Derivato dalla config esistente (più sicuro)
+                // Se PROXY_URL è '.../proxy', togliamo '/proxy'
+const baseUrl = 'https://api.leleflix.store'; 
+                
+                let vlcStaticUrl = '';
+                
+                // FIX 2: Aggiungiamo .m3u8 alla fine dell'URL
+                if (this.content.media_type === 'movie') {
+                    vlcStaticUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
+                } else {
+                    vlcStaticUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
+                }
+
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+                if (isAndroid) {
+                    // Android Intent con URL Statico
+                    // Nota: type=video/* aiuta VLC a capire
+                    const intentUrl = `intent://${vlcStaticUrl.replace(/^https?:\/\//, '')}#Intent;scheme=http;package=org.videolan.vlc;type=video/*;end`;
+                    window.location.href = intentUrl;
+                } else {
+                    // iOS / Desktop
+                    window.location.href = `vlc://${vlcStaticUrl}`;
+                    
+                    if (!isIOS) {
+                        setTimeout(() => {
+                            alert(`Se VLC non si apre, apri VLC > File > Apri Rete e incolla:\n${vlcStaticUrl}`);
+                            prompt.classList.remove('hidden');
+                        }, 1000);
+                        return; // Non risolviamo per permettere copia
                     }
                 }
-            });
+                resolve('vlc');
+            };
+
+            // 3. Annulla
+            btnCancel.onclick = () => {
+                cleanup();
+                resolve('cancel');
+            };
+        });
+    }
+
+   
+
+async initPlayer() {
+        // Reset stato UI (anche se nascosto)
+        this.loadingOverlay.classList.remove('hidden');
+        this.errorOverlay.classList.add('hidden');
+        this.centerControls.classList.remove('hidden');
+        this.controlsContainer.classList.remove('hidden');
+        this.progressBar.style.width = '0%';
+        this.currentTime.textContent = '0:00';
+        this.duration.textContent = '0:00';
+        
+        this.currentStreamId = this.generateStreamId();
+        this.abortController = new AbortController();
+
+        // Rimuovi listener precedenti per evitare duplicati
+        const newVideoPlayer = this.videoPlayer.cloneNode(true);
+        this.videoPlayer.parentNode.replaceChild(newVideoPlayer, this.videoPlayer);
+        this.videoPlayer = newVideoPlayer;
+        // Reinserisci gli event listener di base (play, pause, etc...)
+        // Nota: Idealmente dovresti avere un metodo this.rebindVideoEvents() per pulizia,
+        // ma per ora manteniamo la logica semplice.
+        this.videoPlayer.addEventListener('ended', () => {
+             if (this.content.media_type === 'tv' && this.checkNextEpisodeExists()) {
+                 this.showNextEpisodePrompt();
+             }
+        });
+        // Ri-aggiungi i listener fondamentali persi col clone o assicurati di non duplicarli
+        this.videoPlayer.addEventListener('play', () => { this.updatePlayIcon(true); this.startRefreshKeeper(); });
+        this.videoPlayer.addEventListener('pause', () => { this.updatePlayIcon(false); this.stopRefreshKeeper(); });
+        this.videoPlayer.addEventListener('timeupdate', () => this.updateTimeDisplay());
+        this.videoPlayer.addEventListener('mousemove', () => this.showControlsTemporarily());
+        this.videoPlayer.addEventListener('touchmove', () => this.showControlsTemporarily());
+        this.videoPlayer.addEventListener('touchstart', (e) => this.handleTouchStart(e));
+        this.videoPlayer.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+
+        try {
+            // Costruisci URL
+            let proxyUrl = `${PROXY_URL}${this.content.media_type}/${this.content.id}`;
+            if (this.content.media_type === 'tv' && this.content.season_number && this.content.episode_number) {
+                proxyUrl = `${PROXY_URL}series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}`;
+            }
+            proxyUrl += `?streamId=${this.currentStreamId}`;
             
-            this.hls.loadSource(url);
-            this.hls.attachMedia(this.videoPlayer);
+            const proxyResponse = await fetch(proxyUrl, { signal: this.abortController.signal });
+            if (!proxyResponse.ok) throw new Error('Failed to fetch stream URL');
+            const { url } = await proxyResponse.json();
             
-            this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                // Forza 1080p se presente
-                const lvl = this.hls.levels.findIndex(l => l.height === 1080);
-                if (lvl >= 0) this.hls.currentLevel = lvl;
+            // --- IL PROMPT APPARE ORA (IL PLAYER È ANCORA NASCOSTO) ---
+            const playMethod = await this.askPlayMethod(url);
+            
+            if (playMethod === 'vlc' || playMethod === 'cancel') {
+                this.closePlayer(); // Pulisce tutto e esce
+                return;
+            }
+            
+            // --- SCELTO PLAYER INTERNO: MOSTRA IL PLAYER ---
+            this.playerModal.classList.remove('hidden');
+            this.showControlsTemporarily();
+            
+            // Inizia HLS
+            if (Hls.isSupported()) {
+                if (this.hls) this.hls.destroy();
+                this.hls = new Hls();
                 
-                this.loadingOverlay.classList.add('hidden');
-                this.videoPlayer.play().catch(error => {
-                    console.error('Autoplay failed:', error);
-                    this.showControlsTemporarily();
+                this.hls.on(Hls.Events.ERROR, (event, data) => {
+                    if (data.fatal) {
+                        this.showError('Errore fatale nello stream. Riprova più tardi.');
+                        if (this.abortController) this.abortController.abort();
+                    }
                 });
-
-                this.setupQualityOptions();
-
-                // AUDIO TRACKS
+                
+                this.hls.loadSource(url);
+                this.hls.attachMedia(this.videoPlayer);
+                
+                this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                    const lvl = this.hls.levels.findIndex(l => l.height === 1080);
+                    if (lvl >= 0) this.hls.currentLevel = lvl;
+                    
+                    this.loadingOverlay.classList.add('hidden');
+                    this.videoPlayer.play().catch(console.error);
+                    
+                    this.setupQualityOptions();
+// AUDIO TRACKS
                 const audioOptions = document.querySelector('.audio-options');
                 audioOptions.innerHTML = '';
                 if (data.audioTracks && data.audioTracks.length > 0) {
@@ -551,26 +655,23 @@ showNextEpisodePrompt() {
                         subtitleOptions.appendChild(option);
                     });
                 }
-
-                this.showControlsTemporarily();
-            });
-        } else if (this.videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
-            this.videoPlayer.src = url;
-            this.videoPlayer.addEventListener('loadedmetadata', () => {
-                this.loadingOverlay.classList.add('hidden');
-                this.videoPlayer.play();
-            });
-        } else {
-            this.showError('Your browser does not support this video format.');
+                });
+            } else if (this.videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                this.videoPlayer.src = url;
+                this.videoPlayer.addEventListener('loadedmetadata', () => {
+                    this.loadingOverlay.classList.add('hidden');
+                    this.videoPlayer.play();
+                });
+            } else {
+                this.showError('Il tuo browser non supporta questo formato video.');
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error('Error fetching stream:', error);
+                this.showError('Impossibile caricare il video. Riprova più tardi.');
+            }
         }
-    } catch (error) {
-        if (error.name !== 'AbortError') {
-            console.error('Error fetching stream:', error);
-            this.showError('Failed to load video stream. Please try again later.');
-        }
-        // Se l'errore è un abort, non mostrare messaggi di errore
     }
-}
 
 // Aggiungi questo metodo alla classe VideoPlayer
 generateStreamId() {
@@ -600,12 +701,12 @@ showError(message) {
 // Dentro initEventListeners()
 this.videoPlayer.addEventListener('play', () => {
     this.updatePlayIcon(true);
-    this.startRefreshKeeper(); // <--- AGGIUNGI QUI
+    this.startRefreshKeeper();
 });
 
 this.videoPlayer.addEventListener('pause', () => {
     this.updatePlayIcon(false);
-    this.stopRefreshKeeper(); // <--- AGGIUNGI QUI
+    this.stopRefreshKeeper();
 });
         // Play/Pause
         this.videoPlayer.addEventListener('play', () => this.updatePlayIcon(true));
@@ -688,11 +789,14 @@ this.videoPlayer.addEventListener('pause', () => {
 
     // Metodi per la gestione del player
     togglePlayPause() {
-        this.startRefreshKeeper(); 
         if (this.videoPlayer.paused) {
             this.videoPlayer.play();
+                this.startRefreshKeeper();
+
         } else {
             this.videoPlayer.pause();
+                this.stopRefreshKeeper();
+
         }
     }
 
@@ -952,29 +1056,26 @@ isFullscreen() {
 showControlsTemporarily() {
     const container = document.getElementById('videoContainer');
 
-    // Mostra sempre i controlli in mobile portrait
-    if (this.isMobile && !this.isFullscreen() && window.innerHeight > window.innerWidth) {
-        this.controlsContainer.style.opacity = '1';
-        this.backButtonContainer.style.opacity = '1';
-        this.centerControls.style.opacity = '0'; // Nascondi controlli centrali in verticale
-        this.centerControls.classList.add('hidden');
-        
-        // Layout speciale per mobile verticale
+    // Layout speciale per mobile verticale
+    if (this.isMobile && window.innerHeight > window.innerWidth) {
         this.controlsContainer.classList.add('mobile-portrait');
-        return;
+        
+        // In verticale mostra i pulsanti centrali ma tieni la barra sotto visibile
+        this.centerControls.classList.remove('hidden');
+        this.centerControls.style.opacity = '1';
+    } else {
+        this.controlsContainer.classList.remove('mobile-portrait');
     }
 
-
+    this.controlsContainer.offsetHeight; // Trigger reflow
     
-    this.controlsContainer.offsetHeight;
-    
-    // Poi mostra i controlli
+    // Mostra i controlli
     this.controlsContainer.classList.add('visible');
     this.backButtonContainer.classList.add('visible');
     this.centerControls.classList.remove('hidden');
     this.centerControls.style.opacity = '1';
     
-    // Rimuovi qualsiasi stile inline che potrebbe sovrascrivere
+    // Rimuovi stili inline
     this.controlsContainer.style.removeProperty('opacity');
     this.backButtonContainer.style.removeProperty('opacity');
     
@@ -982,7 +1083,6 @@ showControlsTemporarily() {
     
     this.controlsTimeout = setTimeout(() => {
         if (!this.videoPlayer.paused && !this.isSeeking) {
-            // Nascondi tutto quando il timeout scade
             this.controlsContainer.classList.remove('visible');
             this.backButtonContainer.classList.remove('visible');
             this.centerControls.style.opacity = '0';
@@ -1219,17 +1319,5 @@ function playMovie(content, type = null) {
         };
     }
     
-    // Gestione fullscreen e orientamento
-    const container = document.getElementById('videoContainer');
-    if (container.requestFullscreen) {
-        container.requestFullscreen().then(() => {
-            if (screen.orientation?.lock) {
-                screen.orientation.lock('landscape').catch(err => {
-                    console.warn('Orientation lock failed:', err);
-                });
-            }
-        });
-    } else if (container.webkitRequestFullscreen) {
-        container.webkitRequestFullscreen();
-    }
+
 }
