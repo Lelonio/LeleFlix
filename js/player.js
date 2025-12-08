@@ -488,7 +488,7 @@ showNextEpisodePrompt() {
                 cleanup();
                 this.saveVLCStart(); // Salva nei "Continua a guardare"
                 
-                const baseUrl = window.location.origin; // es: https://api.leleflix.store
+                const baseUrl ='https://api.leleflix.store'; // es: https://api.leleflix.store
                 let vlcStaticUrl = '';
                 
                 if (this.content.media_type === 'movie') {
@@ -522,7 +522,7 @@ showNextEpisodePrompt() {
             // 3. COPIA LINK (Logica del nuovo pulsante)
             btnCopy.onclick = async () => {
                 // Calcoliamo lo stesso URL statico usato per VLC
-                const baseUrl = window.location.origin;
+                const baseUrl = 'https://api.leleflix.store';
                 let vlcStaticUrl = '';
                 if (this.content.media_type === 'movie') {
                     vlcStaticUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
