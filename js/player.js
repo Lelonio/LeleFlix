@@ -489,6 +489,7 @@ showNextEpisodePrompt() {
 
             // AZIONE: PLAYER INTERNO
             btnInternal.onclick = () => {
+                this.logView();
                 cleanup();
                 const container = document.getElementById('videoContainer');
                 if (container && container.requestFullscreen) {
@@ -500,6 +501,7 @@ showNextEpisodePrompt() {
 
             // AZIONE: PLAYER ESTERNO / NATIVO
             btnExternal.onclick = () => {
+                this.logView();
                 cleanup();
                 if (typeof this.saveVLCStart === 'function') this.saveVLCStart();
                 
@@ -562,6 +564,7 @@ showNextEpisodePrompt() {
 
             // AZIONE: COPIA LINK
             btnCopy.onclick = async () => {
+                this.logView();
                 const baseUrl = getApiBaseUrl();
                 let videoUrl = '';
                 if (this.content.media_type === 'movie') {
@@ -587,7 +590,31 @@ showNextEpisodePrompt() {
         });
     }
 
-   
+   // Metodo per loggare la visualizzazione nelle statistiche (chiamato dai bottoni)
+    async logView() {
+        if (!this.content) return;
+        try {
+            const ip = await this.getClientIP();
+            const payload = {
+                ip: ip,
+                tmdbId: this.content.id,
+                contentType: this.content.media_type || 'movie',
+                season: this.content.season_number || null,
+                episode: this.content.episode_number || null
+            };
+
+            // Chiamata all'endpoint di logging
+            fetch(`${this.PROXY_BASE_URL.replace('/proxy', '')}/log/view`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+                keepalive: true
+            }).catch(e => console.warn('Logging fallito:', e));
+            
+        } catch (e) {
+            console.error('Errore log view:', e);
+        }
+    }
 
 async initPlayer() {
         // Reset stato UI (anche se nascosto)
