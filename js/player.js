@@ -449,30 +449,45 @@ showNextEpisodePrompt() {
         return new Promise((resolve) => {
             const prompt = document.getElementById('vlc-prompt');
             const btnInternal = document.getElementById('btn-play-internal');
-            const btnVlc = document.getElementById('btn-play-vlc');
+            const btnExternal = document.getElementById('btn-play-vlc');
             const btnCancel = document.getElementById('btn-cancel-prompt');
             
-            // --- AGGIUNTA: Creazione Pulsante Copia Link ---
+            // 1. Configurazione Etichetta Pulsante
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+            
+            if (btnExternal) {
+                let label = 'Player Esterno';
+                if (isAndroid) label = 'Apri con...'; 
+                else if (isIOS) label = 'Player Nativo';
+                else label = 'Apri in Nuova Scheda'; // Desktop
+                
+                btnExternal.innerHTML = `<i class="fas fa-external-link-alt"></i> ${label}`;
+            }
+
+            // 2. Tasto Copia Link
             let btnCopy = document.getElementById('btn-copy-link');
             if (!btnCopy) {
-                // Crea il pulsante se non esiste
                 btnCopy = document.createElement('button');
                 btnCopy.id = 'btn-copy-link';
-                // Stile grigio per differenziarlo
                 btnCopy.className = 'bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 mt-2';
                 btnCopy.innerHTML = '<i class="fas fa-copy"></i> Copia Link Stream';
-                
-                // Inseriscilo prima del tasto "Annulla"
                 if (btnCancel && btnCancel.parentNode) {
                     btnCancel.parentNode.insertBefore(btnCopy, btnCancel);
                 }
             }
-            // -----------------------------------------------
 
             prompt.classList.remove('hidden');
             const cleanup = () => prompt.classList.add('hidden');
 
-            // 1. PLAYER INTERNO
+            const getApiBaseUrl = () => {
+                if (typeof PROXY_URL !== 'undefined') {
+                    try { return new URL(PROXY_URL).origin; } catch(e) {}
+                }
+                return 'https://api.leleflix.store';
+            };
+
+            // AZIONE: PLAYER INTERNO
             btnInternal.onclick = () => {
                 cleanup();
                 const container = document.getElementById('videoContainer');
@@ -483,80 +498,88 @@ showNextEpisodePrompt() {
                 resolve('internal');
             };
 
-            // 2. VLC
-            btnVlc.onclick = () => {
+            // AZIONE: PLAYER ESTERNO / NATIVO
+            btnExternal.onclick = () => {
                 cleanup();
-                this.saveVLCStart(); // Salva nei "Continua a guardare"
+                if (typeof this.saveVLCStart === 'function') this.saveVLCStart();
                 
-                const baseUrl ='https://api.leleflix.store'; // es: https://api.leleflix.store
-                let vlcStaticUrl = '';
+                const baseUrl = getApiBaseUrl();
+                let videoUrl = '';
                 
                 if (this.content.media_type === 'movie') {
-                    vlcStaticUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
+                    videoUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
                 } else {
-                    vlcStaticUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
+                    videoUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
                 }
 
-                console.log('VLC URL:', vlcStaticUrl);
-
-                const isAndroid = /Android/i.test(navigator.userAgent);
-                const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+                console.log('Opening External:', videoUrl);
 
                 if (isAndroid) {
-                    const intentUrl = `intent://${vlcStaticUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;package=org.videolan.vlc;type=video/*;end`;
+                    // ANDROID: Intent di sistema
+                    const intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;end`;
                     window.location.href = intentUrl;
-                } else {
-                    window.location.href = `vlc://${vlcStaticUrl}`;
-                    if (!isIOS) {
-                        setTimeout(() => {
-                            // Se non si apre, mostra alert con il link da copiare
-                            prompt.classList.remove('hidden');
-                            alert(`Se VLC non si apre automaticamente:\n1. Copia il link dal pulsante qui sotto.\n2. Apri VLC > Media > Apri flusso di rete.\n3. Incolla.`);
-                        }, 1000);
-                        return;
-                    }
+                } 
+                else if (isIOS) {
+                    // IOS: Player Nativo (Safari gestisce m3u8)
+                    window.open(videoUrl, '_blank');
+                } 
+                else {
+                    // DESKTOP: Mini Player Web (per evitare il download del file m3u8)
+                    const w = window.open('', '_blank');
+                    w.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>LeleFlix Player - ${this.content.title || 'Video'}</title>
+                            <style>
+                                body { margin:0; background:black; display:flex; align-items:center; justify-content:center; height:100vh; overflow:hidden; }
+                                video { width:100%; height:100%; outline:none; }
+                            </style>
+                        </head>
+                        <body>
+                            <video id="v" controls autoplay playsinline></video>
+                            <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+                            <script>
+                                const v = document.getElementById('v');
+                                const url = "${videoUrl}";
+                                if (Hls.isSupported()) {
+                                    const hls = new Hls();
+                                    hls.loadSource(url);
+                                    hls.attachMedia(v);
+                                    hls.on(Hls.Events.MANIFEST_PARSED, () => v.play());
+                                } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+                                    v.src = url;
+                                    v.addEventListener('loadedmetadata', () => v.play());
+                                }
+                            </script>
+                        </body>
+                        </html>
+                    `);
+                    w.document.close();
                 }
                 resolve('vlc');
             };
 
-            // 3. COPIA LINK (Logica del nuovo pulsante)
+            // AZIONE: COPIA LINK
             btnCopy.onclick = async () => {
-                // Calcoliamo lo stesso URL statico usato per VLC
-                const baseUrl = 'https://api.leleflix.store';
-                let vlcStaticUrl = '';
+                const baseUrl = getApiBaseUrl();
+                let videoUrl = '';
                 if (this.content.media_type === 'movie') {
-                    vlcStaticUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
+                    videoUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
                 } else {
-                    vlcStaticUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
+                    videoUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
                 }
 
                 try {
-                    await navigator.clipboard.writeText(vlcStaticUrl);
-                    
-                    // Feedback visivo
+                    await navigator.clipboard.writeText(videoUrl);
                     const originalText = btnCopy.innerHTML;
                     btnCopy.innerHTML = '<i class="fas fa-check"></i> Link Copiato!';
-                    btnCopy.classList.remove('bg-gray-700', 'hover:bg-gray-600');
-                    btnCopy.classList.add('bg-green-600', 'hover:bg-green-500');
-                    
-                    // Ripristina dopo 2 secondi
-                    setTimeout(() => {
-                        btnCopy.innerHTML = originalText;
-                        btnCopy.classList.remove('bg-green-600', 'hover:bg-green-500');
-                        btnCopy.classList.add('bg-gray-700', 'hover:bg-gray-600');
-                    }, 2000);
-                    
-                    // Opzionale: Salva anche come "Iniziato" se l'utente copia il link
-                    this.saveVLCStart(); 
-
+                    setTimeout(() => btnCopy.innerHTML = originalText, 2000);
                 } catch (err) {
-                    console.error('Errore copia:', err);
-                    // Fallback per browser vecchi o senza permessi
-                    window.prompt('Copia questo link manualmente:', vlcStaticUrl);
+                    window.prompt('Copia manuale:', videoUrl);
                 }
             };
 
-            // 4. ANNULLA
             btnCancel.onclick = () => {
                 cleanup();
                 resolve('cancel');
