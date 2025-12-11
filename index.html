@@ -1409,19 +1409,21 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     </div>
 
 <div id="detail-view" class="hidden fixed inset-0 z-[60] bg-[#141414] overflow-y-auto custom-scrollbar">        
-        <button onclick="closeDetailView()" class="fixed top-4 left-4 z-50 w-10 h-10 flex items-center justify-center rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-white hover:bg-white hover:text-black transition-all shadow-lg">
-            <i class="fas fa-arrow-left"></i>
-        </button>
+<button onclick="closeDetailView()" class="fixed top-4 left-4 z-50 glass-button rounded-full w-12 h-12 flex items-center justify-center bg-black/50 hover:bg-black/80 transition-all">
+    <i class="fas fa-arrow-left text-white text-xl"></i>
+</button>
     
-        <div class="relative w-full min-h-[90vh] md:min-h-[85vh] flex items-end">
-            <div id="detail-backdrop" class="absolute inset-0 bg-cover bg-center bg-no-repeat"></div>
+<div class="relative w-full min-h-[90vh] md:min-h-[85vh] flex items-end pt-24">
+                <div id="detail-backdrop" class="absolute inset-0 bg-cover bg-center bg-no-repeat"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-[#141414] via-[#141414]/60 to-transparent"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-transparent h-40"></div>
     
             <div class="relative w-full p-6 md:p-12 lg:p-16 z-10 pb-12">
                 <div class="flex flex-col items-start mb-4 md:mb-6">
-                     <img id="detail-logo" src="" alt="Logo" class="hidden w-full max-w-[280px] md:max-w-[450px] h-auto object-contain mb-6 drop-shadow-2xl origin-bottom-left transition-transform duration-700" />
-                     <h1 id="detail-title" class="text-3xl md:text-6xl font-extrabold text-white mb-2 drop-shadow-lg leading-tight"></h1>
+<img id="detail-logo" 
+     src="" 
+     alt="Logo" 
+     class="hidden max-w-[200px] max-h-32 md:max-w-[400px] md:max-h-64 w-full h-auto object-contain mb-6 drop-shadow-xl origin-bottom-left" />                     <h1 id="detail-title" class="text-3xl md:text-6xl font-extrabold text-white mb-2 drop-shadow-lg leading-tight"></h1>
                 </div>
     
                 <div class="flex flex-wrap items-center gap-3 text-sm md:text-base text-gray-300 mb-6 font-medium">
@@ -2523,17 +2525,7 @@ async function handleResultClick(id, type, itemData = null) {
 openDetailView(id, type);            
         } else {
 openDetailView(id, type);            
-            // Gestione fullscreen
-            const container = document.getElementById('videoContainer');
-            if (container.requestFullscreen) {
-                container.requestFullscreen().then(() => {
-                    if (screen.orientation?.lock) {
-                        screen.orientation.lock('landscape').catch(err => {
-                            console.warn('Orientation lock failed:', err);
-                        });
-                    }
-                });
-            }
+
         }
     } catch (error) {
         console.error("Error handling result click:", error);
