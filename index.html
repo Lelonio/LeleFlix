@@ -1020,6 +1020,38 @@ main .max-w-7xl {
         transform: scale(0.96) translateY(20px);
     }
 }
+
+/* Video Background a tutto schermo */
+#hero-video-wrapper {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+}
+
+#hero-video-wrapper iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    /* Zoom aggressivo per tagliare i bordi neri e interfaccia */
+    transform: translate(-50%, -50%) scale(1.5); 
+    pointer-events: none;
+}
+
+/* Adattamento per schermi ultra-wide o alti */
+@media (min-aspect-ratio: 16/9) {
+    #hero-video-wrapper iframe { height: 56.25vw; }
+}
+@media (max-aspect-ratio: 16/9) {
+    #hero-video-wrapper iframe { width: 177.78vh; }
+}
+
+
+.mobile-text-contrast {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0,0,0,0.5);
+    background-color: transparent !important; /* Assicura che non ci siano sfondi */
+}
     </style>
 </head>
 <body class="bg-dark text-accent " >
@@ -1324,12 +1356,18 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 
     <div id="home-view" class="transition-opacity duration-500 ease-in-out">
         
-        <section id="hero-section" class="relative">
-            <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center"></div>
-            <div class="hero-gradient absolute inset-0"></div>
-            <div class="hero-fade"></div>
-            
-            <div class="relative z-10 h-full flex items-center">
+<section id="hero-section" class="relative h-screen overflow-hidden">
+    <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 z-0"></div>
+    
+    <div id="hero-video-container" class="absolute inset-0 z-0 hidden opacity-0 transition-opacity duration-1000 pointer-events-none overflow-hidden">
+        <div id="hero-video-wrapper" class="w-full h-full relative">
+            </div>
+    </div>
+
+    <div class="hero-gradient absolute inset-0 z-10"></div>
+    <div class="hero-fade z-10"></div>
+    
+    <div class="relative z-20 h-full flex items-center">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                     <div class="hero-content-container from-black/80 via-black/50 to-transparent md:bg-none">
                         <div class="w-full lg:w-1/2">
@@ -1358,54 +1396,155 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
 
         <main class="relative z-20 -mt-20 scrollbar-hide">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                
-                <section id="movie-trend" class="mb-12">
-                    <h2 id="trending" class="text-xl font-bold mb-4">Film in tendenza</h2>
-                    <div class="carousel-container relative">
-                        <div id="trending-movies" class="carousel-row gap-4">
-                            <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]">
-                                <div class="bg-gray-800 rounded-lg h-64"></div>
-                                <div class="h-4 bg-gray-800 rounded mt-2 w-3/4"></div>
-                            </div>
-                            <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]">
-                                <div class="bg-gray-800 rounded-lg h-64"></div>
-                                <div class="h-4 bg-gray-800 rounded mt-2 w-3/4"></div>
-                            </div>
-                        </div>
-                        <button class="carousel-btn prev" data-target="trending-movies"><i class="fas fa-chevron-left"></i></button>
-                        <button class="carousel-btn next" data-target="trending-movies"><i class="fas fa-chevron-right"></i></button>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <section id="continue-watching" class="mb-12 hidden relative">
+            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Continua a guardare</h2>
+            <div class="carousel-container relative">
+                <div id="continue-watching-grid" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x py-4">
                     </div>
-                </section>
-
-                <section id="tv-popular" class="mb-12">
-                    <h2 class="text-xl font-bold mb-4">Serie TV popolari</h2>
-                    <div class="carousel-container relative">
-                        <div id="popular-tv" class="carousel-row gap-4"></div>
-                        <button class="carousel-btn prev" data-target="popular-tv"><i class="fas fa-chevron-left"></i></button>
-                        <button class="carousel-btn next" data-target="popular-tv"><i class="fas fa-chevron-right"></i></button>
-                    </div>
-                </section>
-
-                <section id="critics" class="mb-12">
-                    <h2 class="text-xl font-bold mb-4">Film più votati</h2>
-                    <div class="carousel-container relative">
-                        <div id="top-rated-movies" class="carousel-row gap-4"></div>
-                        <button class="carousel-btn prev" data-target="top-rated-movies"><i class="fas fa-chevron-left"></i></button>
-                        <button class="carousel-btn next" data-target="top-rated-movies"><i class="fas fa-chevron-right"></i></button>
-                    </div>
-                </section>
-
-                <section id="new" class="mb-12">
-                    <h2 class="text-xl font-bold mb-4">Film al cinema</h2>
-                    <div class="carousel-container relative">
-                        <div id="upcoming-movies" class="carousel-row gap-4"></div>
-                        <button class="carousel-btn prev" data-target="upcoming-movies"><i class="fas fa-chevron-left"></i></button>
-                        <button class="carousel-btn next" data-target="upcoming-movies"><i class="fas fa-chevron-right"></i></button>
-                    </div>
-                </section>
+                <button class="carousel-btn prev" data-target="continue-watching-grid"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" data-target="continue-watching-grid"><i class="fas fa-chevron-right"></i></button>
             </div>
-        </main>
+        </section>
+
+<section id="top-10-section" class="mb-12 relative">
+    <h2 class="text-xl font-bold mb-4 px-4 md:px-8">Top 10 oggi in Italia</h2>
+    
+    <div class="carousel-container relative">
+        <div id="top-10-grid" class="carousel-row gap-4 pl-4 md:pl-8 pb-8 pt-4 flex overflow-x-auto scrollbar-hide snap-x">
+            <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%] h-64 bg-gray-800 rounded-lg ml-12"></div>
+            <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%] h-64 bg-gray-800 rounded-lg ml-12"></div>
+            <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%] h-64 bg-gray-800 rounded-lg ml-12"></div>
+        </div>
+        
+        <button class="carousel-btn prev" data-target="top-10-grid"><i class="fas fa-chevron-left"></i></button>
+        <button class="carousel-btn next" data-target="top-10-grid"><i class="fas fa-chevron-right"></i></button>
+    </div>
+</section>
+
+        <section id="movie-trend" class="mb-12">
+            <h2 id="trending" class="text-xl font-bold mb-4 px-4 md:px-0">Film in tendenza</h2>
+            <div class="carousel-container relative">
+                <div id="trending-movies" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                </div>
+                <button class="carousel-btn prev" data-target="trending-movies"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" data-target="trending-movies"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+
+        <section id="tv-popular" class="mb-12">
+            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Serie TV popolari</h2>
+            <div class="carousel-container relative">
+                <div id="popular-tv" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                </div>
+                <button class="carousel-btn prev" data-target="popular-tv"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" data-target="popular-tv"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+
+        <section id="critics" class="mb-12">
+            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Film più votati</h2>
+            <div class="carousel-container relative">
+                <div id="top-rated-movies" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                </div>
+                <button class="carousel-btn prev" data-target="top-rated-movies"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" data-target="top-rated-movies"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+
+        <section id="new" class="mb-12">
+            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Film al cinema</h2>
+            <div class="carousel-container relative">
+                <div id="upcoming-movies" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                </div>
+                <button class="carousel-btn prev" data-target="upcoming-movies"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" data-target="upcoming-movies"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+
+        <section id="genre-action-section" class="mb-12">
+            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Azione e Avventura</h2>
+            <div class="carousel-container relative">
+                <div id="genre-action" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                </div>
+                <button class="carousel-btn prev" data-target="genre-action"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" data-target="genre-action"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+
+        <section id="genre-comedy-section" class="mb-12">
+            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Commedie</h2>
+            <div class="carousel-container relative">
+                <div id="genre-comedy" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                </div>
+                <button class="carousel-btn prev" data-target="genre-comedy"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" data-target="genre-comedy"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+
+        <section id="genre-horror-section" class="mb-12">
+            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Brivido e Horror</h2>
+            <div class="carousel-container relative">
+                <div id="genre-horror" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                </div>
+                <button class="carousel-btn prev" data-target="genre-horror"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" data-target="genre-horror"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+        
+        <section id="genre-animation-section" class="mb-12">
+            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Animazione</h2>
+            <div class="carousel-container relative">
+                <div id="genre-animation" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+                </div>
+                <button class="carousel-btn prev" data-target="genre-animation"><i class="fas fa-chevron-left"></i></button>
+                <button class="carousel-btn next" data-target="genre-animation"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </section>
+
+    </div>
+</main>
     </div>
 
 <div id="detail-view" class="hidden fixed inset-0 z-[60] bg-[#141414] overflow-y-auto custom-scrollbar">        
@@ -1541,6 +1680,128 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     </div>
 
     <style>
+        /* Sostituisci o aggiungi questo al tuo CSS */
+
+/* Stile Top 10 Cards */
+.top10-card {
+    position: relative;
+    flex: 0 0 auto;
+    /* La larghezza deve accomodare il numero a sinistra */
+    width: 50%; 
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    /* Snap per scorrimento fluido */
+    scroll-snap-align: start;
+    margin-right: -20px; /* Sovrapposizione leggera per stile */
+    overflow: visible !important;
+}
+
+@media (min-width: 768px) {
+    .top10-card {
+        width: 30%;
+        margin-right: -30px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .top10-card {
+        width: 20%;
+        margin-right: -40px;
+    }
+}
+
+.top10-card:hover {
+    transform: scale(1.05);
+    z-index: 20; /* Porta in primo piano sopra le altre */
+}
+
+/* Il Numero SVG */
+.top10-rank {
+    position: absolute;
+    left: -15px; /* Sposta il numero un po' fuori a sinistra per l'effetto sovrapposizione */
+    bottom: 0;
+    height: 100%;
+    width: 50%;
+    z-index: -1; /* Va DIETRO la locandina */
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+}
+/* Fix per rendere il numero scuro dentro e col bordo bianco */
+.top10-rank svg {
+    height: 160px; /* Altezza fissa grande */
+    width: auto;
+    fill: #141414; /* Riempimento scuro come lo sfondo */
+    stroke: #595959; /* Bordo grigio */
+    stroke-width: 4px;
+}
+
+.top10-text {
+    font-family: 'Impact', 'Arial Black', sans-serif;
+    font-weight: 900;
+    fill: #141414; /* Colore interno scuro */
+    stroke: #595959; /* Colore bordo */
+    stroke-width: 8px;
+    stroke-linejoin: round; /* <--- QUESTO RISOLVE IL BUG DELLE LINEE */
+    paint-order: stroke; /* Assicura che il bordo non mangi il riempimento */
+}
+
+/* Aggiustamenti per mobile */
+@media (max-width: 768px) {
+    .top10-rank {
+        left: -10px; /* Meno sporgente su mobile */
+        width: 45%;
+    }
+    .top10-text {
+        stroke-width: 6px; /* Bordo leggermente più sottile su schermi piccoli */
+    }
+}
+
+/* La locandina */
+.top10-poster-container {
+    /* Assicurati che l'immagine stia sopra */
+    position: relative;
+    z-index: 2;
+    margin-left: auto; /* Spinge l'immagine a destra */
+    width: 65%; /* L'immagine occupa il 65%, lasciando spazio al numero */
+}
+
+.top10-poster {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Badge "Aggiunto di recente" */
+.recent-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #E50914;
+    color: white;
+    text-align: center;
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 2px 0;
+    z-index: 3;
+}
+/* Badge "Aggiunto di recente" */
+.recent-badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #E50914;
+    color: white;
+    text-align: center;
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 2px 0;
+    z-index: 3;
+}
 
         /* Tailwind utility class */
 .scrollbar-hide {
@@ -1687,6 +1948,38 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
                 transform: translateY(0) scale(1);
             }
         }
+
+
+        /* css/style.css */
+
+/* Toast di notifica nel player */
+#player-toast {
+    position: absolute;
+    top: 10%; /* Posizionato in alto */
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    background-color: rgba(0, 0, 0, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 30px; /* Bordi arrotondati */
+    font-size: 14px;
+    font-weight: 500;
+    pointer-events: none; /* Non cliccabile */
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 200;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Stato visibile */
+#player-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
     </style>
     <!-- Player Modal -->
     <div id="player-modal" class="fixed inset-0 z-50 overflow-hidden hidden bg-black">
@@ -2189,173 +2482,113 @@ async function getPosterDetails(tmdbId, contentType) {
 }
 
 // Funzione per visualizzare la sezione "Continua a guardare"
+// Funzione per visualizzare la sezione "Continua a guardare"
 async function displayContinueWatching() {
     try {
         const progressItems = await getContinueWatching();
+        const continueSection = document.getElementById('continue-watching');
+        const grid = document.getElementById('continue-watching-grid');
         
+        // Se non trova gli elementi HTML, esce
+        if (!continueSection || !grid) return;
+
         console.log('Progress items:', progressItems);
         
+        // Se non c'è nulla da guardare, nascondi la sezione
         if (progressItems.length === 0) {
-            console.log('Nessun progresso da visualizzare');
-            const continueSection = document.getElementById('continue-watching');
-            if (continueSection) {
-                continueSection.style.display = 'none';
-            }
+            continueSection.classList.add('hidden');
+            continueSection.style.display = 'none';
             return;
         }
         
-        // Crea la sezione se non esiste
-        let continueSection = document.getElementById('continue-watching');
-        if (!continueSection) {
-            continueSection = document.createElement('section');
-            continueSection.id = 'continue-watching';
-            continueSection.className = 'mb-12';
-            continueSection.innerHTML = `
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <h2 class="text-xl font-bold mb-4">Continua a guardare</h2>
-                    <div id="continue-watching-grid" class="carousel-row"></div>
-                </div>
-            `;
-            
-            // Inserisci all'inizio del main
-            const mainElement = document.querySelector('main');
-            if (mainElement) {
-                mainElement.insertBefore(continueSection, mainElement.firstChild);
-            }
-        } else {
-            continueSection.style.display = 'block';
-        }
+        // --- MOSTRA LA SEZIONE ---
+        continueSection.classList.remove('hidden');
+        continueSection.style.display = 'block';
         
-        const grid = document.getElementById('continue-watching-grid');
-        if (!grid) {
-            console.error('Elemento grid non trovato');
-            return;
-        }
-        
-        // Mostra skeleton loading
+        // Mostra skeleton loading mentre carica i poster
         grid.innerHTML = `
-            <div class="animate-pulse col-span-5 text-center py-8">
-                <i class="fas fa-spinner fa-spin text-2xl text-primary"></i>
-                <p class="text-gray-400 mt-2">Caricamento contenuti...</p>
-            </div>
+           <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+           <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+           <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
         `;
         
-        // Recupera tutti i poster in parallelo
+        // Recupera i poster
         const itemsWithPosters = await Promise.all(
-            progressItems.slice(0, 10).map(async (item) => {
+            progressItems.slice(0, 15).map(async (item) => { // Mostra max 15 item
                 try {
                     const posterPath = await getPosterDetails(item.tmdbId, item.contentType);
-                    return {
-                        ...item,
-                        posterPath
-                    };
-                } catch (error) {
-                    console.error('Errore nel recupero del poster per:', item.tmdbId, error);
-                    return {
-                        ...item,
-                        posterPath: null
-                    };
+                    return { ...item, posterPath };
+                } catch {
+                    return { ...item, posterPath: null };
                 }
             })
         );
         
-        // Ora crea le card con i poster
+        // Pulisci e popola
         grid.innerHTML = '';
         
         itemsWithPosters.forEach(item => {
-            try {
-                const posterUrl = item.posterPath ? 
-                    `https://image.tmdb.org/t/p/w500${item.posterPath}` : 
-                    'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSI0NTAiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2Ij5OZXNzdW5hIGltbWFnaW5lPC90ZXh0Pjwvc3ZnPg==';
-                
-                const title = item.title || 'Senza titolo';
-                const typeLabel = item.contentType === 'movie' ? 'Film' : `S${item.season || 1}E${item.episode || 1}`;
-                
-                const card = document.createElement('div');
-                card.className = 'movie-card cursor-pointer relative';
-                card.innerHTML = `
-                    <button 
-                      class="remove-progress-btn" 
-                      data-key="${item.id}" 
-                      aria-label="Rimuovi dalla lista">
-                        <i class="fas fa-times"></i>
-                    </button>
+            const posterUrl = item.posterPath ? 
+                `https://image.tmdb.org/t/p/w500${item.posterPath}` : 
+                'https://via.placeholder.com/500x750?text=No+Image';
+            
+            const title = item.title || 'Senza titolo';
+            const typeLabel = item.contentType === 'movie' ? 'Film' : `S${item.season || 1} E${item.episode || 1}`;
+            
+            const card = document.createElement('div');
+            // AGGIUNTE classi di larghezza per allinearsi al nuovo carosello
+            card.className = 'movie-card cursor-pointer relative flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%] transform hover:scale-105 transition-transform duration-300';
+            
+            card.innerHTML = `
+                <button class="remove-progress-btn absolute top-2 right-2 z-20 bg-black/60 rounded-full p-2 hover:bg-red-600 transition" 
+                        data-key="${item.id}" onclick="event.stopPropagation(); removeWatchProgress('${item.id}', this.closest('.movie-card'))">
+                    <i class="fas fa-times text-white text-xs"></i>
+                </button>
 
-                    <div class="movie-card-content">
-                        <div class="relative overflow-hidden bg-opacity-0 h-64">
-                            <img src="${posterUrl}" 
-                                 alt="${title}" 
-                                 class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjQ1MCIgdmlld0JveD0iMCAwIDMwMCA0NTAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjMwMCIgaGVpZ2h0PSI0NTAiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2Ij5OZXNzdW5hIGltbWFnaW5lPC90ZXh0Pjwvc3ZnPg=='">
-                            
-                            <div class="absolute bottom-0 left-0 right-0 bg-gray-800 bg-opacity-50 h-1">
-                                <div class="bg-primary h-full" style="width: ${item.progressPercentage || 0}%"></div>
-                            </div>
-                            
-                            
-                        </div>
-                        
-                        <h3 class="mt-2 text-sm font-semibold truncate px-1 text-white">${title}</h3>
-                        <p class="text-gray-400 text-xs px-1">${typeLabel}</p>
+                <div class="movie-card-content relative rounded-lg overflow-hidden h-64">
+                    <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover">
+                    
+                    <div class="absolute bottom-0 left-0 right-0 bg-gray-800/80 h-1">
+                        <div class="bg-primary h-full" style="width: ${item.progressPercentage || 0}%"></div>
                     </div>
-                `;
+                    
+                    <div class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <i class="fas fa-play text-white text-3xl"></i>
+                    </div>
+                </div>
                 
-// (Questa è la NUOVA versione)
-                card.addEventListener('click', async (e) => { // <-- Aggiunto (e)
-                    
-                    // --- INIZIO MODIFICA ---
-                    // Controlla se l'elemento che ha iniziato il click
-                    // (e.target) è il pulsante "X" o un suo figlio (l'icona <i>).
-                    if (e.target.closest('.remove-progress-btn')) {
-                        // Se sì, è un click per rimuovere.
-                        // NON fare nulla e lascia che l'evento
-                        // "risalga" (bubble up) fino al listener su 'main' 
-                        // che gestirà la rimozione.
-                        return; 
-                    }
-                    // --- FINE MODIFICA ---
-
-                    // Se il codice arriva qui, il click NON era sulla "X".
-                    // Procedi normalmente con la riproduzione:
-                    const content = {
-                        id: item.tmdbId,
-                        media_type: item.contentType,
-                        title: item.title,
-                        name: item.title,
-                        season_number: item.season,
-                        episode_number: item.episode,
-                        resumeTime: item.currentTime
-                    };
-                    
-                    if (item.contentType === 'tv') {
-                        try {
-                            const tvResponse = await fetch(`${API_URL}/tv/${item.tmdbId}?api_key=${API_KEY}&language=it-IT`);
-                            const tvData = await tvResponse.json();
-                            content.tv_data = tvData; 
-                        } catch (tvError) {
-                            console.error('Errore nel caricamento dati serie TV:', tvError);
-                        }
-                    }
-                    
-                    playMovie(content);
-                });
-                grid.appendChild(card);
-            } catch (error) {
-                console.error('Errore nel creare la card per:', item.tmdbId, error);
-            }
+                <h3 class="mt-2 text-sm font-semibold truncate text-white px-1">${title}</h3>
+                <p class="text-gray-400 text-xs px-1">${typeLabel}</p>
+            `;
+            
+            // Gestione Click per Riproduzione
+            card.addEventListener('click', async () => {
+                const content = {
+                    id: item.tmdbId,
+                    media_type: item.contentType,
+                    title: item.title,
+                    name: item.title,
+                    season_number: item.season,
+                    episode_number: item.episode,
+                    resumeTime: item.currentTime // Per riprendere da dove lasciato
+                };
+                
+                if (item.contentType === 'tv') {
+                    // Se è una serie, serve caricare i dati completi per il player
+                    try {
+                         const tvRes = await fetch(`${API_URL}/tv/${item.tmdbId}?api_key=${API_KEY}&language=it-IT`);
+                         content.tv_data = await tvRes.json();
+                    } catch(e) {}
+                }
+                
+                playMovie(content);
+            });
+            
+            grid.appendChild(card);
         });
         
     } catch (error) {
-        console.error('Errore nel displayContinueWatching:', error);
-        const grid = document.getElementById('continue-watching-grid');
-        if (grid) {
-            grid.innerHTML = `
-                <div class="col-span-5 text-center py-8">
-                    <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
-                    <p class="text-gray-400 mt-2">Errore nel caricamento dei contenuti</p>
-                </div>
-            `;
-        }
+        console.error('Errore displayContinueWatching:', error);
     }
 }
 
@@ -3050,6 +3283,96 @@ const episodeMap = new Map(); // 🔐 archivio centrale degli episodi
 let availableContent = [];
 
 
+// Funzione per generare l'SVG del numero (1-10)
+// Funzione per generare l'SVG del numero (1-10)
+function getNumberSVG(rank) {
+    // Coordinate path semplificate per i numeri (stile approssimativo)
+    // In un progetto reale useresti file SVG veri, qui li disegniamo col codice
+    // Nota: Uso testo SVG per semplicità, ma con stroke CSS per l'effetto
+    return `
+    <svg viewBox="0 0 70 100" class="top10-number">
+        <text x="50%" y="100%" font-family="Arial, sans-serif" font-weight="900" font-size="130" text-anchor="middle" fill="#141414" stroke="#595959" stroke-width="2">${rank}</text>
+    </svg>`;
+}
+
+// Funzione specifica per caricare la Top 10
+// Funzione specifica per caricare la Top 10 con fix grafico mobile
+async function getTop10() {
+    const container = document.getElementById('top-10-grid');
+    if(!container) return;
+    
+    try {
+        const res = await fetch(`${API_URL}/trending/all/day?api_key=${API_KEY}&language=it-IT`);
+        const data = await res.json();
+        
+        container.innerHTML = '';
+        
+        const topItems = data.results.filter(item => 
+            availableContent.some(ac => ac.tmdb_id === item.id)
+        ).slice(0, 10);
+
+        if (topItems.length === 0) {
+            document.getElementById('top-10-section').style.display = 'none';
+            return;
+        }
+
+        topItems.forEach((item, index) => {
+            const rank = index + 1;
+            const isTV = item.media_type === 'tv';
+            const title = isTV ? item.name : item.title;
+            
+            const card = document.createElement('div');
+            // Nota: Rimuovi classi di larghezza fissa se presenti nel CSS globale per .top10-card
+            // Qui usiamo classi utility per la struttura flex
+            card.className = 'top10-card flex-shrink-0 relative cursor-pointer transform hover:scale-105 transition-transform duration-300 snap-start';
+            
+            // Definisci larghezza inline per coerenza col carosello
+            // Mobile: 40%, Tablet: 28%, Desktop: 18%
+            card.classList.add('w-[45%]', 'md:w-[30%]', 'lg:w-[20%]'); 
+
+            // Offset specifico per il numero 1 (che è stretto) e il 10 (che è largo)
+            let viewBox = "0 0 100 150";
+            let xPos = "50%";
+            let fontSize = "140px";
+            
+            if (rank === 1) { 
+                xPos = "65%"; // Sposta l'1 un po' a destra
+            } else if (rank === 10) {
+            
+                xPos = "65%"; // Allarga la vista per il 10
+                 // Leggermente più piccolo per farcelo stare
+            }
+
+            // Generazione SVG Robusto
+            const numberHtml = `
+                <div class="top10-rank">
+                    <svg viewBox="${viewBox}" class="top10-svg" preserveAspectRatio="xMidYMax meet">
+                        <text x="${xPos}" y="90%" 
+                              class="top10-text"
+                              text-anchor="middle"
+                              font-size="${fontSize}">
+                            ${rank}
+                        </text>
+                    </svg>
+                </div>
+            `;
+
+            card.innerHTML = `
+                ${numberHtml}
+                <div class="top10-poster-container h-64 rounded-lg overflow-hidden shadow-lg">
+                    <img src="${POSTER_PATH}${item.poster_path}" alt="${title}" class="w-full h-full object-cover">
+                </div>
+            `;
+
+            // Click handler (usa la tua logica esistente)
+            card.addEventListener('click', () => handleResultClick(item.id, item.media_type, item));
+
+            container.appendChild(card);
+        });
+    } catch (e) {
+        console.error("Errore Top 10:", e);
+    }
+}
 
 // Carica tutti i contenuti disponibili
 async function loadAvailableContent() {
@@ -3091,6 +3414,11 @@ async function loadAvailableContent() {
     getTopRatedMovies();
     getUpcomingMovies();
     getRandomHeroContent(); // Updated function name
+    getMoviesByGenre(28, 'genre-action');
+    getMoviesByGenre(35, 'genre-comedy');
+    getMoviesByGenre(27, 'genre-horror');
+    getMoviesByGenre(16, 'genre-animation');
+    getTop10();
 
 
     document.getElementById('search-button').addEventListener('click', () => searchMedia());
@@ -3358,7 +3686,117 @@ async function getRandomHeroContent() {
     displayHeroMovie(currentHeroMovie, backdropUrl); // Passa l'URL per evitare duplicazioni
 }
 
+// --- GESTIONE VIDEO HERO IN HD ---
 
+// 1. Carica le API di YouTube in modo asincrono
+const tag = document.createElement('script');
+tag.src = "https://www.youtube.com/iframe_api";
+const firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+let player = null;
+let currentVideoId = null;
+
+// Funzione chiamata dalle API di YouTube quando sono pronte
+function onYouTubeIframeAPIReady() {
+    console.log("YouTube API Ready");
+}
+
+async function loadHeroVideo(content) {
+    // Rimuovi il blocco mobile se vuoi il video anche lì
+    // if (window.innerWidth <= 768) return;
+
+    const container = document.getElementById('hero-video-container');
+    const backdrop = document.getElementById('hero-backdrop');
+    
+    // Reset stato
+    container.classList.add('hidden', 'opacity-0');
+    container.classList.remove('opacity-100');
+    backdrop.style.opacity = '1';
+
+    try {
+        // Cerca il trailer su TMDB
+        const res = await fetch(`${API_URL}/${content.media_type}/${content.id}/videos?api_key=${API_KEY}&language=en-US`);
+        const data = await res.json();
+        
+        if (!data.results || data.results.length === 0) return;
+
+        // Cerca Trailer
+        const video = data.results.find(v => v.site === 'YouTube' && v.type === 'Trailer') || data.results[0];
+        if (!video) return;
+
+        // Se c'è già un player attivo, distruggilo per crearne uno nuovo pulito
+        if (player) {
+            player.destroy();
+            player = null;
+        }
+
+        // Crea il div segnaposto se è stato rimosso
+        const wrapper = document.getElementById('hero-video-wrapper');
+        wrapper.innerHTML = '<div id="youtube-player"></div>';
+
+        // Inizializza il Player YouTube
+        player = new YT.Player('youtube-player', {
+            videoId: video.key,
+            playerVars: {
+                'autoplay': 1,
+                'controls': 0,
+                'rel': 0,
+                'showinfo': 0,
+                'mute': 1,
+                'loop': 1,
+                'playlist': video.key,
+                'playsinline': 1, // Fondamentale per iOS
+                'iv_load_policy': 3,
+                'modestbranding': 1
+            },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
+        });
+
+    } catch (error) {
+        console.error("Errore setup video:", error);
+    }
+}
+
+// Quando il player è pronto (bufferizzato)
+function onPlayerReady(event) {
+    // 1. Muta per sicurezza (browser policy)
+    event.target.mute();
+    
+    // 2. FORZA LA QUALITÀ HD
+    event.target.setPlaybackQuality('hd1080'); 
+    
+    // 3. Avvia
+    event.target.playVideo();
+}
+
+// Gestione stati (Buffer, Playing, ecc.)
+function onPlayerStateChange(event) {
+    const container = document.getElementById('hero-video-container');
+    const backdrop = document.getElementById('hero-backdrop');
+
+    // Quando il video sta effettivamente riproducendo (State = 1)
+    if (event.data === YT.PlayerState.PLAYING) {
+        
+        // Riprova a forzare la qualità mentre riproduce
+        event.target.setPlaybackQuality('hd1080');
+
+        // Aspetta un istante che la qualità visiva si stabilizzi, poi mostra
+        setTimeout(() => {
+            container.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                container.classList.remove('opacity-0');
+                container.classList.add('opacity-100');
+                
+                // Opzionale: nascondi l'immagine sotto per performance
+                // backdrop.style.opacity = '0';
+            });
+        }, 1000); // 1 secondo di buffer "invisibile" per caricare l'HD
+    }
+}
 // Update displayHeroMovie to handle both types
 async function displayHeroMovie(content) {
     const isMobile = window.innerWidth <= 768;
@@ -3445,21 +3883,61 @@ async function displayHeroMovie(content) {
             heroTitleEl.classList.remove('hidden');
         }
 
+
+
     } catch (error) {
         console.error('Errore logo hero:', error);
         // CASO C: Errore API -> Mostra il testo
         heroTitleEl.classList.remove('hidden');
     }
 
+    setTimeout(() => {
+        loadHeroVideo(content);
+    }, 1000);
+
     // 4. Gestione classi Mobile (invariato)
     if (isMobile) {
-        document.querySelector('.hero-gradient').classList.add('mobile-contrast');
         heroTitleEl.classList.add('mobile-text-contrast');
         heroOverviewEl.classList.add('mobile-text-contrast');
     } else {
-        document.querySelector('.hero-gradient').classList.remove('mobile-contrast');
         heroTitleEl.classList.remove('mobile-text-contrast');
         heroOverviewEl.classList.remove('mobile-text-contrast');
+    }
+}
+
+// Funzione generica per caricare film per genere
+async function getMoviesByGenre(genreId, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    try {
+        // Scarica film di quel genere ordinati per popolarità
+        const res = await fetch(`${API_URL}/discover/movie?api_key=${API_KEY}&with_genres=${genreId}&language=it-IT&sort_by=popularity.desc&page=1`);
+        const data = await res.json();
+        
+        container.innerHTML = ''; // Pulisce gli skeleton
+
+        // Filtra solo quelli disponibili sul tuo server
+        const filteredMovies = data.results.filter(movie => 
+            availableContent.some(item => item.tmdb_id === movie.id)
+        );
+        
+        if (filteredMovies.length === 0) {
+            // Se non ci sono film disponibili per questo genere, nascondiamo l'intera sezione
+            const section = document.getElementById(containerId + '-section');
+            if(section) section.style.display = 'none';
+            return;
+        }
+
+        // Crea le card
+        filteredMovies.slice(0, 15).forEach(movie => {
+            const movieEl = createMovieCard(movie, 'movie');
+            container.appendChild(movieEl);
+        });
+        
+    } catch (error) {
+        console.error(`Errore caricamento genere ${genreId}:`, error);
+        container.innerHTML = '<p class="text-gray-400">Impossibile caricare i contenuti.</p>';
     }
 }
         

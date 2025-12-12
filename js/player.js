@@ -616,6 +616,35 @@ showNextEpisodePrompt() {
         }
     }
 
+    showToast(message) {
+        // Cerca se esiste già il toast, altrimenti crealo
+        let toast = document.getElementById('player-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'player-toast';
+            // Icona opzionale
+            toast.innerHTML = `<i class="fas fa-history text-[#E50914]"></i> <span></span>`;
+            
+            // Aggiungilo al contenitore del video
+            const container = document.getElementById('videoContainer');
+            if (container) container.appendChild(toast);
+        }
+        
+        // Imposta il messaggio
+        toast.querySelector('span').textContent = message;
+        
+        // Mostra
+        requestAnimationFrame(() => {
+            toast.classList.add('visible');
+        });
+        
+        // Nascondi dopo 3 secondi
+        clearTimeout(this.toastTimeout);
+        this.toastTimeout = setTimeout(() => {
+            if (toast) toast.classList.remove('visible');
+        }, 3000);
+    }
+
 async initPlayer() {
         // Reset stato UI (anche se nascosto)
         this.loadingOverlay.classList.remove('hidden');
@@ -674,6 +703,15 @@ async initPlayer() {
             this.playerModal.classList.remove('hidden');
             this.showControlsTemporarily();
             
+
+            // Funzione helper per gestire il resume
+            const handleResume = () => {
+                if (this.content.resumeTime && this.content.resumeTime > 10) { // Ignora se < 10 secondi
+                    console.log(`Resuming playback at ${this.content.resumeTime}s`);
+                    this.videoPlayer.currentTime = this.content.resumeTime;
+                    
+this.showToast('Ripreso da dove avevi lasciato');                }
+            };
             // Inizia HLS
             if (Hls.isSupported()) {
                 if (this.hls) this.hls.destroy();
@@ -694,7 +732,12 @@ async initPlayer() {
                     if (lvl >= 0) this.hls.currentLevel = lvl;
                     
                     this.loadingOverlay.classList.add('hidden');
-                    this.videoPlayer.play().catch(console.error);
+this.videoPlayer.play()
+                        .then(() => {
+                            // --- APPLICA IL RESUME QUI ---
+                            handleResume();
+                        })
+                        .catch(console.error);                    
                     
                     this.setupQualityOptions();
 // AUDIO TRACKS
@@ -742,8 +785,10 @@ async initPlayer() {
                 this.videoPlayer.src = url;
                 this.videoPlayer.addEventListener('loadedmetadata', () => {
                     this.loadingOverlay.classList.add('hidden');
-                    this.videoPlayer.play();
-                });
+this.videoPlayer.play().then(() => {
+                         // --- APPLICA IL RESUME QUI ---
+                         handleResume();
+                    });                });
             } else {
                 this.showError('Il tuo browser non supporta questo formato video.');
             }
