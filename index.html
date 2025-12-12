@@ -1359,10 +1359,9 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 <section id="hero-section" class="relative h-screen overflow-hidden">
     <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 z-0"></div>
     
-    <div id="hero-video-container" class="absolute inset-0 z-0 hidden opacity-0 transition-opacity duration-1000 pointer-events-none overflow-hidden">
-        <div id="hero-video-wrapper" class="w-full h-full relative">
-            </div>
-    </div>
+<div id="hero-video-container" class="absolute inset-0 z-0 hidden pointer-events-none overflow-hidden">
+    <div id="hero-video-wrapper" class="w-full h-full relative"></div>
+</div>
 
     <div class="hero-gradient absolute inset-0 z-10"></div>
     <div class="hero-fade z-10"></div>
@@ -1554,6 +1553,11 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     
 <div class="relative w-full min-h-[90vh] md:min-h-[85vh] flex items-end pt-24">
                 <div id="detail-backdrop" class="absolute inset-0 bg-cover bg-center bg-no-repeat"></div>
+<div id="detail-video-container" class="absolute inset-0 z-0 hidden pointer-events-none overflow-hidden">
+    <div id="detail-video-wrapper" class="w-full h-full relative">
+
+    </div>
+</div>
             <div class="absolute inset-0 bg-gradient-to-t from-[#141414] via-[#141414]/60 to-transparent"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-transparent h-40"></div>
     
@@ -1681,7 +1685,30 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 
     <style>
         /* Sostituisci o aggiungi questo al tuo CSS */
+#detail-video-wrapper {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+}
 
+#detail-video-wrapper iframe {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    /* Stesso zoom aggressivo della home */
+    transform: translate(-50%, -50%) scale(1.5); 
+    pointer-events: none;
+}
+
+/* Adattamento aspect ratio (opzionale, uguale alla home) */
+@media (min-aspect-ratio: 16/9) {
+    #detail-video-wrapper iframe { height: 56.25vw; }
+}
+@media (max-aspect-ratio: 16/9) {
+    #detail-video-wrapper iframe { width: 177.78vh; }
+}
 /* Stile Top 10 Cards */
 .top10-card {
     position: relative;
@@ -2377,6 +2404,22 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         max-width: 80%;
     }
 }
+
+/* Animazione Ingresso Video Hero */
+@keyframes cinematicEntrance {
+    0% {
+        opacity: 0;
+        transform: scale(1.05); /* Parte leggermente zoomato */
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1); /* Arriva alla dimensione normale */
+    }
+}
+
+.video-entrance-active {
+    animation: cinematicEntrance 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
 </style>
 <!-- Season/Episode Selector Modal -->
 <div id="seasonEpisodeSelector" class="season-episode-selector glass-modal" style="display: none;">
@@ -2826,9 +2869,20 @@ async function openDetailView(contentOrId, type = 'movie') {
 }
 
 function closeDetailView() {
-    const homeView = document.getElementById('home-view');
+const homeView = document.getElementById('home-view');
     const detailView = document.getElementById('detail-view');
     
+    // --- AGGIUNTA: Pulisci il video player ---
+    if (detailPlayer) {
+        detailPlayer.destroy();
+        detailPlayer = null;
+    }
+    // Nascondi il container video per la prossima volta
+    const videoContainer = document.getElementById('detail-video-container');
+    if(videoContainer) {
+        videoContainer.classList.add('hidden', 'opacity-0');
+        videoContainer.classList.remove('opacity-100');
+    }
     // 1. Mostra SUBITO la home sotto (così si vede mentre il dettaglio scompare)
     homeView.classList.remove('hidden');
     window.scrollTo(0, scrollPositionBeforeDetail); // Ripristina scroll home
@@ -2961,7 +3015,12 @@ async function populateDetailView(content) {
 
     // --- TITOLI SIMILI ---
     loadSimilar(content.id, content.media_type);
+
+        loadDetailVideo(content);
+
 }
+
+
 
 // Caricamento Episodi
 async function loadEpisodes(tvId, seasonNum, tvData) {
@@ -3696,46 +3755,71 @@ firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
 let player = null;
 let currentVideoId = null;
+let isYouTubeApiReady = false; // Flag di stato per l'API
 
-// Funzione chiamata dalle API di YouTube quando sono pronte
+// Funzione chiamata automaticamente da YouTube quando è pronto
 function onYouTubeIframeAPIReady() {
     console.log("YouTube API Ready");
+    isYouTubeApiReady = true;
 }
 
+// Funzione Helper per attendere che l'API sia pronta
+function waitForYouTubeApi() {
+    return new Promise(resolve => {
+        // Se è già pronta, risolvi subito
+        if (isYouTubeApiReady && window.YT) {
+            resolve();
+        } else {
+            // Altrimenti controlla ogni 100ms
+            const interval = setInterval(() => {
+                if (isYouTubeApiReady && window.YT) {
+                    clearInterval(interval);
+                    resolve();
+                }
+            }, 100);
+        }
+    });
+}
+let detailPlayer = null; // Variabile per il player della vista dettagli
+// Funzione chiamata dalle API di YouTube quando sono pronte
+
+
 async function loadHeroVideo(content) {
-    // Rimuovi il blocco mobile se vuoi il video anche lì
-    // if (window.innerWidth <= 768) return;
+    // if (window.innerWidth <= 768) return; // Scommenta se vuoi bloccare su mobile
 
     const container = document.getElementById('hero-video-container');
     const backdrop = document.getElementById('hero-backdrop');
     
-    // Reset stato
-    container.classList.add('hidden', 'opacity-0');
-    container.classList.remove('opacity-100');
+    // Reset stato: nascondi e rimuovi classi di animazione
+    container.classList.add('hidden');
+    container.classList.remove('video-entrance-active'); 
     backdrop.style.opacity = '1';
 
     try {
+        // --- FIX: Attendi che YouTube sia pronto prima di procedere ---
+        await waitForYouTubeApi(); 
+        // -----------------------------------------------------------
+
+        // Distruggi player precedente se esiste
+        if (player) {
+            player.destroy();
+            player = null;
+        }
+
         // Cerca il trailer su TMDB
         const res = await fetch(`${API_URL}/${content.media_type}/${content.id}/videos?api_key=${API_KEY}&language=en-US`);
         const data = await res.json();
         
         if (!data.results || data.results.length === 0) return;
 
-        // Cerca Trailer
         const video = data.results.find(v => v.site === 'YouTube' && v.type === 'Trailer') || data.results[0];
         if (!video) return;
 
-        // Se c'è già un player attivo, distruggilo per crearne uno nuovo pulito
-        if (player) {
-            player.destroy();
-            player = null;
-        }
-
-        // Crea il div segnaposto se è stato rimosso
+        // Reset wrapper HTML
         const wrapper = document.getElementById('hero-video-wrapper');
         wrapper.innerHTML = '<div id="youtube-player"></div>';
 
-        // Inizializza il Player YouTube
+        // Inizializza Player
         player = new YT.Player('youtube-player', {
             videoId: video.key,
             playerVars: {
@@ -3746,7 +3830,7 @@ async function loadHeroVideo(content) {
                 'mute': 1,
                 'loop': 1,
                 'playlist': video.key,
-                'playsinline': 1, // Fondamentale per iOS
+                'playsinline': 1,
                 'iv_load_policy': 3,
                 'modestbranding': 1
             },
@@ -3757,7 +3841,66 @@ async function loadHeroVideo(content) {
         });
 
     } catch (error) {
-        console.error("Errore setup video:", error);
+        console.error("Errore setup video hero:", error);
+    }
+}
+
+// Funzione per i DETTAGLI
+async function loadDetailVideo(content) {
+    const container = document.getElementById('detail-video-container');
+    
+    // Reset stato: Nascondi e rimuovi classe animazione per poterla ri-eseguire
+    container.classList.add('hidden');
+    container.classList.remove('video-entrance-active');
+    
+    try {
+        if (detailPlayer) {
+            detailPlayer.destroy();
+            detailPlayer = null;
+        }
+
+        const res = await fetch(`${API_URL}/${content.media_type}/${content.id}/videos?api_key=${API_KEY}&language=en-US`);
+        const data = await res.json();
+        
+        if (!data.results || data.results.length === 0) return;
+
+        const video = data.results.find(v => v.site === 'YouTube' && v.type === 'Trailer') || data.results[0];
+        if (!video) return;
+
+        const wrapper = document.getElementById('detail-video-wrapper');
+        wrapper.innerHTML = '<div id="detail-youtube-player"></div>';
+
+        detailPlayer = new YT.Player('detail-youtube-player', {
+            videoId: video.key,
+            playerVars: {
+                'autoplay': 1, 'controls': 0, 'rel': 0, 'showinfo': 0,
+                'mute': 1, 'loop': 1, 'playlist': video.key,
+                'playsinline': 1, 'iv_load_policy': 3, 'modestbranding': 1
+            },
+            events: {
+                'onReady': (event) => {
+                    event.target.mute();
+                    event.target.setPlaybackQuality('hd1080');
+                    event.target.playVideo();
+                },
+                'onStateChange': (event) => {
+                    if (event.data === YT.PlayerState.PLAYING) {
+                        event.target.setPlaybackQuality('hd1080');
+                        
+                        // APPLICAZIONE ANIMAZIONE
+                        setTimeout(() => {
+                            container.classList.remove('hidden');
+                            requestAnimationFrame(() => {
+                                container.classList.add('video-entrance-active');
+                            });
+                        }, 800);
+                    }
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error("Errore video dettaglio:", error);
     }
 }
 
@@ -3774,27 +3917,24 @@ function onPlayerReady(event) {
 }
 
 // Gestione stati (Buffer, Playing, ecc.)
+// Funzione per la HOME
 function onPlayerStateChange(event) {
     const container = document.getElementById('hero-video-container');
-    const backdrop = document.getElementById('hero-backdrop');
 
-    // Quando il video sta effettivamente riproducendo (State = 1)
     if (event.data === YT.PlayerState.PLAYING) {
-        
-        // Riprova a forzare la qualità mentre riproduce
         event.target.setPlaybackQuality('hd1080');
 
-        // Aspetta un istante che la qualità visiva si stabilizzi, poi mostra
+        // Buffer di 1 secondo per caricare HD
         setTimeout(() => {
+            // 1. Rimuovi hidden
             container.classList.remove('hidden');
+            
+            // 2. Applica l'animazione di ingresso
             requestAnimationFrame(() => {
-                container.classList.remove('opacity-0');
-                container.classList.add('opacity-100');
-                
-                // Opzionale: nascondi l'immagine sotto per performance
-                // backdrop.style.opacity = '0';
+                container.classList.add('video-entrance-active');
             });
-        }, 1000); // 1 secondo di buffer "invisibile" per caricare l'HD
+
+        }, 1000); 
     }
 }
 // Update displayHeroMovie to handle both types
@@ -3891,9 +4031,9 @@ async function displayHeroMovie(content) {
         heroTitleEl.classList.remove('hidden');
     }
 
-    setTimeout(() => {
         loadHeroVideo(content);
-    }, 1000);
+  
+        
 
     // 4. Gestione classi Mobile (invariato)
     if (isMobile) {
