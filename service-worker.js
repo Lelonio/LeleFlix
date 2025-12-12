@@ -1,4 +1,4 @@
-const CACHE_NAME = "streaming-cache-v1";
+const CACHE_NAME = "streaming-cache-v5";
 const urlsToCache = [
   "/",
   "/index.html",
