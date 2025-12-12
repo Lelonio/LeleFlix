@@ -1075,64 +1075,217 @@ main .max-w-7xl {
     </svg>
 
     <!-- Navbar con effetto liquid glass premium -->
-    <div class="glass-nav-container">
-        <nav class="glass-nav">
-            <!-- Filtro liquido avanzato -->
-            <div class="glass-filter"></div>
-            
-            <!-- Contenuto navbar -->
-            <div class="nav-content">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                    <div class="flex items-center justify-between h-full">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <img class="h-8 w-auto" src="logo.png" alt="LeleFlix">
-                            </div>
-                            <div class="hidden md:block ml-10">
-                                <div class="flex space-x-4">
-                                    <a href="#hero-section" class="text-accent hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Home</a>
-                                    <a href="#movie-trend" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Film</a>
-                                    <a href="#tv-popular" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Serie TV</a>
-                                    <a href="#critics" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Più votati</a>
-                                    <a href="#new" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Nuovi</a>
-                                </div>
+   <div class="glass-nav-container">
+    <nav class="glass-nav">
+        <div class="glass-nav-bg"></div>
+
+        <div class="glass-filter"></div>
+        
+        <div class="nav-content">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+                <div class="flex items-center justify-between h-full">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <img class="h-8 w-auto" src="logo.png" alt="LeleFlix">
+                        </div>
+                        <div class="hidden md:block ml-10">
+                            <div class="flex space-x-4">
+                                <a href="#hero-section" class="text-accent hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Home</a>
+                                <a href="#movie-trend" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Film</a>
+                                <a href="#tv-popular" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Serie TV</a>
+                                <a href="#critics" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Più votati</a>
+                                <a href="#new" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Nuovi</a>
                             </div>
                         </div>
-                        <div class="hidden md:block">
-                            <div class="ml-4 flex items-center">
-                                <div class="relative">
-                                    <input id="search-input" type="text" placeholder="Cerca Film o Serie TV..." 
-                                           class="bg-secondary bg-opacity-70 text-white px-4 py-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64 transition-all duration-300">
-                                    <button id="search-button" class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                        <i class="fas fa-search text-gray-400 hover:text-primary transition-colors duration-300"></i>
-                                    </button>
-                                </div>
+                    </div>
+                    <div class="hidden md:block">
+                        <div class="ml-4 flex items-center">
+                            <div class="relative">
+                                <input id="search-input" type="text" placeholder="Cerca Film o Serie TV..." 
+                                       class="bg-secondary bg-opacity-70 text-white px-4 py-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64 transition-all duration-300"
+                                       autocomplete="off"> 
+                                <button id="search-button" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                    <i class="fas fa-search text-gray-400 hover:text-primary transition-colors duration-300"></i>
+                                </button>
+                                
+                                <div id="search-history-desktop" class="search-history-dropdown"></div>
                             </div>
                         </div>
-                                     <!-- Icona ricerca mobile -->
-                <div class="md:hidden flex items-center">
-                    <button id="mobile-search-toggle" class="text-gray-300 hover:text-primary focus:outline-none">
-                        <i class="fas fa-search text-2xl"></i>
-                    </button>
+                    </div>
+                    <div class="md:hidden flex items-center">
+                        <button id="mobile-search-toggle" class="text-gray-300 hover:text-primary focus:outline-none">
+                            <i class="fas fa-search text-2xl"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Mobile search box - DEVE essere dentro il <nav> -->
         <div id="mobile-search-box">
             <div class="relative">
                 <input id="mobile-search-input" type="text" placeholder="Cerca Film o Serie TV..." 
-                       class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full">
+                       class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full"
+                       autocomplete="off">
                 <button id="mobile-search-button" class="absolute right-3 top-1/2 transform -translate-y-1/2">
                     <i class="fas fa-search text-gray-400 hover:text-primary"></i>
                 </button>
+                
+                <div id="search-history-mobile" class="search-history-dropdown"></div>
             </div>
         </div>
     </nav>
-         </div>
+</div>
     
     <script>
+// --- SISTEMA CRONOLOGIA RICERCHE ---
+const MAX_HISTORY_ITEMS = 5;
+const HISTORY_STORAGE_KEY = 'leleflix_search_history';
 
+// 1. Salva una ricerca
+function saveSearchToHistory(query) {
+    if (!query || query.trim().length < 2) return;
+    query = query.trim();
+
+    let history = getSearchHistory();
+    
+    // Rimuovi se esiste già (per spostarlo in cima)
+    history = history.filter(item => item.toLowerCase() !== query.toLowerCase());
+    
+    // Aggiungi all'inizio
+    history.unshift(query);
+    
+    // Mantieni solo gli ultimi X elementi
+    if (history.length > MAX_HISTORY_ITEMS) {
+        history = history.slice(0, MAX_HISTORY_ITEMS);
+    }
+
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+}
+
+// 2. Recupera la cronologia
+function getSearchHistory() {
+    try {
+        return JSON.parse(localStorage.getItem(HISTORY_STORAGE_KEY) || '[]');
+    } catch {
+        return [];
+    }
+}
+
+// 3. Cancella un elemento specifico
+function deleteHistoryItem(itemToDelete, event) {
+    if(event) event.stopPropagation(); // Evita di attivare la ricerca quando si clicca la X
+    
+    let history = getSearchHistory();
+    history = history.filter(item => item !== itemToDelete);
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+    
+    // Aggiorna le liste aperte
+    renderHistory('search-history-desktop');
+    renderHistory('search-history-mobile');
+}
+
+// 4. Renderizza la lista HTML
+// Cerca questa funzione nel tuo script
+function renderHistory(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const history = getSearchHistory();
+    
+    if (history.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="px-4 py-2 text-xs text-gray-500 font-bold uppercase tracking-wider bg-black/20">
+            Recenti
+        </div>
+    `;
+
+    history.forEach(term => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+            <div class="history-text">
+                <i class="fas fa-history text-gray-500"></i>
+                <span>${term}</span>
+            </div>
+            <button class="history-delete" onclick="deleteHistoryItem('${term.replace(/'/g, "\\'")}', event)">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        // --- MODIFICA QUESTA PARTE ---
+        div.addEventListener('click', () => {
+            // 1. Imposta il valore negli input
+            document.getElementById('search-input').value = term;
+            document.getElementById('mobile-search-input').value = term;
+            
+            // 2. Nascondi il menu a tendina
+            container.style.display = 'none';
+
+            // 3. FIX: Chiudi esplicitamente la barra mobile
+            const mobileBox = document.getElementById('mobile-search-box');
+            if (mobileBox) {
+                mobileBox.classList.remove('active');
+            }
+
+            // 4. Avvia la ricerca
+            searchMedia(term);
+        });
+        // -----------------------------
+
+        container.appendChild(div);
+    });
+
+    container.style.display = 'block';
+}
+
+// 5. Inizializzazione Event Listeners per gli input
+function setupSearchHistoryListeners() {
+    const inputs = [
+        { input: 'search-input', container: 'search-history-desktop' },
+        { input: 'mobile-search-input', container: 'search-history-mobile' }
+    ];
+
+    inputs.forEach(({ input, container }) => {
+        const inputEl = document.getElementById(input);
+        const containerEl = document.getElementById(container);
+        
+        if (!inputEl) return;
+
+        // Mostra cronologia al focus
+        inputEl.addEventListener('focus', () => {
+            if (!inputEl.value.trim()) { // Solo se il campo è vuoto o quasi
+                renderHistory(container);
+            }
+        });
+
+        // Mostra cronologia quando si clicca (se era già a fuoco)
+        inputEl.addEventListener('click', () => {
+             if (!inputEl.value.trim()) {
+                renderHistory(container);
+            }
+        });
+
+        // Nascondi quando si digita
+        inputEl.addEventListener('input', () => {
+            if (inputEl.value.trim().length > 0) {
+                containerEl.style.display = 'none';
+            } else {
+                renderHistory(container);
+            }
+        });
+
+        // Nascondi al blur (con ritardo per permettere il click sugli elementi)
+        inputEl.addEventListener('blur', () => {
+            setTimeout(() => {
+                containerEl.style.display = 'none';
+            }, 200);
+        });
+    });
+}
 /**
  * Funzione per rimuovere un elemento da "Continua a guardare".
  * @param {string} key - La chiave di progresso (es. "ip-id-tipo-...")
@@ -1684,7 +1837,86 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     </div>
 
     <style>
-        /* Sostituisci o aggiungi questo al tuo CSS */
+
+
+/* --- CSS AGGIORNATO PER NAVBAR (FIX OVERFLOW) --- */
+
+/* 1. La Navbar diventa solo un contenitore strutturale */
+.glass-nav {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: transparent; /* Sfondo spostato */
+    transform-style: preserve-3d;
+    overflow: visible; /* FONDAMENTALE: Permette al menu di uscire */
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 2. Il nuovo div gestisce sfondo, sfocatura e taglio riflessi */
+.glass-nav-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(34, 31, 31, 0.45);
+    backdrop-filter: blur(16px) saturate(200%);
+    -webkit-backdrop-filter: blur(16px) saturate(200%);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+    overflow: hidden; /* Mantiene i riflessi all'interno */
+    z-index: 0; /* Sta sotto il contenuto */
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Aggiornamento stato scroll */
+.glass-nav.scrolled .glass-nav-bg {
+    background: rgba(34, 31, 31, 0.8);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+/* La nav si accorcia, e il background segue automaticamente grazie a inset:0 */
+.glass-nav.scrolled {
+    height: 3.5rem;
+}
+
+/* 3. Spostiamo gli effetti liquidi sul background */
+.glass-nav-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.05) 50%,
+        rgba(255, 255, 255, 0.1) 100%
+    );
+    z-index: -1;
+    mix-blend-mode: overlay;
+    opacity: 0.8;
+}
+
+.glass-nav-bg::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    animation: shine 8s infinite;
+    z-index: -1;
+}
+
+/* Assicuriamo che il contenuto stia sopra lo sfondo */
+.nav-content {
+    position: relative;
+    z-index: 10;
+    height: 100%;
+}
+
 #detail-video-wrapper {
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -2420,6 +2652,73 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 .video-entrance-active {
     animation: cinematicEntrance 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+
+
+/* --- STILI CRONOLOGIA RICERCHE --- */
+.search-history-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: rgba(34, 31, 31, 0.95); /* Sfondo scuro semitrasparente */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    z-index: 60;
+    margin-top: 4px;
+    overflow: hidden;
+    display: none; /* Nascosto di default */
+    transform-origin: top;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: scaleY(0.9); }
+    to { opacity: 1; transform: scaleY(1); }
+}
+
+.history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.history-item:last-child {
+    border-bottom: none;
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.history-text {
+    color: #e5e5e5;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.history-delete {
+    color: #666;
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.history-delete:hover {
+    color: #E50914; /* Rosso al passaggio del mouse */
+}
 </style>
 <!-- Season/Episode Selector Modal -->
 <div id="seasonEpisodeSelector" class="season-episode-selector glass-modal" style="display: none;">
@@ -2710,11 +3009,14 @@ document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
 
 async function searchMedia(query) {
   query = query?.trim() || document.getElementById("search-input").value.trim();
+  let actualQuery = query?.trim();
   if (!query) {
     document.body.classList.remove('show-search-results');
     document.getElementById("search-results-section").classList.add("hidden");
     return;
   }
+
+  saveSearchToHistory(actualQuery);
 
   document.body.classList.add('show-search-results');
   document.getElementById("search-query-text").textContent = `"${query}"`;
@@ -3465,6 +3767,7 @@ async function loadAvailableContent() {
         
         // Initialize the app
         document.addEventListener('DOMContentLoaded', async () => {
+            setupSearchHistoryListeners();
     await loadAvailableContent();
     
     // Then load all data
@@ -3549,34 +3852,53 @@ if (window.lastPlayedTV) {
 });
 
 
-           const mobileSearchToggle = document.getElementById('mobile-search-toggle');
-            const mobileSearchBox = document.getElementById('mobile-search-box');
-            
-            // 1. Gestione click sull'icona
-            mobileSearchToggle.addEventListener('click', function(e) {
-                e.stopPropagation();
-                mobileSearchBox.classList.toggle('active');
-                
-                // Focus sull'input quando appare
-                if(mobileSearchBox.classList.contains('active')) {
-                    setTimeout(() => {
-                        document.getElementById('mobile-search-input').focus();
-                    }, 50);
-                }
-            });
-            
-            // 2. Chiudi quando si clicca fuori
-            document.addEventListener('click', function(e) {
-                if(!mobileSearchBox.contains(e.target) && !mobileSearchToggle.contains(e.target)) {
-                    mobileSearchBox.classList.remove('active');
-                }
-            });
-            
-            // 3. Chiudi dopo la ricerca
-            document.getElementById('mobile-search-button').addEventListener('click', function() {
-                mobileSearchBox.classList.remove('active');
-            });
+          /* --- GESTIONE RICERCA MOBILE CON ICONA DINAMICA --- */
+const mobileSearchToggle = document.getElementById('mobile-search-toggle');
+const mobileSearchBox = document.getElementById('mobile-search-box');
+const toggleIcon = mobileSearchToggle.querySelector('i'); // Seleziona l'icona dentro il bottone
 
+// Funzione helper per aggiornare l'icona
+function updateMobileIcon() {
+    if (mobileSearchBox.classList.contains('active')) {
+        // Se aperta, mostra la X
+        toggleIcon.classList.remove('fa-search');
+        toggleIcon.classList.add('fa-times');
+    } else {
+        // Se chiusa, mostra la lente
+        toggleIcon.classList.add('fa-search');
+        toggleIcon.classList.remove('fa-times');
+    }
+}
+
+// 1. Gestione click sul bottone (Apertura/Chiusura)
+mobileSearchToggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    mobileSearchBox.classList.toggle('active');
+    updateMobileIcon(); // Aggiorna icona
+    
+    // Focus sull'input quando appare
+    if(mobileSearchBox.classList.contains('active')) {
+        setTimeout(() => {
+            document.getElementById('mobile-search-input').focus();
+        }, 50);
+    }
+});
+
+// 2. Chiudi quando si clicca fuori
+document.addEventListener('click', function(e) {
+    if(!mobileSearchBox.contains(e.target) && !mobileSearchToggle.contains(e.target)) {
+        if (mobileSearchBox.classList.contains('active')) {
+            mobileSearchBox.classList.remove('active');
+            updateMobileIcon(); // Ripristina icona
+        }
+    }
+});
+
+// 3. Chiudi dopo aver cliccato il bottone lente interno
+document.getElementById('mobile-search-button').addEventListener('click', function() {
+    mobileSearchBox.classList.remove('active');
+    updateMobileIcon(); // Ripristina icona
+});
 
 
             
