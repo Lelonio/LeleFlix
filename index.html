@@ -3683,11 +3683,28 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
         
     </script>
 
-      <script>
+<script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('✅ Service Worker registrato:', reg))
-      .catch(err => console.error('❌ Service Worker errore:', err));
+    navigator.serviceWorker.register('./service-worker.js').then(registration => {
+      console.log('✅ Service Worker registrato:', registration);
+
+      // Controlla se c'è un aggiornamento ogni volta che apri la pagina
+      registration.update();
+
+      registration.onupdatefound = () => {
+        const installingWorker = registration.installing;
+        installingWorker.onstatechange = () => {
+          if (installingWorker.state === 'installed') {
+            if (navigator.serviceWorker.controller) {
+              // Nuovo aggiornamento disponibile!
+              console.log('🔄 Nuovo contenuto disponibile. Ricarico...');
+              // Opzionale: Forza il reload o mostra un toast all'utente
+               window.location.reload(); 
+            }
+          }
+        };
+      };
+    }).catch(err => console.error('❌ Service Worker errore:', err));
   }
 </script>
 <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 h-16 z-50">
