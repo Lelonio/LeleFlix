@@ -455,7 +455,22 @@ showNextEpisodePrompt() {
             // 1. Configurazione Etichetta Pulsante
             const isAndroid = /Android/i.test(navigator.userAgent);
             const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-            
+
+            // --- AGGIUNTA LELECAST ---
+            // Controlliamo se il bottone esiste già, altrimenti lo creiamo
+            let btnCast = document.getElementById('btn-cast');
+            if (!btnCast) {
+                btnCast = document.createElement('button');
+                btnCast.id = 'btn-cast';
+                // Stile verde/ciano per distinguerlo
+                btnCast.className = 'bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 mt-2';
+                btnCast.innerHTML = '<i class="fas fa-broadcast-tower"></i> Trasmetti su altri schermi';
+                
+                // Inseriscilo prima del tasto annulla o copia
+                if (btnExternal && btnExternal.parentNode) {
+                    btnExternal.parentNode.insertBefore(btnCast, btnExternal.nextSibling);
+                }
+            }
             if (btnExternal) {
                 let label = 'Player Esterno';
                 if (isAndroid) label = 'Apri con...'; 
@@ -478,8 +493,14 @@ showNextEpisodePrompt() {
             }
 
             prompt.classList.remove('hidden');
-            const cleanup = () => prompt.classList.add('hidden');
-
+const cleanup = () => {
+                prompt.classList.add('hidden');
+                // Resetta testo bottone cast
+                if(btnCast) {
+                    btnCast.innerHTML = '<i class="fas fa-broadcast-tower"></i> Trasmetti su altri schermi';
+                    btnCast.className = 'bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 mt-2';
+                }
+            };
             const getApiBaseUrl = () => {
                 if (typeof PROXY_URL !== 'undefined') {
                     try { return new URL(PROXY_URL).origin; } catch(e) {}
@@ -497,6 +518,26 @@ showNextEpisodePrompt() {
                      if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => {});
                 }
                 resolve('internal');
+            };
+
+            btnCast.onclick = () => {
+                // 1. Invia il comando al server tramite il socket globale
+                if (typeof socket !== 'undefined') {
+                    socket.emit('cast_command', this.content);
+                    
+                    // 2. Feedback visivo
+                    btnCast.innerHTML = '<i class="fas fa-check"></i> Comando inviato!';
+                    btnCast.classList.remove('bg-teal-600');
+                    btnCast.classList.add('bg-green-600');
+                    
+                    // 3. Chiudi il prompt dopo poco
+                    setTimeout(() => {
+                        cleanup();
+                        resolve('cancel'); // Risolviamo come cancel perché su QUESTO device non parte il player
+                    }, 1000);
+                } else {
+                    alert("Errore di connessione LeleCast");
+                }
             };
 
             // AZIONE: PLAYER ESTERNO / NATIVO

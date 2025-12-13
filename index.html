@@ -10,6 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
         <link rel="stylesheet" href="css/style.css">
     <script>
         tailwind.config = {
@@ -40,6 +41,74 @@ sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],          
             }
         }
     </script>
+
+    <script>
+    const socket = io('https://api.leleflix.store'); // Usa il tuo dominio corretto
+
+    // Funzione per mostrare l'animazione
+    function showCastAnimation(title) {
+        // 1. Crea l'overlay se non esiste
+        let overlay = document.getElementById('cast-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'cast-overlay';
+            overlay.innerHTML = `
+                <div class="cast-icon-wrapper">
+                    <i class="fas fa-satellite-dish text-white text-4xl"></i>
+                    <div class="cast-ripple"></div>
+                    <div class="cast-ripple"></div>
+                    <div class="cast-ripple"></div>
+                </div>
+                <div class="cast-text">Ricezione segnale LeleCast...</div>
+                <div class="cast-subtext">Preparazione: ${title}</div>
+            `;
+            document.body.appendChild(overlay);
+        } else {
+            // Aggiorna solo il titolo se esiste già
+            overlay.querySelector('.cast-subtext').textContent = `Preparazione: ${title}`;
+        }
+
+        // 2. Attiva l'animazione (Fade In)
+        requestAnimationFrame(() => {
+            overlay.classList.add('active');
+        });
+
+        return overlay;
+    }
+
+    // Gestione Evento Socket
+    socket.on('connect', () => {
+        console.log("🟢 Connesso a LeleCast");
+    });
+
+    socket.on('remote_play_trigger', (content) => {
+        console.log("📡 Comando remoto ricevuto:", content.title);
+
+        // A. Chiudi eventuali modali aperti per pulire la vista
+        const movieModal = document.getElementById('movie-modal');
+        if (movieModal) movieModal.classList.add('hidden');
+        
+        // B. Mostra l'animazione di ricezione
+        const overlay = showCastAnimation(content.title || content.name);
+
+        // C. Aspetta 1.5 secondi (per far godere l'animazione) poi avvia il film
+        setTimeout(() => {
+            if (typeof playMovie === 'function') {
+                playMovie(content);
+            }
+            
+            // D. Nascondi l'overlay (Fade Out) quando il player sta caricando
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                // Rimuovi dal DOM dopo la transizione CSS (0.5s)
+                setTimeout(() => {
+                    overlay.remove();
+                }, 500);
+            }, 500); // Piccolo delay aggiuntivo
+            
+        }, 1500);
+    });
+</script>
 
 <style>
 /* Stili specifici per la sezione Continua a guardare */
@@ -1053,6 +1122,100 @@ main .max-w-7xl {
     background-color: transparent !important; /* Assicura che non ci siano sfondi */
 }
     </style>
+
+    <style>
+/* ... altri stili esistenti ... */
+
+/* === ANIMAZIONE LELECAST === */
+#cast-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 10000; /* Sopra a tutto */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none; /* Non cliccabile */
+}
+
+#cast-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.cast-icon-wrapper {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #E50914; /* Colore Primary */
+    border-radius: 50%;
+    margin-bottom: 2rem;
+    box-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
+    z-index: 2;
+}
+
+/* Cerchi pulsanti (Ripple) */
+.cast-ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: 100px;
+    border: 2px solid rgba(229, 9, 20, 0.8);
+    border-radius: 50%;
+    animation: ripple 2s linear infinite;
+    z-index: 1;
+}
+
+.cast-ripple:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+.cast-ripple:nth-child(3) {
+    animation-delay: 1s;
+}
+
+@keyframes ripple {
+    0% {
+        width: 100px;
+        height: 100px;
+        opacity: 0.8;
+        border-width: 4px;
+    }
+    100% {
+        width: 300px;
+        height: 300px;
+        opacity: 0;
+        border-width: 0px;
+    }
+}
+
+.cast-text {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+    text-align: center;
+    animation: pulseText 1.5s ease-in-out infinite alternate;
+}
+
+.cast-subtext {
+    color: #a3a3a3;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+}
+
+@keyframes pulseText {
+    from { opacity: 0.6; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+</style>
 </head>
 <body class="bg-dark text-accent " >
     <div id="hr-keeper"></div>
