@@ -4860,5 +4860,283 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
         </div>
     </div>
 </div>
+<style>
+    /* --- MINI BARRA (In basso) --- */
+#remote-bar {
+        position: fixed;
+        bottom: 20px; /* Default per Desktop */
+        left: 50%;
+        /* Nascondi completamente all'inizio */
+        transform: translateX(-50%) translateY(150%); 
+        width: 90%;
+        max-width: 500px;
+        background: rgba(20, 20, 20, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 12px 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+        z-index: 9998;
+        
+        /* Animazioni di entrata/uscita */
+        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                    opacity 0.3s ease, 
+                    visibility 0.3s;
+        
+        cursor: pointer;
+        
+        /* Stato Iniziale: Invisibile e Trasparente */
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    #remote-bar.active {
+        /* Stato Attivo: Visibile e in posizione */
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* FIX MOBILE: Solleva la barra per non coprire il menu */
+    @media (max-width: 768px) {
+        #remote-bar {
+            bottom: 85px; 
+            width: 95%;
+            padding: 10px 15px;
+        }
+    }
+
+    .remote-info { flex: 1; overflow: hidden; pointer-events: none; }
+    .remote-title { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; color: white; margin-bottom: 2px; }
+    .remote-device { font-size: 11px; color: #46d369; display: flex; align-items: center; gap: 6px; }
+    
+    .pulse-dot { width: 6px; height: 6px; background: #46d369; border-radius: 50%; animation: pulse-green 2s infinite; }
+    @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(70, 211, 105, 0.7); } 70% { box-shadow: 0 0 0 6px rgba(70, 211, 105, 0); } 100% { box-shadow: 0 0 0 0 rgba(70, 211, 105, 0); } }
+
+    /* Bottoni Mini Bar */
+    .mini-controls { display: flex; gap: 10px; }
+    .remote-btn { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); border: none; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
+    .remote-btn:hover { background: white; color: black; }
+    .remote-btn:active { transform: scale(0.95); }
+
+    /* --- VISTA ESPANSA (Full Screen) --- */
+    #remote-expanded {
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 10, 10, 0.95);
+        backdrop-filter: blur(20px);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        padding: 40px 24px;
+        transform: translateY(100%); /* Nascosto giù */
+        transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    #remote-expanded.open {
+        transform: translateY(0);
+        opacity: 1;
+        visibility: visible;
+    }
+
+
+    /* Header Espanso */
+    .expanded-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+    .expanded-device { color: #46d369; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .btn-close-expanded { background: transparent; border: none; color: #888; font-size: 24px; padding: 10px; cursor: pointer; }
+
+    /* Info Espanso */
+    .expanded-info { text-align: center; margin-bottom: 40px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .expanded-icon { font-size: 60px; color: #333; margin-bottom: 20px; }
+    .expanded-title { font-size: 24px; font-weight: 800; color: white; margin-bottom: 10px; line-height: 1.2; }
+    .expanded-subtitle { color: #888; font-size: 16px; }
+
+    /* Progress Bar Interattiva */
+    .expanded-progress-container { width: 100%; margin-bottom: 40px; cursor: pointer; padding: 10px 0; /* Area click più grande */ }
+    .expanded-progress-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; position: relative; overflow: hidden; }
+    .expanded-progress-fill { height: 100%; background: #E50914; width: 0%; border-radius: 3px; transition: width 0.1s linear; }
+    .expanded-time { display: flex; justify-content: space-between; margin-top: 10px; color: #888; font-size: 12px; font-weight: 500; }
+
+    /* Controlli Grandi */
+    .expanded-controls { display: flex; justify-content: center; align-items: center; gap: 30px; margin-bottom: 20px; }
+    .btn-big { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); border: none; color: white; font-size: 20px; cursor: pointer; }
+    .btn-huge { width: 80px; height: 80px; border-radius: 50%; background: white; color: black; border: none; font-size: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 20px rgba(255,255,255,0.2); }
+    .btn-big:active, .btn-huge:active { transform: scale(0.95); }
+    .btn-stop { color: #E50914; background: rgba(229, 9, 20, 0.15); }
+</style>
+
+<div id="remote-bar" onclick="openRemoteExpanded()">
+    <div class="remote-info">
+        <div class="remote-title" id="mini-title">In attesa...</div>
+        <div class="remote-device">
+            <div class="pulse-dot"></div>
+            <span id="mini-status">Connesso alla TV</span>
+        </div>
+    </div>
+    <div class="mini-controls" onclick="event.stopPropagation()">
+        <button class="remote-btn" id="mini-play-pause" onclick="sendRemote('toggle')"><i class="fas fa-pause"></i></button>
+    </div>
+</div>
+
+<div id="remote-expanded">
+    <div class="expanded-header">
+        <button class="btn-close-expanded" onclick="closeRemoteExpanded()"><i class="fas fa-chevron-down"></i></button>
+        <div class="expanded-device">
+            <div class="pulse-dot"></div>
+            <span id="expanded-device-name">TV Tizen</span>
+        </div>
+        <div style="width: 44px;"></div> </div>
+
+    <div class="expanded-info">
+        <div class="expanded-icon"><i class="fas fa-tv"></i></div>
+        <div class="expanded-title" id="expanded-title">Titolo Film</div>
+        <div class="expanded-subtitle">Controllo Remoto</div>
+    </div>
+
+    <div class="expanded-progress-container" onclick="handleSeek(event)">
+        <div class="expanded-progress-bg">
+            <div class="expanded-progress-fill" id="expanded-progress-fill"></div>
+        </div>
+        <div class="expanded-time">
+            <span id="expanded-curr-time">0:00</span>
+            <span id="expanded-dur-time">0:00</span>
+        </div>
+    </div>
+
+    <div class="expanded-controls">
+        <button class="btn-big" onclick="sendRemote('rewind')"><i class="fas fa-undo-alt"></i> 10</button>
+        <button class="btn-huge" id="expanded-play-pause" onclick="sendRemote('toggle')"><i class="fas fa-pause"></i></button>
+        <button class="btn-big" onclick="sendRemote('forward')">10 <i class="fas fa-redo-alt"></i></button>
+    </div>
+    
+    <div style="text-align: center; margin-top: 20px;">
+        <button class="remote-btn btn-stop" onclick="sendRemote('stop')" style="width: auto; padding: 0 20px; border-radius: 20px; gap: 8px;">
+            <i class="fas fa-stop"></i> Interrompi Riproduzione
+        </button>
+    </div>
+</div>
+
+<script>
+    // Variabili stato
+    let lastRemoteStatus = null;
+    let remoteTimeout = null;
+    let isDraggingScrubber = false;
+
+    
+
+    // --- GESTIONE UI ---
+    function openRemoteExpanded() {
+        document.getElementById('remote-expanded').classList.add('open');
+    }
+
+    function closeRemoteExpanded() {
+        document.getElementById('remote-expanded').classList.remove('open');
+    }
+
+    // --- LOGICA SOCKET & AGGIORNAMENTI ---
+socket.on('remote_player_status', (status) => {
+        const miniBar = document.getElementById('remote-bar');
+        
+        // 1. SE IL PLAYER È CHIUSO, NASCONDI IMMEDIATAMENTE
+        if (status.isClosed) {
+            console.log("Player chiuso remoto, nascondo barra");
+            miniBar.classList.remove('active');
+            closeRemoteExpanded();
+            return;
+        }
+
+        // Mostra la mini bar se è nascosta (e non è chiusa)
+        if (!miniBar.classList.contains('active')) {
+            miniBar.classList.add('active');
+        }
+
+        lastRemoteStatus = status;
+
+        // 1. Aggiorna Mini Bar
+        document.getElementById('mini-title').textContent = status.title;
+        document.getElementById('mini-status').textContent = status.isPlaying ? 'In riproduzione su ' + status.device  : 'In pausa';
+        document.getElementById('mini-play-pause').innerHTML = status.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+
+        // 2. Aggiorna Vista Espansa
+        document.getElementById('expanded-title').textContent = status.title;
+        document.getElementById('expanded-device-name').textContent = status.device || 'Dispositivo Remoto';
+        document.getElementById('expanded-play-pause').innerHTML = status.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play" style="padding-left: 5px;"></i>';
+
+        // 3. Aggiorna Progress Bar (Solo se non stiamo trascinando, se implementassimo il drag)
+        if (status.duration > 0) {
+            const pct = (status.currentTime / status.duration) * 100;
+            document.getElementById('expanded-progress-fill').style.width = pct + '%';
+            document.getElementById('expanded-curr-time').textContent = formatTime(status.currentTime);
+            document.getElementById('expanded-dur-time').textContent = formatTime(status.duration);
+        }
+
+        // Timeout auto-hide mini bar se non ci sono update (es. crash TV)
+        clearTimeout(remoteTimeout);
+        remoteTimeout = setTimeout(() => {
+            miniBar.classList.remove('active');
+        }, 4000);
+    });
+
+    // --- COMANDI ---
+    function sendRemote(action) {
+        if (!lastRemoteStatus) return;
+        let cmd = {};
+
+        if (action === 'toggle') {
+            cmd.action = lastRemoteStatus.isPlaying ? 'pause' : 'play';
+        } else if (action === 'stop') {
+            cmd.action = 'stop';
+            // Chiudi subito UI per feedback immediato
+            document.getElementById('remote-bar').classList.remove('active');
+            closeRemoteExpanded();
+        } else if (action === 'rewind') {
+            cmd.action = 'seek';
+            cmd.value = 'rewind';
+        } else if (action === 'forward') {
+            cmd.action = 'seek';
+            cmd.value = 'forward';
+        }
+
+        socket.emit('remote_control_command', cmd);
+    }
+
+    // --- SEEK SU BARRA ---
+    function handleSeek(e) {
+        if (!lastRemoteStatus || !lastRemoteStatus.duration) return;
+
+        const container = e.currentTarget;
+        const rect = container.getBoundingClientRect();
+        // Calcola percentuale click (0.0 - 1.0)
+        let clickX = e.clientX - rect.left;
+        let percentage = Math.max(0, Math.min(1, clickX / rect.width));
+        
+        // Calcola tempo target
+        let targetTime = percentage * lastRemoteStatus.duration;
+
+        // Feedback visivo immediato
+        document.getElementById('expanded-progress-fill').style.width = (percentage * 100) + '%';
+        document.getElementById('expanded-curr-time').textContent = formatTime(targetTime);
+
+        // Invia comando
+        socket.emit('remote_control_command', {
+            action: 'seek',
+            value: targetTime
+        });
+    }
+
+    // --- UTILS ---
+    function formatTime(seconds) {
+        if (!seconds) return "0:00";
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return m + ":" + (s < 10 ? "0" : "") + s;
+    }
+</script>
 </body>
 </html>
