@@ -77,8 +77,10 @@ sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],          
     }
 
     // Gestione Evento Socket
-    socket.on('connect', () => {
+socket.on('connect', () => {
         console.log("🟢 Connesso a LeleCast");
+        // Appena connesso, chiedi se c'è qualcosa in riproduzione (anche se in pausa)
+        socket.emit('request_player_status');
     });
 
     socket.on('remote_play_trigger', (content) => {
@@ -4989,7 +4991,7 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
         <button class="btn-close-expanded" onclick="closeRemoteExpanded()"><i class="fas fa-chevron-down"></i></button>
         <div class="expanded-device">
             <div class="pulse-dot"></div>
-            <span id="expanded-device-name">TV Tizen</span>
+            <span id="expanded-device-name">TV</span>
         </div>
         <div style="width: 44px;"></div> </div>
 
@@ -5015,10 +5017,15 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
         <button class="btn-big" onclick="sendRemote('forward')">10 <i class="fas fa-redo-alt"></i></button>
     </div>
     
-    <div style="text-align: center; margin-top: 20px;">
+<div style="text-align: center; margin-top: 20px; display: flex; justify-content: center; gap: 15px;">
+<button class="remote-btn" onclick="openRemoteDetails()" style="width: auto; padding: 0 20px; border-radius: 20px; gap: 8px; background: rgba(255,255,255,0.15);">
+            <i class="fas fa-info-circle"></i> Dettagli
+    </button>
         <button class="remote-btn btn-stop" onclick="sendRemote('stop')" style="width: auto; padding: 0 20px; border-radius: 20px; gap: 8px;">
-            <i class="fas fa-stop"></i> Interrompi Riproduzione
+            <i class="fas fa-stop"></i> Stop
         </button>
+
+
     </div>
 </div>
 
@@ -5134,6 +5141,17 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
             return;
         }
 
+        if (!miniBar.classList.contains('active')) {
+            miniBar.classList.add('active');
+            silentAudio.play().catch(() => {}); 
+            
+            // Chiude la pagina dettagli se è aperta sotto
+            // (La funzione closeDetailView è definita nel tuo index.html originale)
+            if (typeof closeDetailView === 'function') {
+                closeDetailView();
+            }
+        }
+
         // Mostra la mini bar se è nascosta
         if (!miniBar.classList.contains('active')) {
             miniBar.classList.add('active');
@@ -5148,7 +5166,7 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
 
         // 1. Aggiorna UI Web
         document.getElementById('mini-title').textContent = status.title;
-        document.getElementById('mini-status').textContent = status.isPlaying ? 'In riproduzione' : 'In pausa';
+        document.getElementById('mini-status').textContent = status.isPlaying ? 'In riproduzione su ' + status.device : 'In pausa su ' + status.device;
         document.getElementById('mini-play-pause').innerHTML = status.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
         
         document.getElementById('expanded-title').textContent = status.title;
@@ -5161,11 +5179,17 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
             document.getElementById('expanded-curr-time').textContent = formatTime(status.currentTime);
             document.getElementById('expanded-dur-time').textContent = formatTime(status.duration);
         }
+clearTimeout(remoteTimeout);
 
-        clearTimeout(remoteTimeout);
-        remoteTimeout = setTimeout(() => {
-            miniBar.classList.remove('active');
-        }, 4000); 
+        // 2. Imposta il timeout di chiusura SOLO se è in riproduzione
+        if (status.isPlaying) {
+            remoteTimeout = setTimeout(() => {
+                // Non nascondere se l'utente ha aperto il pannello espanso (opzionale ma consigliato)
+                if (!document.getElementById('remote-expanded').classList.contains('open')) {
+                    miniBar.classList.remove('active');
+                }
+            }, 4000);
+        }
     });
 
     // --- INVIO COMANDI ---
