@@ -5022,13 +5022,18 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
     </div>
 </div>
 
+<audio id="silent-audio" loop preload="auto">
+    <source src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD//////////////////////////////////////////////////////////////////wAAAP9MYXZjNTguNTQuMTAwAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASGluZwAAAA8AAAAEAAABIAAAzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMz//////////////////////////////////////////////////////////////////wAAAANMYXZmNTguMjkuMTAwAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA" type="audio/mpeg">
+</audio>
+
 <script>
     // Variabili stato
     let lastRemoteStatus = null;
     let remoteTimeout = null;
     let isDraggingScrubber = false;
-
     
+    // Riferimento all'audio silenzioso
+    const silentAudio = document.getElementById('silent-audio');
 
     // --- GESTIONE UI ---
     function openRemoteExpanded() {
@@ -5039,36 +5044,117 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
         document.getElementById('remote-expanded').classList.remove('open');
     }
 
+    // --- SETUP MEDIA SESSION (Android/iOS integration) ---
+    function updateMediaSession(status) {
+        if (!('mediaSession' in navigator)) return;
+
+        // 1. Aggiorna Metadati (Titolo, Info nel blocco schermo)
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: status.title || "LeleFlix",
+            artist: "In riproduzione su " + (status.device || "TV"),
+            album: "LeleCast Control",
+            artwork: [
+                { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }, // Usa la tua icona o un poster generico
+                { src: 'logo.png', sizes: '192x192', type: 'image/png' }
+            ]
+        });
+
+        // 2. Aggiorna Stato Riproduzione (Play/Pausa)
+        navigator.mediaSession.playbackState = status.isPlaying ? 'playing' : 'paused';
+
+        // 3. Aggiorna Posizione Temporale (Seek bar nel centro notifiche)
+        if (status.duration && status.duration > 0 && typeof status.currentTime === 'number') {
+            try {
+                navigator.mediaSession.setPositionState({
+                    duration: status.duration,
+                    playbackRate: 1.0,
+                    position: status.currentTime
+                });
+            } catch (e) {
+                console.warn("Errore aggiornamento posizione mediaSession:", e);
+            }
+        }
+
+        // 4. Gestione Audio Silenzioso (Il motore che tiene vivo tutto)
+        // Se la TV suona, il telefono deve "suonare" il silenzio per mostrare i controlli
+        if (status.isPlaying && silentAudio.paused) {
+            silentAudio.play().catch(e => console.log("Impossibile avviare audio (necessaria interazione utente):", e));
+        } else if (!status.isPlaying && !silentAudio.paused) {
+            silentAudio.pause();
+        }
+    }
+
+    // --- CONFIGURAZIONE HANDLER MEDIA SESSION ---
+    // Mappa i tasti fisici/notifiche ai comandi Socket
+    if ('mediaSession' in navigator) {
+        const actionHandlers = [
+            ['play',        () => sendRemote('play')],
+            ['pause',       () => sendRemote('pause')],
+            ['previoustrack', () => sendRemote('rewind')], // Tasto indietro cuffie = -10s
+            ['nexttrack',     () => sendRemote('forward')], // Tasto avanti cuffie = +10s
+            ['seekbackward', (details) => {
+                const seekOffset = details.seekOffset || 10;
+                sendRemote('seek', -seekOffset); // Gestione seek relativo
+            }],
+            ['seekforward', (details) => {
+                const seekOffset = details.seekOffset || 10;
+                sendRemote('seek', seekOffset);
+            }],
+            ['seekto', (details) => {
+                // Seek assoluto (es. trascinando la barra nel centro notifiche)
+                if (details.fastSeek && 'fastSeek' in silentAudio) {
+                    silentAudio.fastSeek(details.seekTime); // Sincronizza audio locale
+                    return;
+                }
+                sendRemote('seekToAbs', details.seekTime); // Invia tempo assoluto
+            }],
+            ['stop', () => sendRemote('stop')]
+        ];
+
+        for (const [action, handler] of actionHandlers) {
+            try {
+                navigator.mediaSession.setActionHandler(action, handler);
+            } catch (error) {
+                console.warn(`L'azione ${action} non è supportata dal browser`);
+            }
+        }
+    }
+
     // --- LOGICA SOCKET & AGGIORNAMENTI ---
-socket.on('remote_player_status', (status) => {
+    socket.on('remote_player_status', (status) => {
         const miniBar = document.getElementById('remote-bar');
         
-        // 1. SE IL PLAYER È CHIUSO, NASCONDI IMMEDIATAMENTE
+        // Se il player è chiuso, nascondi tutto
         if (status.isClosed) {
-            console.log("Player chiuso remoto, nascondo barra");
             miniBar.classList.remove('active');
             closeRemoteExpanded();
+            // Ferma sessione media
+            if(!silentAudio.paused) silentAudio.pause();
+            if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
             return;
         }
 
-        // Mostra la mini bar se è nascosta (e non è chiusa)
+        // Mostra la mini bar se è nascosta
         if (!miniBar.classList.contains('active')) {
             miniBar.classList.add('active');
+            // Tenta di avviare l'audio silenzioso al primo apparire della barra
+            silentAudio.play().catch(() => {}); 
         }
 
         lastRemoteStatus = status;
 
-        // 1. Aggiorna Mini Bar
-        document.getElementById('mini-title').textContent = status.title;
-        document.getElementById('mini-status').textContent = status.isPlaying ? 'In riproduzione su ' + status.device  : 'In pausa';
-        document.getElementById('mini-play-pause').innerHTML = status.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+        // AGGIORNA MEDIA SESSION (Android/iOS)
+        updateMediaSession(status);
 
-        // 2. Aggiorna Vista Espansa
+        // 1. Aggiorna UI Web
+        document.getElementById('mini-title').textContent = status.title;
+        document.getElementById('mini-status').textContent = status.isPlaying ? 'In riproduzione' : 'In pausa';
+        document.getElementById('mini-play-pause').innerHTML = status.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play"></i>';
+        
         document.getElementById('expanded-title').textContent = status.title;
         document.getElementById('expanded-device-name').textContent = status.device || 'Dispositivo Remoto';
         document.getElementById('expanded-play-pause').innerHTML = status.isPlaying ? '<i class="fas fa-pause"></i>' : '<i class="fas fa-play" style="padding-left: 5px;"></i>';
 
-        // 3. Aggiorna Progress Bar (Solo se non stiamo trascinando, se implementassimo il drag)
         if (status.duration > 0) {
             const pct = (status.currentTime / status.duration) * 100;
             document.getElementById('expanded-progress-fill').style.width = pct + '%';
@@ -5076,61 +5162,67 @@ socket.on('remote_player_status', (status) => {
             document.getElementById('expanded-dur-time').textContent = formatTime(status.duration);
         }
 
-        // Timeout auto-hide mini bar se non ci sono update (es. crash TV)
         clearTimeout(remoteTimeout);
         remoteTimeout = setTimeout(() => {
             miniBar.classList.remove('active');
-        }, 4000);
+        }, 4000); 
     });
 
-    // --- COMANDI ---
-    function sendRemote(action) {
+    // --- INVIO COMANDI ---
+    // Modificata per supportare seek relativo e assoluto
+    function sendRemote(action, value = null) {
         if (!lastRemoteStatus) return;
         let cmd = {};
 
         if (action === 'toggle') {
             cmd.action = lastRemoteStatus.isPlaying ? 'pause' : 'play';
-        } else if (action === 'stop') {
-            cmd.action = 'stop';
-            // Chiudi subito UI per feedback immediato
-            document.getElementById('remote-bar').classList.remove('active');
-            closeRemoteExpanded();
+        } else if (action === 'play' || action === 'pause' || action === 'stop') {
+            cmd.action = action;
+            if (action === 'stop') {
+                document.getElementById('remote-bar').classList.remove('active');
+                closeRemoteExpanded();
+                if(!silentAudio.paused) silentAudio.pause();
+            }
         } else if (action === 'rewind') {
             cmd.action = 'seek';
             cmd.value = 'rewind';
         } else if (action === 'forward') {
             cmd.action = 'seek';
             cmd.value = 'forward';
+        } else if (action === 'seek') {
+            // Seek Relativo (usato dai pulsanti media session)
+            // Se value è negativo è rewind, positivo è forward, ma qui passiamo il valore numerico
+            // Per compatibilità col player TV che accetta solo 'forward'/'rewind' o numeri assoluti:
+            // Dobbiamo calcolare il tempo assoluto qui
+            let target = lastRemoteStatus.currentTime + value;
+            cmd.action = 'seek';
+            cmd.value = target; 
+        } else if (action === 'seekToAbs') {
+            // Seek Assoluto (dalla barra notifiche)
+            cmd.action = 'seek';
+            cmd.value = value;
         }
 
         socket.emit('remote_control_command', cmd);
     }
 
-    // --- SEEK SU BARRA ---
+    // --- SEEK SU BARRA WEB ---
     function handleSeek(e) {
         if (!lastRemoteStatus || !lastRemoteStatus.duration) return;
 
         const container = e.currentTarget;
         const rect = container.getBoundingClientRect();
-        // Calcola percentuale click (0.0 - 1.0)
         let clickX = e.clientX - rect.left;
         let percentage = Math.max(0, Math.min(1, clickX / rect.width));
-        
-        // Calcola tempo target
         let targetTime = percentage * lastRemoteStatus.duration;
 
-        // Feedback visivo immediato
         document.getElementById('expanded-progress-fill').style.width = (percentage * 100) + '%';
         document.getElementById('expanded-curr-time').textContent = formatTime(targetTime);
 
-        // Invia comando
-        socket.emit('remote_control_command', {
-            action: 'seek',
-            value: targetTime
-        });
+        // Invia comando seek assoluto
+        sendRemote('seekToAbs', targetTime);
     }
 
-    // --- UTILS ---
     function formatTime(seconds) {
         if (!seconds) return "0:00";
         const m = Math.floor(seconds / 60);
