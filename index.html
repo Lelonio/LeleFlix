@@ -3292,6 +3292,10 @@ let scrollPositionBeforeDetail = 0;
 async function openDetailView(contentOrId, type = 'movie') {
     // 1. Salva posizione scroll
     scrollPositionBeforeDetail = window.scrollY;
+
+    if (typeof player !== 'undefined' && player && typeof player.pauseVideo === 'function') {
+        player.pauseVideo();
+    }
     
     // 2. Recupera dati (logica invariata)
     let content;
@@ -3338,6 +3342,12 @@ async function openDetailView(contentOrId, type = 'movie') {
 function closeDetailView() {
 const homeView = document.getElementById('home-view');
     const detailView = document.getElementById('detail-view');
+
+    if (scrollPositionBeforeDetail < 500) {
+        if (typeof player !== 'undefined' && player && typeof player.playVideo === 'function') {
+            player.playVideo();
+        }
+    }
     
     // --- AGGIUNTA: Pulisci il video player ---
     if (detailPlayer) {
@@ -3392,7 +3402,7 @@ async function populateDetailView(content) {
     
     // Imposta il testo di fallback
     titleEl.textContent = content.title || content.name;
-    titleEl.classList.remove('hidden');
+    titleEl.classList.add('hidden');
     logoEl.classList.add('hidden'); // Nascondi logo finché non lo troviamo
         
     document.getElementById('detail-backdrop').style.backgroundImage = `url(${backdropUrl})`;
@@ -3415,11 +3425,16 @@ async function populateDetailView(content) {
             if (logo) {
                 logoEl.src = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
                 logoEl.classList.remove('hidden'); // Mostra il logo
-                titleEl.classList.add('hidden');   // Nascondi il titolo testuale
+                   // Nascondi il titolo testuale
+            }
+
+            else{
+                titleEl.classList.remove('hidden');
             }
         }
     } catch (error) {
         console.error("Errore recupero logo:", error);
+        titleEl.classList.remove('hidden');
         // In caso di errore, il titolo testuale rimane visibile come fallback
     }
     
@@ -4971,6 +4986,25 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
     .btn-huge { width: 80px; height: 80px; border-radius: 50%; background: white; color: black; border: none; font-size: 32px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 20px rgba(255,255,255,0.2); }
     .btn-big:active, .btn-huge:active { transform: scale(0.95); }
     .btn-stop { color: #E50914; background: rgba(229, 9, 20, 0.15); }
+
+
+    .carousel-row {
+        padding-top: 40px !important;    /* Spazio per l'ingrandimento verso l'alto */
+        padding-bottom: 40px !important; /* Spazio per l'ingrandimento verso il basso */
+        margin-top: -30px;               /* Compensa visivamente lo spazio extra */
+        margin-bottom: -10px;
+        
+        /* Assicura che lo scroll funzioni bene */
+        display: flex;
+        overflow-y: visible; /* Importante: lascia uscire le ombre verticali */
+    }
+
+    /* Assicuriamoci che la card in hover stia sopra a tutto */
+    .movie-card:hover {
+        z-index: 50 !important; 
+        /* La trasformazione esistente va bene, ma assicurati che sia fluida */
+        transform: translateY(-10px) scale(1.1) !important; 
+    }
 </style>
 
 <div id="remote-bar" onclick="openRemoteExpanded()">
@@ -5253,6 +5287,43 @@ clearTimeout(remoteTimeout);
         const s = Math.floor(seconds % 60);
         return m + ":" + (s < 10 ? "0" : "") + s;
     }
+</script>
+<script>
+    // --- RISPARMIO DATI HERO VIDEO (YouTube Fix) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        const heroSection = document.getElementById('hero-section');
+
+        // Configurazione: scatta quando il 10% dell'elemento entra/esce
+        const observerOptions = {
+            root: null,
+            threshold: 0.1 
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                // VERIFICA CORRETTA:
+                // Controlliamo se la variabile 'player' è definita e ha i metodi di YouTube.
+                // Usiamo 'typeof player' per evitare errori se la variabile non esiste ancora.
+                if (typeof player !== 'undefined' && player && typeof player.pauseVideo === 'function') {
+                    
+                    if (entry.isIntersecting) {
+                        // Video entra nello schermo -> Play
+                        // console.log("Hero visibile -> Play");
+                        player.playVideo();
+                    } else {
+                        // Video esce dallo schermo -> Pausa
+                        // console.log("Hero nascosto -> Pausa");
+                        player.pauseVideo();
+                    }
+                }
+            });
+        }, observerOptions);
+
+        // Inizia a monitorare la sezione Hero
+        if (heroSection) {
+            observer.observe(heroSection);
+        }
+    });
 </script>
 </body>
 </html>
