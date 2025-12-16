@@ -5071,7 +5071,6 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
     let isDraggingScrubber = false;
     
     // Riferimento all'audio silenzioso
-    const silentAudio = document.getElementById('silent-audio');
 
     // --- GESTIONE UI ---
     function openRemoteExpanded() {
@@ -5087,39 +5086,7 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
 
     // --- CONFIGURAZIONE HANDLER MEDIA SESSION ---
     // Mappa i tasti fisici/notifiche ai comandi Socket
-    if ('mediaSession' in navigator) {
-        const actionHandlers = [
-            ['play',        () => sendRemote('play')],
-            ['pause',       () => sendRemote('pause')],
-            ['previoustrack', () => sendRemote('rewind')], // Tasto indietro cuffie = -10s
-            ['nexttrack',     () => sendRemote('forward')], // Tasto avanti cuffie = +10s
-            ['seekbackward', (details) => {
-                const seekOffset = details.seekOffset || 10;
-                sendRemote('seek', -seekOffset); // Gestione seek relativo
-            }],
-            ['seekforward', (details) => {
-                const seekOffset = details.seekOffset || 10;
-                sendRemote('seek', seekOffset);
-            }],
-            ['seekto', (details) => {
-                // Seek assoluto (es. trascinando la barra nel centro notifiche)
-                if (details.fastSeek && 'fastSeek' in silentAudio) {
-                    silentAudio.fastSeek(details.seekTime); // Sincronizza audio locale
-                    return;
-                }
-                sendRemote('seekToAbs', details.seekTime); // Invia tempo assoluto
-            }],
-            ['stop', () => sendRemote('stop')]
-        ];
-
-        for (const [action, handler] of actionHandlers) {
-            try {
-                navigator.mediaSession.setActionHandler(action, handler);
-            } catch (error) {
-                console.warn(`L'azione ${action} non è supportata dal browser`);
-            }
-        }
-    }
+    
 
     // --- LOGICA SOCKET & AGGIORNAMENTI ---
     socket.on('remote_player_status', (status) => {
@@ -5147,7 +5114,6 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
         if (!miniBar.classList.contains('active')) {
             miniBar.classList.add('active');
             // Tenta di avviare l'audio silenzioso al primo apparire della barra
-            silentAudio.play().catch(() => {}); 
         }
 
         lastRemoteStatus = status;
