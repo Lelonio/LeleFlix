@@ -5063,9 +5063,6 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
     </div>
 </div>
 
-<audio id="silent-audio" loop preload="auto">
-    <source src="data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD//////////////////////////////////////////////////////////////////wAAAP9MYXZjNTguNTQuMTAwAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASGluZwAAAA8AAAAEAAABIAAAzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMz//////////////////////////////////////////////////////////////////wAAAANMYXZmNTguMjkuMTAwAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA//OEDxAAAAJMzIAAAAAAAAEAAAC7AAAAAAABJzAAAAAAAAAAAAAA" type="audio/mpeg">
-</audio>
 
 <script>
     // Variabili stato
@@ -5086,44 +5083,7 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
     }
 
     // --- SETUP MEDIA SESSION (Android/iOS integration) ---
-    function updateMediaSession(status) {
-        if (!('mediaSession' in navigator)) return;
-
-        // 1. Aggiorna Metadati (Titolo, Info nel blocco schermo)
-        navigator.mediaSession.metadata = new MediaMetadata({
-            title: status.title || "LeleFlix",
-            artist: "In riproduzione su " + (status.device || "TV"),
-            album: "LeleCast Control",
-            artwork: [
-                { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }, // Usa la tua icona o un poster generico
-                { src: 'logo.png', sizes: '192x192', type: 'image/png' }
-            ]
-        });
-
-        // 2. Aggiorna Stato Riproduzione (Play/Pausa)
-        navigator.mediaSession.playbackState = status.isPlaying ? 'playing' : 'paused';
-
-        // 3. Aggiorna Posizione Temporale (Seek bar nel centro notifiche)
-        if (status.duration && status.duration > 0 && typeof status.currentTime === 'number') {
-            try {
-                navigator.mediaSession.setPositionState({
-                    duration: status.duration,
-                    playbackRate: 1.0,
-                    position: status.currentTime
-                });
-            } catch (e) {
-                console.warn("Errore aggiornamento posizione mediaSession:", e);
-            }
-        }
-
-        // 4. Gestione Audio Silenzioso (Il motore che tiene vivo tutto)
-        // Se la TV suona, il telefono deve "suonare" il silenzio per mostrare i controlli
-        if (status.isPlaying && silentAudio.paused) {
-            silentAudio.play().catch(e => console.log("Impossibile avviare audio (necessaria interazione utente):", e));
-        } else if (!status.isPlaying && !silentAudio.paused) {
-            silentAudio.pause();
-        }
-    }
+    
 
     // --- CONFIGURAZIONE HANDLER MEDIA SESSION ---
     // Mappa i tasti fisici/notifiche ai comandi Socket
@@ -5170,14 +5130,11 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
             miniBar.classList.remove('active');
             closeRemoteExpanded();
             // Ferma sessione media
-            if(!silentAudio.paused) silentAudio.pause();
-            if('mediaSession' in navigator) navigator.mediaSession.playbackState = 'none';
             return;
         }
 
         if (!miniBar.classList.contains('active')) {
             miniBar.classList.add('active');
-            silentAudio.play().catch(() => {}); 
             
             // Chiude la pagina dettagli se è aperta sotto
             // (La funzione closeDetailView è definita nel tuo index.html originale)
@@ -5196,7 +5153,6 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
         lastRemoteStatus = status;
 
         // AGGIORNA MEDIA SESSION (Android/iOS)
-        updateMediaSession(status);
 
         // 1. Aggiorna UI Web
         document.getElementById('mini-title').textContent = status.title;
@@ -5252,7 +5208,6 @@ clearTimeout(remoteTimeout);
             if (action === 'stop') {
                 document.getElementById('remote-bar').classList.remove('active');
                 closeRemoteExpanded();
-                if(silentAudio && !silentAudio.paused) silentAudio.pause();
             }
         } 
         else if (action === 'rewind') {
