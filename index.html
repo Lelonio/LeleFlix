@@ -5228,41 +5228,61 @@ clearTimeout(remoteTimeout);
 
     // --- INVIO COMANDI ---
     // Modificata per supportare seek relativo e assoluto
-    function sendRemote(action, value = null) {
-        if (!lastRemoteStatus) return;
-        let cmd = {};
+    // --- INVIO COMANDI ROBUSTO ---
+    // Definiamo la funzione su window per essere sicuri che l'HTML la veda
+    window.sendRemote = function(action, value = null) {
+        console.log("Tentativo invio comando:", action, value);
+        
+        // Feedback tattile (vibrazione) se su mobile
+        if (navigator.vibrate) navigator.vibrate(50);
+
+        let cmd = { action: action };
 
         if (action === 'toggle') {
-            cmd.action = lastRemoteStatus.isPlaying ? 'pause' : 'play';
-        } else if (action === 'play' || action === 'pause' || action === 'stop') {
+            // Se non abbiamo stato, mandiamo un toggle generico
+            if (!lastRemoteStatus) {
+                cmd.action = 'toggle';
+            } else {
+                // Se sappiamo lo stato, mandiamo il comando opposto esplicito per sicurezza
+                cmd.action = lastRemoteStatus.isPlaying ? 'pause' : 'play';
+            }
+        } 
+        else if (action === 'play' || action === 'pause' || action === 'stop') {
             cmd.action = action;
             if (action === 'stop') {
                 document.getElementById('remote-bar').classList.remove('active');
                 closeRemoteExpanded();
-                if(!silentAudio.paused) silentAudio.pause();
+                if(silentAudio && !silentAudio.paused) silentAudio.pause();
             }
-        } else if (action === 'rewind') {
+        } 
+        else if (action === 'rewind') {
             cmd.action = 'seek';
-            cmd.value = 'rewind';
-        } else if (action === 'forward') {
+            cmd.value = 'rewind'; // La TV gestirà il -10s
+        } 
+        else if (action === 'forward') {
             cmd.action = 'seek';
-            cmd.value = 'forward';
-        } else if (action === 'seek') {
-            // Seek Relativo (usato dai pulsanti media session)
-            // Se value è negativo è rewind, positivo è forward, ma qui passiamo il valore numerico
-            // Per compatibilità col player TV che accetta solo 'forward'/'rewind' o numeri assoluti:
-            // Dobbiamo calcolare il tempo assoluto qui
-            let target = lastRemoteStatus.currentTime + value;
-            cmd.action = 'seek';
-            cmd.value = target; 
-        } else if (action === 'seekToAbs') {
-            // Seek Assoluto (dalla barra notifiche)
+            cmd.value = 'forward'; // La TV gestirà il +10s
+        } 
+        else if (action === 'seek') {
+            // Seek relativo (es. dai tasti cuffie)
+            let current = lastRemoteStatus ? lastRemoteStatus.currentTime : 0;
+            cmd.value = current + value;
+        } 
+        else if (action === 'seekToAbs') {
             cmd.action = 'seek';
             cmd.value = value;
         }
 
-        socket.emit('remote_control_command', cmd);
-    }
+        // Invia comando
+        if (socket && socket.connected) {
+            socket.emit('remote_control_command', cmd);
+            console.log("Comando inviato:", cmd);
+        } else {
+            console.warn("Socket non connesso, impossibile inviare comando");
+            // Tenta riconnessione
+            if(socket) socket.connect();
+        }
+    };
 
     // --- SEEK SU BARRA WEB ---
     function handleSeek(e) {
