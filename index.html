@@ -76,11 +76,47 @@ sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],          
         return overlay;
     }
 
+        function showPartyToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-6 py-3 rounded-full z-[10000] shadow-2xl font-bold flex items-center gap-3 animate-bounce';
+        toast.innerHTML = `<i class="fas fa-users"></i> ${msg}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
     // Gestione Evento Socket
-socket.on('connect', () => {
-        console.log("🟢 Connesso a LeleCast");
-        // Appena connesso, chiedi se c'è qualcosa in riproduzione (anche se in pausa)
-        socket.emit('request_player_status');
+let currentPartyCode = sessionStorage.getItem('lelePartyCode');
+    // Nota: sessionStorage salva solo stringhe, quindi confrontiamo con 'true'
+    let isPartyHost = (sessionStorage.getItem('lelePartyHost') === 'true');
+    let isRemoteUpdate = false;
+    
+    // Riferimento alla funzione playMovie originale
+    let originalPlayMovie = null;
+
+    // --- SOCKET LOGIC & PERSISTENZA ---
+    
+    // 1. Evento Connect (Riconnessione "silenziosa" al server)
+    socket.on('connect', () => {
+        console.log("🟢 Connesso. Verifica sessione party...");
+
+        // Se abbiamo recuperato un codice dalla memoria all'avvio
+        if (currentPartyCode) {
+            console.log("🔄 Ripristino connessione Socket per stanza:", currentPartyCode);
+            
+            // Ci riconnettiamo alla stanza sul server (così riceviamo i comandi)
+            // IMPORTANTE: Questo non deve resettare la UI, perché le variabili sono già settate
+            socket.emit('party_join', currentPartyCode);
+            
+            showPartyToast("Bentornato nel Party! Sessione ripristinata.");
+            
+            // Se c'è un player attivo (es. refresh mentre guardavi), riattiva i listener
+            if (document.getElementById('videoPlayer')) {
+                setupPartyListeners();
+            }
+        } else {
+            // Se non c'è party, chiediamo solo lo stato base (per la barra remota)
+            socket.emit('request_player_status');
+        }
     });
 
     socket.on('remote_play_trigger', (content) => {
@@ -1260,6 +1296,9 @@ main .max-w-7xl {
                                 <a href="#tv-popular" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Serie TV</a>
                                 <a href="#critics" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Più votati</a>
                                 <a href="#new" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Nuovi</a>
+                                <a href="#" onclick="openPartyMenu(); return false;" class="text-purple-400 hover:text-purple-300 px-3 py-2 rounded-md text-sm font-bold transition-colors duration-300 flex items-center gap-2 border border-purple-500/30 bg-purple-500/10">
+    <i class="fas fa-users"></i> Party
+</a>
                             </div>
                         </div>
                     </div>
@@ -1677,7 +1716,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 <section id="hero-section" class="relative h-screen overflow-hidden">
     <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 z-0"></div>
     
-<div id="hero-video-container" class="absolute inset-0 z-0 hidden pointer-events-none overflow-hidden">
+<div id="hero-video-container" class="absolute inset-0 z-10 pointer-events-none overflow-hidden opacity-0 transition-opacity duration-1000">
     <div id="hero-video-wrapper" class="w-full h-full relative"></div>
 </div>
 
@@ -4418,25 +4457,44 @@ function onPlayerReady(event) {
     event.target.playVideo();
 }
 
+let heroFadeTimeout = null;
+
 // Gestione stati (Buffer, Playing, ecc.)
 // Funzione per la HOME
 function onPlayerStateChange(event) {
-    const container = document.getElementById('hero-video-container');
+    const videoContainer = document.getElementById('hero-video-container');
 
     if (event.data === YT.PlayerState.PLAYING) {
-        event.target.setPlaybackQuality('hd1080');
+        console.log("Video partito -> FADE IN");
+        
+        // 1. FADE IN: Rendiamo il video visibile
+        if (videoContainer) {
+            videoContainer.classList.remove('opacity-0'); // Rimuove trasparenza (Tailwind)
+            // Se non usi tailwind, usa: videoContainer.style.opacity = '1';
+        }
 
-        // Buffer di 1 secondo per caricare HD
-        setTimeout(() => {
-            // 1. Rimuovi hidden
-            container.classList.remove('hidden');
-            
-            // 2. Applica l'animazione di ingresso
-            requestAnimationFrame(() => {
-                container.classList.add('video-entrance-active');
-            });
+        // Pulisci timer precedenti
+        clearTimeout(heroFadeTimeout);
 
-        }, 1000); 
+        // 2. Timer per FADE OUT dopo 5 secondi
+        heroFadeTimeout = setTimeout(() => {
+            console.log("5 secondi passati -> FADE OUT");
+            if (videoContainer) {
+                videoContainer.classList.add('opacity-0'); // Rimette trasparenza
+                
+                // Opzionale: Pausa dopo la dissolvenza
+                setTimeout(() => {
+                    if (player && typeof player.pauseVideo === 'function') {
+                        player.pauseVideo();
+                    }
+                }, 1500); 
+            }
+        }, 10000);
+
+    } 
+    else if (event.data === YT.PlayerState.ENDED || event.data === YT.PlayerState.PAUSED) {
+        // Se si ferma prima, nascondilo subito (opzionale) o annulla il timer
+        clearTimeout(heroFadeTimeout);
     }
 }
 // Update displayHeroMovie to handle both types
@@ -4533,7 +4591,7 @@ async function displayHeroMovie(content) {
         heroTitleEl.classList.remove('hidden');
     }
 
-        loadHeroVideo(content);
+        //loadHeroVideo(content);
   
         
 
@@ -4852,6 +4910,11 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
             <span>Più votati</span>
         </a>
 
+        <a href="#" onclick="openPartyMenu(); return false;" class="mobile-nav-link text-purple-400">
+    <i class="fas fa-users"></i>
+    <span>Party</span>
+</a>
+
     </div>
 </nav>
 <div id="vlc-prompt" class="fixed inset-0 hidden flex items-center justify-center bg-black/90 backdrop-blur-sm" style="z-index: 9999 !important;">
@@ -5004,6 +5067,24 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
         z-index: 50 !important; 
         /* La trasformazione esistente va bene, ma assicurati che sia fluida */
         transform: translateY(-10px) scale(1.1) !important; 
+    }
+
+    #hero-background-image {
+        z-index: 0; 
+        /* Assicurati che la tua immagine di sfondo abbia questo ID o adatta il selettore */
+    }
+
+    /* Il contenitore del video sta sopra (z-index alto) e gestisce la transizione */
+    #hero-video-container {
+        z-index: 10; 
+        opacity: 1; /* Inizialmente visibile */
+        transition: opacity 1.5s ease-in-out; /* Dissolvenza morbida di 1.5 secondi */
+    }
+
+    /* Classe che aggiungeremo via JS per nascondere il video */
+    #hero-video-container.video-hidden {
+        opacity: 0; /* Diventa trasparente */
+        pointer-events: none; /* Importante: permette di cliccare sui bottoni che stanno sotto */
     }
 </style>
 
@@ -5265,6 +5346,417 @@ clearTimeout(remoteTimeout);
             observer.observe(heroSection);
         }
     });
+</script>
+
+<div id="party-menu-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div class="bg-[#1a1a1a] border border-white/10 p-8 rounded-2xl max-w-md w-full text-center shadow-2xl transform scale-100 transition-all">
+        <div class="text-purple-500 text-5xl mb-4"><i class="fas fa-couch"></i></div>
+        <h3 class="text-2xl font-bold text-white mb-2">LeleParty</h3>
+        <p class="text-gray-400 mb-8">Guarda film in sincrono con gli amici.</p>
+
+        <div id="party-start-view" class="flex flex-col gap-4">
+            <button onclick="createParty()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-3">
+                <i class="fas fa-plus-circle"></i> Crea Nuova Stanza
+            </button>
+            
+            <div class="relative">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-700"></div></div>
+                <div class="relative flex justify-center text-sm"><span class="px-2 bg-[#1a1a1a] text-gray-500">OPPURE</span></div>
+            </div>
+
+            <div class="flex gap-2">
+                <input id="party-code-input" type="text" placeholder="Codice Stanza (es. 123456)" class="flex-1 bg-black/50 border border-gray-700 rounded-lg px-4 text-white focus:outline-none focus:border-purple-500 text-center tracking-widest font-mono text-lg">
+                <button onclick="joinParty()" class="bg-gray-700 hover:bg-gray-600 text-white px-6 rounded-lg font-bold">
+                    Entra
+                </button>
+            </div>
+        </div>
+
+        <div id="party-lobby-view" class="hidden">
+    <p class="text-gray-400 mb-2">Codice Stanza:</p>
+    <div class="text-5xl font-mono font-bold text-white tracking-wider mb-6 select-all bg-black/30 py-4 rounded-xl border border-purple-500/30 text-purple-400" id="display-party-code">------</div>
+    
+    <div id="party-status-message" class="bg-gray-800/50 p-4 rounded-lg text-gray-300 mb-6 border border-white/5 transition-all">
+        In attesa...
+    </div>
+
+    <div id="party-participants" class="mb-6 flex justify-center gap-2">
+        </div>
+
+    <button onclick="closePartyMenu()" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold transition border border-white/10">
+        <i class="fas fa-arrow-down mr-2"></i> Riduci a icona e naviga
+    </button>
+
+    <button onclick="leaveParty()" class="w-full bg-red-900/50 hover:bg-red-700 text-red-200 py-2 rounded-xl font-bold transition text-sm">
+        <i class="fas fa-sign-out-alt mr-2"></i> Abbandona Party
+    </button>
+</div>
+
+        <button onclick="closePartyMenu()" class="mt-6 text-gray-500 hover:text-white text-sm">Annulla</button>
+    </div>
+</div>
+<script>
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            if (window.playMovie) {
+                originalPlayMovie = window.playMovie;
+                
+                // --- INTERCETTORE PLAY ---
+                // Sovrascriviamo la funzione globale playMovie
+                // --- INTERCETTORE PLAY (CORRETTO) ---
+                window.playMovie = function(content) {
+                    // Protezione contro chiamate vuote
+                    if (!content) return console.warn("playMovie chiamato senza contenuto");
+
+                    const titleSafe = content.title || content.name || "ID: " + (content.id || content);
+                    console.log("Play richiesto per:", titleSafe);
+
+                    // 1. SE SIAMO IN UN PARTY
+                    if (currentPartyCode) {
+                        if (isPartyHost) {
+                            // HOST: Avvia per tutti
+                            console.log("Host avvia film per il party");
+                            
+                            // Aggiungi flag
+                            if (typeof content === 'object') {
+                                content.forceInternalPlayer = true;
+                            }
+
+                            // Invia comando
+                            socket.emit('party_sync_event', {
+                                code: currentPartyCode,
+                                action: 'start_movie',
+                                content: content
+                            });
+
+                            // Avvia localmente
+                            if (typeof originalPlayMovie === 'function') {
+                                originalPlayMovie(content);
+                                setupPartyListeners();
+                                showPartyToast(`Hai avviato "${titleSafe}" per il gruppo`);
+                            }
+
+                        } else {
+                            // OSPITE: Blocca
+                            alert("⛔ Solo l'host può scegliere il film! Attendi che l'host ne avvii uno.");
+                        }
+                    } else {
+                        // 2. MODALITÀ NORMALE
+                        if (typeof originalPlayMovie === 'function') {
+                            originalPlayMovie(content);
+                        }
+                    }
+                };
+            }
+        }, 1000);
+    });
+
+    // --- UI GESTIONE ---
+    function openPartyMenu() {
+        document.getElementById('party-menu-modal').classList.remove('hidden');
+        
+        // Se siamo già in un party, mostra la lobby direttamente
+        if (currentPartyCode) {
+            showLobbyView(currentPartyCode);
+        } else {
+            document.getElementById('party-start-view').classList.remove('hidden');
+            document.getElementById('party-lobby-view').classList.add('hidden');
+        }
+    }
+
+    function closePartyMenu() {
+        document.getElementById('party-menu-modal').classList.add('hidden');
+    }
+
+function leaveParty() {
+        if (confirm("Vuoi davvero lasciare il Watch Party?")) {
+            // 1. Pulisci Storage
+            sessionStorage.removeItem('lelePartyCode');
+            sessionStorage.removeItem('lelePartyHost');
+            
+            // 2. Reset Variabili
+            currentPartyCode = null;
+            isPartyHost = false;
+            
+            // 3. Reset UI
+            document.getElementById('party-lobby-view').classList.add('hidden');
+            document.getElementById('party-start-view').classList.remove('hidden');
+            
+            // 4. (Opzionale) Ricarica la pagina per pulire socket sporchi
+            window.location.reload();
+        }
+    }
+
+    // --- AGGIUNGI QUESTO BLOCCO ---
+    
+    // Quando qualcun altro entra nella stanza
+    socket.on('party_member_joined', () => {
+        console.log("Nuovo membro rilevato!");
+        
+        // 1. Notifica Toast (appare ovunque tu sia)
+        showPartyToast("Un amico si è unito al Party! 🥳");
+        
+        // 2. Aggiorna la grafica nel modale (se aperto)
+        const participantsDiv = document.getElementById('party-participants');
+        if (participantsDiv) {
+            // Aggiungi un'icona utente
+            const icon = document.createElement('div');
+            icon.className = 'w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-black font-bold animate-bounce';
+            icon.innerHTML = '<i class="fas fa-user"></i>';
+            participantsDiv.appendChild(icon);
+        }
+
+        // 3. Se sei l'host, cambia il messaggio per incoraggiare l'azione
+        if (isPartyHost) {
+            const statusMsg = document.getElementById('party-status-message');
+            statusMsg.innerHTML = `<span class="text-green-400 font-bold">Ci sono spettatori!</span><br>Chiudi questa finestra e fai Play su un film qualsiasi per iniziare.`;
+            statusMsg.classList.add('bg-green-900/30', 'border-green-500/50');
+        }
+    });
+    // -----------------------------
+    
+    function createParty() {
+        socket.emit('party_create');
+        isPartyHost = true;
+    }
+
+socket.on('party_created', (code) => {
+        currentPartyCode = code;
+        isPartyHost = true;
+        // SALVA
+        sessionStorage.setItem('lelePartyCode', code);
+        sessionStorage.setItem('lelePartyHost', 'true');
+        
+        showLobbyView(code);
+    });
+
+    // 3. Unione (Salva stato)
+    socket.on('party_joined', (code) => {
+        // Aggiorniamo il codice corrente
+        currentPartyCode = code;
+        
+        // Se non avevamo già definito se siamo host (es. nuovo accesso), salviamo che siamo guest
+        if (sessionStorage.getItem('lelePartyHost') === null) {
+            isPartyHost = false;
+            sessionStorage.setItem('lelePartyCode', code);
+            sessionStorage.setItem('lelePartyHost', 'false');
+        }
+        
+        // Aggiorna la UI del menu (ma non aprirlo forzatamente se siamo in ripristino)
+        // Se il menu è aperto, mostrerà la lobby corretta
+        const startView = document.getElementById('party-start-view');
+        const lobbyView = document.getElementById('party-lobby-view');
+        if(startView && lobbyView) {
+            startView.classList.add('hidden');
+            lobbyView.classList.remove('hidden');
+            document.getElementById('display-party-code').textContent = code;
+            updateLobbyMessage(); // Funzione helper per il testo
+        }
+        
+        // Non resettiamo isPartyHost qui, ci fidiamo del sessionStorage o della creazione
+    });
+
+    function updateLobbyMessage() {
+        const statusMsg = document.getElementById('party-status-message');
+        const participantsDiv = document.getElementById('party-participants');
+        
+        // Reset icona utente principale
+        if(participantsDiv) {
+            participantsDiv.innerHTML = '<div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white"><i class="fas fa-crown"></i></div>';
+        }
+
+        if (statusMsg) {
+            if (isPartyHost) {
+                statusMsg.innerHTML = `
+                    <i class="fas fa-crown text-yellow-500 mb-2 text-2xl"></i><br>
+                    Sei l'Host.<br>
+                    <span class="text-sm text-gray-400">Condividi il codice. Quando sei pronto, chiudi qui e avvia un film.</span>
+                `;
+            } else {
+                statusMsg.innerHTML = `
+                    <i class="fas fa-popcorn text-purple-400 mb-2 text-2xl"></i><br>
+                    Sei dentro!<br>
+                    <span class="text-sm text-gray-400">Rilassati, il film partirà automaticamente quando l'host lo avvia.</span>
+                `;
+            }
+        }
+    }
+
+    function joinParty() {
+        const code = document.getElementById('party-code-input').value.trim();
+        if(code.length !== 6) return alert("Codice non valido");
+        socket.emit('party_join', code);
+    }
+
+
+    
+    socket.on('party_error', (msg) => alert(msg));
+
+    // --- VISTA LOBBY ---
+    function showLobbyView(code) {
+        document.getElementById('party-start-view').classList.add('hidden');
+        document.getElementById('party-lobby-view').classList.remove('hidden');
+        document.getElementById('display-party-code').textContent = code;
+
+        // Reset visuale partecipanti (mettiamo solo noi stessi all'inizio)
+        const participantsDiv = document.getElementById('party-participants');
+        participantsDiv.innerHTML = '<div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white"><i class="fas fa-crown"></i></div>';
+
+        const statusMsg = document.getElementById('party-status-message');
+        
+        if (isPartyHost) {
+            statusMsg.innerHTML = `
+                <i class="fas fa-crown text-yellow-500 mb-2 text-2xl"></i><br>
+                Sei l'Host.<br>
+                <span class="text-sm text-gray-400">Condividi il codice. Quando sei pronto, chiudi qui e avvia un film.</span>
+            `;
+        } else {
+            statusMsg.innerHTML = `
+                <i class="fas fa-popcorn text-purple-400 mb-2 text-2xl"></i><br>
+                Sei dentro!<br>
+                <span class="text-sm text-gray-400">Rilassati, il film partirà automaticamente quando l'host lo avvia.</span>
+            `;
+        }
+    }
+
+    // --- SINCRONIZZAZIONE ---
+    
+// --- SINCRONIZZAZIONE (CORRETTA) ---
+    socket.on('party_sync_trigger', (data) => {
+        if (data.action === 'start_movie') {
+            // Verifica che il contenuto esista
+            if (!data.content) return console.error("Ricevuto start_movie senza contenuto");
+
+            const titleSafe = data.content.title || data.content.name || "Contenuto Party";
+            console.log("L'host ha avviato un film:", titleSafe);
+            
+            closePartyMenu();
+            const modal = document.getElementById('movie-modal');
+            if(modal) modal.classList.add('hidden');
+            
+            // Imposta flag per evitare prompt
+if (data.content) data.content.forceInternalPlayer = true;
+            
+            if (typeof originalPlayMovie === 'function') {
+                originalPlayMovie(data.content);
+                setupPartyListeners();
+                showPartyToast(`L'host ha avviato: ${titleSafe}`);
+            }
+        } 
+        else {
+            // Comandi Play/Pausa/Seek
+            handleVideoSync(data);
+        }
+    });
+
+    // Funzione Toast Party
+
+
+    // --- SETUP LISTENER YOUTUBE (Identico a prima) ---
+function setupPartyListeners() {
+        // Cerca il tag <video> del player integrato
+        const checkVideo = setInterval(() => {
+            const videoEl = document.getElementById('videoPlayer');
+            
+            // Se il video esiste ed è pronto
+            if (videoEl) {
+                clearInterval(checkVideo);
+                console.log("🎥 Player Integrato trovato. Attivazione Sync Party...");
+                
+                // --- LISTENERS (Inviano comandi agli altri) ---
+                
+                // 1. PLAY
+                videoEl.addEventListener('play', () => {
+                    if (isRemoteUpdate) return; // Non inviare se è una risposta a un comando ricevuto
+                    emitPartyEvent('play', videoEl.currentTime);
+                });
+
+                // 2. PAUSE
+                videoEl.addEventListener('pause', () => {
+                    if (isRemoteUpdate) return;
+                    emitPartyEvent('pause', videoEl.currentTime);
+                });
+
+                // 3. SEEK (Usiamo 'seeked' che scatta quando si lascia la barra)
+                videoEl.addEventListener('seeked', () => {
+                    if (isRemoteUpdate) return;
+                    emitPartyEvent('seek', videoEl.currentTime);
+                });
+            }
+        }, 500);
+    }
+
+    function attachYoutubeHooks() {
+        let lastTime = 0;
+        let lastState = -1;
+
+        setInterval(() => {
+            if (!player || !currentPartyCode || isRemoteUpdate) return;
+
+            const currentTime = player.getCurrentTime();
+            const currentState = player.getPlayerState();
+
+            if (currentState !== lastState) {
+                if (currentState === 1) emitPartyEvent('play', currentTime);
+                if (currentState === 2) emitPartyEvent('pause', currentTime);
+                lastState = currentState;
+            }
+
+            if (Math.abs(currentTime - lastTime) > 2 && currentState === 1) { 
+                emitPartyEvent('seek', currentTime);
+            }
+            lastTime = currentTime;
+        }, 500);
+    }
+
+    function emitPartyEvent(action, time) {
+        if(isRemoteUpdate) return;
+        socket.emit('party_sync_event', {
+            code: currentPartyCode,
+            action: action,
+            time: time,
+            timestamp: Date.now()
+        });
+    }
+
+    function handleVideoSync(data) {
+        const videoEl = document.getElementById('videoPlayer');
+        if (!videoEl) return;
+
+        console.log(`📥 Sync Party: ${data.action} a ${data.time}`);
+        
+        // Attiva il flag per evitare che il player risponda "Ho fatto Play!" creando un loop infinito
+        isRemoteUpdate = true;
+
+        try {
+            if (data.action === 'play') {
+                // Se la differenza di tempo è grande (> 2 secondi), sincronizza anche il tempo
+                if (Math.abs(videoEl.currentTime - data.time) > 2) {
+                    videoEl.currentTime = data.time;
+                }
+                videoEl.play().catch(e => console.warn("Play remoto bloccato:", e));
+            } 
+            else if (data.action === 'pause') {
+                videoEl.pause();
+                // In pausa sincronizziamo il tempo esatto per essere precisi al millisecondo
+                videoEl.currentTime = data.time;
+            } 
+            else if (data.action === 'seek') {
+                videoEl.currentTime = data.time;
+            }
+        } catch (error) {
+            console.error("Errore sync:", error);
+        }
+
+        // Rilascia il blocco dopo mezzo secondo
+        setTimeout(() => {
+            isRemoteUpdate = false;
+        }, 500);
+    }
+
+    // --- FIX AVVIO PARTY: Auto-Click sul Prompt ---
+    
 </script>
 </body>
 </html>

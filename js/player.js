@@ -446,11 +446,18 @@ showNextEpisodePrompt() {
 }
 // Metodo per gestire la scelta del player (Aggiungi questo dentro la classe VideoPlayer)
     askPlayMethod(streamUrl) {
+
+if (this.content && this.content.forceInternalPlayer) {
+            console.log("Party Mode: Forzatura player interno");
+            return Promise.resolve('internal');
+        }
         return new Promise((resolve) => {
             const prompt = document.getElementById('vlc-prompt');
             const btnInternal = document.getElementById('btn-play-internal');
             const btnExternal = document.getElementById('btn-play-vlc');
             const btnCancel = document.getElementById('btn-cancel-prompt');
+
+            
             
             // 1. Configurazione Etichetta Pulsante
             const isAndroid = /Android/i.test(navigator.userAgent);
@@ -479,6 +486,7 @@ showNextEpisodePrompt() {
                 
                 btnExternal.innerHTML = `<i class="fas fa-external-link-alt"></i> ${label}`;
             }
+            
 
             // 2. Tasto Copia Link
             let btnCopy = document.getElementById('btn-copy-link');
@@ -741,6 +749,10 @@ async initPlayer() {
             }
             
             // --- SCELTO PLAYER INTERNO: MOSTRA IL PLAYER ---
+            if (this.content && this.content.forceInternalPlayer) {
+            console.log("Tentativo Fullscreen Immediato (Host)");
+            this.enterFullscreen().catch(e => console.log("Fullscreen immediato fallito (Normale per Guest):", e));
+        }
             this.playerModal.classList.remove('hidden');
             this.showControlsTemporarily();
             
@@ -773,12 +785,24 @@ this.showToast('Ripreso da dove avevi lasciato');                }
                     if (lvl >= 0) this.hls.currentLevel = lvl;
                     
                     this.loadingOverlay.classList.add('hidden');
-this.videoPlayer.play()
-                        .then(() => {
-                            // --- APPLICA IL RESUME QUI ---
-                            handleResume();
-                        })
-                        .catch(console.error);                    
+const playPromise = this.videoPlayer.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise
+                            .then(() => {
+                                handleResume();
+                                
+                                // Se siamo in Party, proviamo il fullscreen
+                                if (this.content && this.content.forceInternalPlayer) {
+                                    return this.enterFullscreen(); // <--- Se fallisce, va nel catch sotto
+                                }
+                            })
+                            .catch(error => {
+                                // Se fallisce il Play OPPURE il Fullscreen, mostriamo l'overlay
+                                console.warn("Autoplay o Fullscreen bloccato:", error);
+                                this.showClickToPlayOverlay();
+                            });
+                    }            
                     
                     this.setupQualityOptions();
 // AUDIO TRACKS
@@ -824,12 +848,23 @@ this.videoPlayer.play()
                 });
             } else if (this.videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
                 this.videoPlayer.src = url;
-                this.videoPlayer.addEventListener('loadedmetadata', () => {
+this.videoPlayer.addEventListener('loadedmetadata', () => {
                     this.loadingOverlay.classList.add('hidden');
-this.videoPlayer.play().then(() => {
-                         // --- APPLICA IL RESUME QUI ---
-                         handleResume();
-                    });                });
+                    
+                    // --- MODIFICA 2B (Nativo): Gestione Blocco Autoplay ---
+this.videoPlayer.play()
+                        .then(() => {
+                            handleResume();
+                            if (this.content && this.content.forceInternalPlayer) {
+                                return this.enterFullscreen();
+                            }
+                        })
+                        .catch(error => {
+                            console.warn("Autoplay o Fullscreen bloccato:", error);
+                            this.showClickToPlayOverlay();
+                        });
+                    // -----------------------------------------------------
+                });
             } else {
                 this.showError('Il tuo browser non supporta questo formato video.');
             }
@@ -841,11 +876,72 @@ this.videoPlayer.play().then(() => {
         }
     }
 
+enterFullscreen() {
+        // Implementazione richiesta
+        const container = document.getElementById('videoContainer');
+        
+        if (container && container.requestFullscreen) {
+             // Ritorniamo la Promise per poter gestire l'errore se il browser blocca
+             return container.requestFullscreen()
+                .then(() => {
+                    if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => {});
+                });
+        } 
+        // Fallback necessario per Safari su iPhone (che non usa requestFullscreen standard)
+        else if (this.videoPlayer.webkitEnterFullscreen) {
+            this.videoPlayer.webkitEnterFullscreen();
+            return Promise.resolve();
+        }
+        
+        return Promise.reject("Fullscreen API non supportata");
+    }
+
+
 // Aggiungi questo metodo alla classe VideoPlayer
 generateStreamId() {
     return Math.random().toString(36).substring(2, 15) + 
            Math.random().toString(36).substring(2, 15);
 }
+
+// --- MODIFICA 3: Overlay Sblocco ---
+    showClickToPlayOverlay() {
+        if (document.getElementById('autoplay-overlay')) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'autoplay-overlay';
+        overlay.className = 'absolute inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer';
+        overlay.innerHTML = `
+            <div class="text-center animate-bounce">
+                <div class="w-24 h-24 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl border-4 border-white/20 hover:scale-110 transition-transform">
+                    <i class="fas fa-expand text-4xl text-white pl-1"></i>
+                </div>
+                <h2 class="text-white text-2xl font-bold mb-2">Unisciti al Party</h2>
+                <p class="text-gray-300">Clicca per sincronizzare e andare a tutto schermo</p>
+            </div>
+        `;
+        
+        overlay.onclick = () => {
+            this.videoPlayer.muted = false;
+            
+            // 1. Play
+            this.videoPlayer.play()
+                .then(() => {
+                    // 2. Fullscreen (usando il tuo metodo)
+                    return this.enterFullscreen();
+                })
+                .then(() => {
+                    // 3. Rimuovi overlay solo se tutto ok
+                    overlay.remove();
+                })
+                .catch(e => {
+                    console.error("Errore click overlay:", e);
+                    // Rimuovi comunque l'overlay se il play è andato, anche se fullscreen fallisce
+                    if (!this.videoPlayer.paused) overlay.remove();
+                });
+        };
+        
+        document.getElementById('videoContainer').appendChild(overlay);
+    }
 
 showError(message) {
     this.centerControls.classList.add('hidden');
