@@ -4133,41 +4133,91 @@ async function loadAvailableContent() {
 }
         
         // Initialize the app
-        document.addEventListener('DOMContentLoaded', async () => {
-            setupSearchHistoryListeners();
-    await loadAvailableContent();
+document.addEventListener('DOMContentLoaded', async () => {
+    setupSearchHistoryListeners();
+
+    // --- 1. CARICAMENTO PARALLELO (TURBO MODE) ---
+    // Avviamo il recupero della lista contenuti E dei candidati per l'Hero contemporaneamente.
+    // Non aspettiamo che uno finisca per iniziare l'altro.
     
-    // Then load all data
+    console.time("HeroLoad"); // Debug timing
+    
+    const availablePromise = loadAvailableContent();
+    
+    const heroCandidatesPromise = Promise.all([
+        fetch(`${API_URL}/movie/popular?api_key=${API_KEY}`),
+        fetch(`${API_URL}/tv/popular?api_key=${API_KEY}`)
+    ]).then(async ([m, t]) => {
+        const movies = await m.json();
+        const tv = await t.json();
+        // Uniamo i risultati grezzi
+        return [...movies.results.map(i=>({...i, media_type:'movie'})), ...tv.results.map(i=>({...i, media_type:'tv'}))];
+    });
+
+    // Attendiamo che entrambi siano pronti (sarà molto più veloce della sequenza)
+    const [_, heroCandidates] = await Promise.all([availablePromise, heroCandidatesPromise]);
+
+    // --- 2. RENDER HERO IMMEDIATO ---
+    // Filtriamo e mostriamo l'Hero PRIMA di caricare qualsiasi carosello
+    const availableHeroItems = heroCandidates.filter(item => 
+        availableContent.some(avail => avail.tmdb_id === item.id)
+    );
+
+    if (availableHeroItems.length > 0) {
+        const randomItem = availableHeroItems[Math.floor(Math.random() * availableHeroItems.length)];
+        
+        // Fetch dettagli rapidissimo per l'Hero
+        const details = await getMovieDetails(randomItem.id, randomItem.media_type);
+        
+        // --- PRELOAD IMMAGINE (LCP Optimization) ---
+        // Diciamo al browser di scaricare lo sfondo con priorità massima
+        const backdropUrl = `${IMG_PATH}${details.backdrop_path}`;
+        const link = document.createElement('link');
+        link.rel = 'preload'; 
+        link.as = 'image';
+        link.href = backdropUrl;
+        link.setAttribute('fetchpriority', 'high');
+        document.head.appendChild(link);
+
+        currentHeroMovie = { ...details, media_type: randomItem.media_type };
+        
+        // Mostra a schermo!
+        displayHeroMovie(currentHeroMovie);
+        console.timeEnd("HeroLoad");
+    } else {
+        // Fallback se nessun popolare è disponibile
+        getRandomHeroContent(); 
+    }
+
+    // --- 3. CARICAMENTO RESTO DELLA PAGINA (LAZY) ---
+    // Ora che l'utente vede l'Hero e il titolo, carichiamo con calma i caroselli sotto
     getTrendingMovies();
+    getTop10(); // Top 10 subito dopo
     getPopularTv();
     getTopRatedMovies();
     getUpcomingMovies();
-    getRandomHeroContent(); // Updated function name
+    
+    // Generi (meno prioritari)
     getMoviesByGenre(28, 'genre-action');
     getMoviesByGenre(35, 'genre-comedy');
     getMoviesByGenre(27, 'genre-horror');
     getMoviesByGenre(16, 'genre-animation');
-    getTop10();
 
-
+    // Listener Eventi (Search, Bottoni, ecc.)
     document.getElementById('search-button').addEventListener('click', () => searchMedia());
-document.getElementById('search-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') searchMedia();
-});
-document.getElementById('mobile-search-button').addEventListener('click', () => searchMedia(document.getElementById('mobile-search-input').value));
-document.getElementById('mobile-search-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') searchMedia(e.target.value);
-});
-    
-    // Update event listeners to handle both types
-playButton.addEventListener('click', () => playMovie(currentHeroMovie));
-
-moreInfoButton.addEventListener('click', () => {
-    if (currentHeroMovie) {
-        // Usa la nuova funzione openDetailView invece di showMovieDetails
-        openDetailView(currentHeroMovie);
-    }
-});            closeModal.addEventListener('click', () => movieModal.classList.add('hidden'));
+    document.getElementById('search-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') searchMedia();
+    });
+    document.getElementById('mobile-search-button').addEventListener('click', () => searchMedia(document.getElementById('mobile-search-input').value));
+    document.getElementById('mobile-search-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') searchMedia(e.target.value);
+    });
+        
+    playButton.addEventListener('click', () => playMovie(currentHeroMovie));
+    moreInfoButton.addEventListener('click', () => {
+        if (currentHeroMovie) openDetailView(currentHeroMovie);
+    });            
+    closeModal.addEventListener('click', () => movieModal.classList.add('hidden'));
 closePlayer.addEventListener('click', () => {
     const video = document.getElementById('videoPlayer');
     if (video) {
@@ -4594,11 +4644,11 @@ let heroFadeTimeout = null;
 async function displayHeroMovie(content) {
     const isMobile = window.innerWidth <= 768;
 
-    // 1. Gestione Backdrop (Sfondo) - Rimane uguale
+    // 1. GESTIONE SFONDO (Backdrop)
     const clone = heroBackdropEl.cloneNode(true);
     clone.style.backgroundImage = `url(${IMG_PATH}${content.backdrop_path})`;
     clone.style.opacity = '0';
-    clone.style.transition = 'opacity 0.5s ease-in-out';
+    clone.style.transition = 'opacity 0.4s ease-out';
     clone.style.position = 'absolute';
     clone.style.top = '0';
     clone.style.left = '0';
@@ -4607,7 +4657,9 @@ async function displayHeroMovie(content) {
     
     heroBackdropEl.parentNode.appendChild(clone);
     
-    setTimeout(() => { clone.style.opacity = '1'; }, 10);
+    requestAnimationFrame(() => {
+        clone.style.opacity = '1';
+    });
     
     clone.addEventListener('transitionend', () => {
         heroBackdropEl.style.backgroundImage = `url(${IMG_PATH}${content.backdrop_path})`;
@@ -4626,21 +4678,22 @@ async function displayHeroMovie(content) {
         heroRuntimeEl.textContent = `${content.episode_run_time?.[0] || 'N/A'} min/ep`;
     }
 
-    // --- LOGICA LOGO AGGIORNATA ---
+    // --- 3. LOGICA "SOLO LOGO" (Niente testo in attesa) ---
     const heroTitleEl = document.getElementById('hero-title');
     const heroLogoEl = document.getElementById('hero-logo');
 
-    // 1. PREPARA: Imposta il testo ma NASCONDILO subito
+    // A. RESET INIZIALE: Nascondiamo TUTTO
+    // Il titolo testuale lo impostiamo ma lo teniamo NASCOSTO (hidden)
     heroTitleEl.textContent = content.title || content.name;
-    heroTitleEl.classList.add('hidden'); // Nascondi testo di default
+    heroTitleEl.classList.add('hidden'); // Fondamentale: nascosto di default
+    heroTitleEl.style.opacity = '0';
     
-    // 2. PREPARA: Nascondi il logo e resetta stili
+    // Anche il logo è nascosto e pronto per l'animazione
     heroLogoEl.classList.add('hidden');
     heroLogoEl.style.opacity = '0';
     heroLogoEl.style.transform = 'translateY(10px)';
 
     try {
-        // 3. Cerca il logo
         const response = await fetch(`${API_URL}/${content.media_type}/${content.id}/images?api_key=${API_KEY}&include_image_language=it,en,null`);
         const data = await response.json();
         
@@ -4652,43 +4705,42 @@ async function displayHeroMovie(content) {
         }
 
         if (logo) {
-            // CASO A: Logo Trovato
+            // CASO A: Abbiamo un logo
             const logoUrl = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
             
-            // Pre-carichiamo l'immagine in memoria per renderla istantanea
             const imgLoader = new Image();
             imgLoader.src = logoUrl;
             
             imgLoader.onload = () => {
-                // Solo quando è scaricata la mostriamo
+                // Solo quando l'immagine è pronta, la mostriamo
                 heroLogoEl.src = logoUrl;
                 heroLogoEl.classList.remove('hidden');
                 
-                // Animazione smooth
                 requestAnimationFrame(() => {
-                    heroLogoEl.style.transition = 'all 0.7s ease-out';
+                    // DISSOLVENZA IN ENTRATA
+                    heroLogoEl.style.transition = 'all 0.8s cubic-bezier(0.22, 1, 0.36, 1)'; // Effetto "Smooth"
                     heroLogoEl.style.opacity = '1';
                     heroLogoEl.style.transform = 'translateY(0)';
                 });
             };
         } else {
-            // CASO B: Nessun logo trovato -> Mostra il testo
+            // CASO B: Nessun logo disponibile -> Mostriamo il titolo testuale come fallback
+            // Solo ora, se abbiamo fallito nel trovare il logo, mostriamo il testo
             heroTitleEl.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                heroTitleEl.style.transition = 'opacity 0.5s ease';
+                heroTitleEl.style.opacity = '1';
+            });
         }
 
-
-
     } catch (error) {
-        console.error('Errore logo hero:', error);
-        // CASO C: Errore API -> Mostra il testo
+        // CASO C: Errore API -> Fallback al testo
+        console.warn('Errore logo hero:', error);
         heroTitleEl.classList.remove('hidden');
+        heroTitleEl.style.opacity = '1';
     }
 
-        //loadHeroVideo(content);
-  
-        
-
-    // 4. Gestione classi Mobile (invariato)
+    // Gestione contrasto testo su mobile
     if (isMobile) {
         heroTitleEl.classList.add('mobile-text-contrast');
         heroOverviewEl.classList.add('mobile-text-contrast');
