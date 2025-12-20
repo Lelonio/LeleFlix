@@ -1,6 +1,6 @@
 // Aumenta la versione per forzare l'aggiornamento
 const CACHE_NAME = "leleflix-v7"; // Aggiornato a v7
-const IMAGE_CACHE_NAME = "leleflix-images-v4"; // Nuova cache specifica per le immagini
+const IMAGE_CACHE_NAME = "leleflix-images-v5"; // Nuova cache specifica per le immagini
 
 const urlsToCache = [
   "./",
@@ -45,22 +45,19 @@ self.addEventListener("activate", event => {
 });
 
 // 3. FETCH (Gestione Intelligente)
-self.addEventListener("fetch", event => {
+self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
 
-  // A. STRATEGIA: Cache First per le IMMAGINI di TMDB
-  // Se l'URL contiene 'image.tmdb.org', lo salviamo nella cache immagini
+  // 1. GESTIONE IMMAGINI TMDB (Salvale in cache!)
   if (requestUrl.hostname.includes('image.tmdb.org')) {
     event.respondWith(
       caches.open(IMAGE_CACHE_NAME).then(cache => {
         return cache.match(event.request).then(response => {
-          // 1. Se è in cache, restituiscilo subito (Velocissimo!)
-          if (response) {
-            return response;
-          }
-          // 2. Se non c'è, scaricalo dalla rete
+          // Se l'immagine è già nella cache del browser, usala subito
+          if (response) return response;
+          
+          // Altrimenti scaricala da TMDB e salvala per la prossima volta
           return fetch(event.request).then(networkResponse => {
-            // Controlla che la risposta sia valida prima di cacharla
             if(networkResponse && networkResponse.status === 200) {
               cache.put(event.request, networkResponse.clone());
             }
@@ -69,23 +66,19 @@ self.addEventListener("fetch", event => {
         });
       })
     );
-    return; // Stop qui per le immagini
-  }
-
-  // B. STRATEGIA: Network Only per le API JSON
-  // Le chiamate dati (titoli, descrizioni, ecc.) non devono essere cachate
-  if (requestUrl.pathname.includes('/3/') || event.request.url.includes('api.')) {
-    event.respondWith(fetch(event.request));
     return;
   }
 
-  // C. STRATEGIA: Cache First per i file statici dell'app (CSS, JS, HTML)
+  // 2. GESTIONE API (Non cachare mai le API JSON per avere dati freschi)
+  if (requestUrl.pathname.includes('/api/') || requestUrl.search.includes('api_key')) {
+     event.respondWith(fetch(event.request));
+     return;
+  }
+
+  // 3. GESTIONE FILE STATICI APP (HTML, CSS, JS)
   event.respondWith(
     caches.match(event.request).then(response => {
-      if (response) {
-        return response;
-      }
-      return fetch(event.request);
+      return response || fetch(event.request);
     })
   );
 });
