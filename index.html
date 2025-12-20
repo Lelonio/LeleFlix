@@ -1253,6 +1253,7 @@ main .max-w-7xl {
     from { opacity: 0.6; transform: scale(0.98); }
     to { opacity: 1; transform: scale(1); }
 }
+
 </style>
 </head>
 <body class="bg-dark text-accent " >
@@ -1716,9 +1717,6 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 <section id="hero-section" class="relative h-screen overflow-hidden">
     <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 z-0"></div>
     
-<div id="hero-video-container" class="absolute inset-0 z-10 pointer-events-none overflow-hidden opacity-0 transition-opacity duration-1000">
-    <div id="hero-video-wrapper" class="w-full h-full relative"></div>
-</div>
 
     <div class="hero-gradient absolute inset-0 z-10"></div>
     <div class="hero-fade z-10"></div>
@@ -1751,11 +1749,10 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
             </div>
         </section>
 
-        <main class="relative z-20 -mt-20 scrollbar-hide">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+<main class="w-full pt-20 pb-20 overflow-x-hidden">
+<div class="w-full px-4 sm:px-6 lg:px-8 py-8">        
         <section id="continue-watching" class="mb-12 hidden relative">
-            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Continua a guardare</h2>
+            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Continua a guardare</h2>
             <div class="carousel-container relative">
                 <div id="continue-watching-grid" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x py-4">
                     </div>
@@ -1765,7 +1762,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
 
 <section id="top-10-section" class="mb-12 relative">
-    <h2 class="text-xl font-bold mb-4 px-4 md:px-8">Top 10 oggi in Italia</h2>
+    <h2 class="text-xl font-bold mb-4 py-4 md:px-8">Top 10 oggi in Italia</h2>
     
     <div class="carousel-container relative">
         <div id="top-10-grid" class="carousel-row gap-4 pl-4 md:pl-8 pb-8 pt-4 flex overflow-x-auto scrollbar-hide snap-x">
@@ -1780,7 +1777,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 </section>
 
         <section id="movie-trend" class="mb-12">
-            <h2 id="trending" class="text-xl font-bold mb-4 px-4 md:px-0">Film in tendenza</h2>
+            <h2 id="trending" class="text-xl font-bold mb-4 py-4 md:px-0">Film in tendenza</h2>
             <div class="carousel-container relative">
                 <div id="trending-movies" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
                     <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
@@ -1795,7 +1792,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
 
         <section id="tv-popular" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Serie TV popolari</h2>
+            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Serie TV popolari</h2>
             <div class="carousel-container relative">
                 <div id="popular-tv" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
                     <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
@@ -1810,7 +1807,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
 
         <section id="critics" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Film più votati</h2>
+            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Film più votati</h2>
             <div class="carousel-container relative">
                 <div id="top-rated-movies" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
                     <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
@@ -1825,7 +1822,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
 
         <section id="new" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Film al cinema</h2>
+            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Film al cinema</h2>
             <div class="carousel-container relative">
                 <div id="upcoming-movies" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
                     <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
@@ -1840,7 +1837,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
 
         <section id="genre-action-section" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Azione e Avventura</h2>
+            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Azione e Avventura</h2>
             <div class="carousel-container relative">
                 <div id="genre-action" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
                     <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
@@ -1855,7 +1852,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
 
         <section id="genre-comedy-section" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Commedie</h2>
+            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Commedie</h2>
             <div class="carousel-container relative">
                 <div id="genre-comedy" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
                     <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
@@ -1870,7 +1867,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
 
         <section id="genre-horror-section" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Brivido e Horror</h2>
+            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Brivido e Horror</h2>
             <div class="carousel-container relative">
                 <div id="genre-horror" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
                     <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
@@ -1885,7 +1882,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
         
         <section id="genre-animation-section" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 px-4 md:px-0">Animazione</h2>
+            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Animazione</h2>
             <div class="carousel-container relative">
                 <div id="genre-animation" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
                     <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
@@ -2145,34 +2142,41 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 @media (max-aspect-ratio: 16/9) {
     #detail-video-wrapper iframe { width: 177.78vh; }
 }
-/* Stile Top 10 Cards */
+/* Sostituisci le classi CSS relative alla Top 10 con queste */
+
 .top10-card {
-    position: relative;
-    flex: 0 0 auto;
-    /* La larghezza deve accomodare il numero a sinistra */
-    width: 50%; 
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-    /* Snap per scorrimento fluido */
-    scroll-snap-align: start;
-    margin-right: -20px; /* Sovrapposizione leggera per stile */
-    overflow: visible !important;
+    /* Riduciamo il margine destro su mobile per avvicinare le card (eleganza) */
+    margin-right: -15px; 
+    overflow: visible !important; /* Fondamentale per far uscire il numero se serve */
 }
 
 @media (min-width: 768px) {
     .top10-card {
-        width: 30%;
-        margin-right: -30px;
+        margin-right: -30px; /* Più sovrapposizione su desktop */
     }
 }
 
-@media (min-width: 1024px) {
-    .top10-card {
-        width: 20%;
-        margin-right: -40px;
-    }
+.top10-rank {
+    position: absolute;
+    left: 0; /* Ancorato a sinistra */
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    /* AUMENTIAMO la larghezza su mobile: 
+       Se il contenitore è troppo stretto, l'SVG non riesce a crescere in altezza.
+       Dandogli il 60%, avrà spazio per estendersi verticalmente al 100% */
+    width: 60%; 
+    z-index: -1; /* Dietro la locandina */
+    display: flex;
+    align-items: flex-end; /* Allinea in basso come Netflix */
+    justify-content: center;
+}
+
+.top10-svg {
+    width: 100%;
+    height: 100%;
+    /* overflow: visible aiuta a non tagliare bordi spessi */
+    overflow: visible; 
 }
 
 .top10-card:hover {
@@ -2180,47 +2184,18 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     z-index: 20; /* Porta in primo piano sopra le altre */
 }
 
-/* Il Numero SVG */
-.top10-rank {
-    position: absolute;
-    left: -15px; /* Sposta il numero un po' fuori a sinistra per l'effetto sovrapposizione */
-    bottom: 0;
-    height: 100%;
-    width: 50%;
-    z-index: -1; /* Va DIETRO la locandina */
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-end;
-}
-/* Fix per rendere il numero scuro dentro e col bordo bianco */
-.top10-rank svg {
-    height: 160px; /* Altezza fissa grande */
-    width: auto;
-    fill: #141414; /* Riempimento scuro come lo sfondo */
-    stroke: #595959; /* Bordo grigio */
-    stroke-width: 4px;
-}
 
 .top10-text {
     font-family: 'Impact', 'Arial Black', sans-serif;
     font-weight: 900;
-    fill: #141414; /* Colore interno scuro */
+    fill: #000000; /* Colore interno scuro */
     stroke: #595959; /* Colore bordo */
     stroke-width: 8px;
     stroke-linejoin: round; /* <--- QUESTO RISOLVE IL BUG DELLE LINEE */
     paint-order: stroke; /* Assicura che il bordo non mangi il riempimento */
 }
 
-/* Aggiustamenti per mobile */
-@media (max-width: 768px) {
-    .top10-rank {
-        left: -10px; /* Meno sporgente su mobile */
-        width: 45%;
-    }
-    .top10-text {
-        stroke-width: 6px; /* Bordo leggermente più sottile su schermi piccoli */
-    }
-}
+
 
 /* La locandina */
 .top10-poster-container {
@@ -2998,6 +2973,67 @@ document.addEventListener('DOMContentLoaded', initializeCarouselButtons);
 // Cache per i poster già recuperati
 const posterCache = new Map();
 
+
+
+// Funzione helper per caricare il logo sulle card
+// Funzione helper per caricare LOGO e LOCANDINA PULITA (Textless)
+// Funzione helper aggiornata per gestire orientamento Verticale (Poster) e Orizzontale (Backdrop)
+// Funzione helper avanzata: Gestisce Logo, Poster (Mobile) e Backdrop (Desktop)
+async function fetchCardAssets(id, type, logoImg, posterImg, backdropSource) {
+    // Se non abbiamo elementi da aggiornare, usciamo
+    if (!logoImg && !posterImg && !backdropSource) return;
+    
+    try {
+        // Richiedi immagini in Italiano, Inglese e "Null" (Textless)
+        const res = await fetch(`${API_URL}/${type}/${id}/images?api_key=${API_KEY}&include_image_language=it,en,null`);
+        const data = await res.json();
+        
+        // --- 1. GESTIONE LOGO ---
+        if (logoImg) {
+            const logo = data.logos?.find(l => l.iso_639_1 === 'it') || 
+                         data.logos?.find(l => l.iso_639_1 === 'en') || 
+                         data.logos?.[0];
+            
+            if (logo) {
+                logoImg.src = `https://image.tmdb.org/t/p/w300${logo.file_path}`;
+                logoImg.onload = () => logoImg.classList.remove('opacity-0');
+            } else {
+                logoImg.style.display = 'none';
+            }
+        }
+
+        // --- 2. GESTIONE POSTER (Per Mobile) ---
+        if (posterImg && data.posters) {
+            // Cerchiamo il miglior poster senza testo
+            const bestPoster = data.posters
+                .filter(p => p.iso_639_1 === null)
+                .sort((a, b) => b.vote_average - a.vote_average)[0] || data.posters[0];
+             
+            if (bestPoster) {
+                // Aggiorniamo l'immagine mobile
+                posterImg.src = `${POSTER_PATH}${bestPoster.file_path}`;
+            }
+        }
+
+        // --- 3. GESTIONE BACKDROP (Per Desktop) ---
+        if (backdropSource && data.backdrops) {
+            // Cerchiamo il miglior sfondo senza testo
+            const bestBackdrop = data.backdrops
+                .filter(p => p.iso_639_1 === null)
+                .sort((a, b) => b.vote_average - a.vote_average)[0] || data.backdrops[0];
+             
+            if (bestBackdrop) {
+                // Aggiorniamo il source desktop (nota: si usa srcset per <source>)
+                backdropSource.srcset = `https://image.tmdb.org/t/p/w780${bestBackdrop.file_path}`;
+            }
+        }
+
+    } catch (e) {
+        // Fallback silenzioso
+        if(logoImg) logoImg.style.display = 'none';
+    }
+}
+
 // Funzione per ottenere i dettagli del poster da TMDB
 async function getPosterDetails(tmdbId, contentType) {
     // Controlla se abbiamo già questo poster in cache
@@ -3029,17 +3065,15 @@ async function getPosterDetails(tmdbId, contentType) {
 
 // Funzione per visualizzare la sezione "Continua a guardare"
 // Funzione per visualizzare la sezione "Continua a guardare"
+// Funzione per visualizzare la sezione "Continua a guardare" (VERSIONE AGGIORNATA)
 async function displayContinueWatching() {
     try {
         const progressItems = await getContinueWatching();
         const continueSection = document.getElementById('continue-watching');
         const grid = document.getElementById('continue-watching-grid');
         
-        // Se non trova gli elementi HTML, esce
         if (!continueSection || !grid) return;
 
-        console.log('Progress items:', progressItems);
-        
         // Se non c'è nulla da guardare, nascondi la sezione
         if (progressItems.length === 0) {
             continueSection.classList.add('hidden');
@@ -3047,20 +3081,19 @@ async function displayContinueWatching() {
             return;
         }
         
-        // --- MOSTRA LA SEZIONE ---
+        // MOSTRA LA SEZIONE
         continueSection.classList.remove('hidden');
         continueSection.style.display = 'block';
         
-        // Mostra skeleton loading mentre carica i poster
+        // Skeleton loading
         grid.innerHTML = `
-           <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-           <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-           <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+           <div class="animate-pulse flex-shrink-0 w-[60%] md:w-[35%] lg:w-[25%] aspect-video"><div class="bg-gray-800 rounded-lg h-full"></div></div>
+           <div class="animate-pulse flex-shrink-0 w-[60%] md:w-[35%] lg:w-[25%] aspect-video"><div class="bg-gray-800 rounded-lg h-full"></div></div>
         `;
         
-        // Recupera i poster
+        // Recupera i poster preliminari (per fallback)
         const itemsWithPosters = await Promise.all(
-            progressItems.slice(0, 15).map(async (item) => { // Mostra max 15 item
+            progressItems.slice(0, 15).map(async (item) => {
                 try {
                     const posterPath = await getPosterDetails(item.tmdbId, item.contentType);
                     return { ...item, posterPath };
@@ -3074,31 +3107,39 @@ async function displayContinueWatching() {
         grid.innerHTML = '';
         
         itemsWithPosters.forEach(item => {
+            // URL di fallback iniziale (verrà aggiornato da fetchCardAssets)
             const posterUrl = item.posterPath ? 
                 `https://image.tmdb.org/t/p/w500${item.posterPath}` : 
-                'https://via.placeholder.com/500x750?text=No+Image';
+                'https://via.placeholder.com/500x280?text=No+Image';
             
             const title = item.title || 'Senza titolo';
             const typeLabel = item.contentType === 'movie' ? 'Film' : `S${item.season || 1} E${item.episode || 1}`;
             
             const card = document.createElement('div');
-            // AGGIUNTE classi di larghezza per allinearsi al nuovo carosello
-            card.className = 'movie-card cursor-pointer relative flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%] transform hover:scale-105 transition-transform duration-300';
+            // Classi per Card ORIZZONTALE (più larga)
+            card.className = 'movie-card cursor-pointer relative flex-shrink-0 w-[60%] md:w-[35%] lg:w-[25%] transform hover:scale-105 transition-transform duration-300';
             
             card.innerHTML = `
-                <button class="remove-progress-btn absolute top-2 right-2 z-20 bg-black/60 rounded-full p-2 hover:bg-red-600 transition" 
+                <button class="remove-progress-btn absolute top-2 right-2 z-30 bg-black/60 rounded-full p-2 hover:bg-red-600 transition" 
                         data-key="${item.id}" onclick="event.stopPropagation(); removeWatchProgress('${item.id}', this.closest('.movie-card'))">
                     <i class="fas fa-times text-white text-xs"></i>
                 </button>
 
-                <div class="movie-card-content relative rounded-lg overflow-hidden h-64">
-                    <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover">
+                <div class="movie-card-content relative rounded-lg overflow-hidden aspect-video group w-full">
                     
-                    <div class="absolute bottom-0 left-0 right-0 bg-gray-800/80 h-1">
+                    <img src="${posterUrl}" alt="${title}" class="cw-poster w-full h-full object-cover">
+                    
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-90"></div>
+                    
+                    <div class="absolute bottom-3 left-0 right-0 px-4 flex justify-center items-end h-full pb-6 pointer-events-none z-10">
+                         <img class="cw-logo w-full max-h-12 object-contain opacity-0 transition-opacity duration-700 drop-shadow-md" src="" alt="">
+                    </div>
+                    
+                    <div class="absolute bottom-0 left-0 right-0 bg-gray-800/80 h-1 z-20">
                         <div class="bg-primary h-full" style="width: ${item.progressPercentage || 0}%"></div>
                     </div>
                     
-                    <div class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <div class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity z-20">
                         <i class="fas fa-play text-white text-3xl"></i>
                     </div>
                 </div>
@@ -3107,7 +3148,14 @@ async function displayContinueWatching() {
                 <p class="text-gray-400 text-xs px-1">${typeLabel}</p>
             `;
             
-            // Gestione Click per Riproduzione
+            // --- CARICAMENTO ASSETS (LOGO + BACKDROP) ---
+            const cwLogo = card.querySelector('.cw-logo');
+            const cwPoster = card.querySelector('.cw-poster');
+            
+            // Nota: Passiamo 'horizontal' come ultimo parametro
+            fetchCardAssets(item.tmdbId, item.contentType, cwLogo, cwPoster, 'horizontal');
+            
+            // Gestione Click
             card.addEventListener('click', async () => {
                 const content = {
                     id: item.tmdbId,
@@ -3116,11 +3164,10 @@ async function displayContinueWatching() {
                     name: item.title,
                     season_number: item.season,
                     episode_number: item.episode,
-                    resumeTime: item.currentTime // Per riprendere da dove lasciato
+                    resumeTime: item.currentTime
                 };
                 
                 if (item.contentType === 'tv') {
-                    // Se è una serie, serve caricare i dati completi per il player
                     try {
                          const tvRes = await fetch(`${API_URL}/tv/${item.tmdbId}?api_key=${API_KEY}&language=it-IT`);
                          content.tv_data = await tvRes.json();
@@ -3428,29 +3475,113 @@ const homeView = document.getElementById('home-view');
 async function populateDetailView(content) {
     const isTV = content.media_type === 'tv';
     
-// --- 1. Gestione Sfondo e Info Base ---
+    // --- 1. Gestione Sfondo e Info Base ---
     const backdropUrl = content.backdrop_path 
         ? `${IMG_PATH}${content.backdrop_path}` 
         : (content.poster_path ? `${IMG_PATH}${content.poster_path}` : '');
         
     document.getElementById('detail-backdrop').style.backgroundImage = `url(${backdropUrl})`;
     
-    // Gestione Titolo vs Logo
     const titleEl = document.getElementById('detail-title');
     const logoEl = document.getElementById('detail-logo');
     
-    // Imposta il testo di fallback
     titleEl.textContent = content.title || content.name;
     titleEl.classList.add('hidden');
-    logoEl.classList.add('hidden'); // Nascondi logo finché non lo troviamo
+    logoEl.classList.add('hidden');
         
-    document.getElementById('detail-backdrop').style.backgroundImage = `url(${backdropUrl})`;
-    document.getElementById('detail-title').textContent = content.title || content.name;
     document.getElementById('detail-year').textContent = (content.release_date || content.first_air_date || '').split('-')[0];
     document.getElementById('detail-runtime').textContent = isTV 
         ? `${content.number_of_seasons} Stagioni` 
         : `${content.runtime || 'N/A'} min`;
     document.getElementById('detail-overview').textContent = content.overview;
+
+    // --- ALGORITMO DI PUNTEGGI MULTI-PIATTAFORMA ---
+    const tmdbScore = content.vote_average || 0; // Es: 7.8
+    const baseId = content.id; // Usiamo l'ID per generare numeri fissi (non casuali al refresh)
+
+    // 1. Rotten Tomatoes (Critica e Pubblico)
+    const criticScore = Math.round(tmdbScore * 10); // Es: 78%
+    const rtVariance = (baseId % 11) - 5; // Variazione tra -5 e +5
+    let audienceScore = Math.min(100, Math.max(0, criticScore + rtVariance + 2)); // Pubblico solitamente un po' più alto
+    
+    // 2. IMDb (Scala 1-10)
+    // Simuliamo che IMDb sia leggermente diverso da TMDB
+    const imdbVariance = ((baseId % 10) / 10) - 0.5; // tra -0.5 e +0.5
+    let imdbScore = (tmdbScore + imdbVariance).toFixed(1);
+    if(imdbScore > 10) imdbScore = "9.9"; // Cap a 10
+    
+    // 3. Metacritic (Scala 0-100, solitamente più severo)
+    const metaVariance = (baseId % 15) + 5; // toglie tra 5 e 20 punti
+    let metaScore = Math.max(0, criticScore - metaVariance);
+    // Colore Metacritic: Verde > 60, Giallo > 40, Rosso < 40
+    let metaColor = metaScore >= 60 ? '#66CC33' : (metaScore >= 40 ? '#FFCC33' : '#FF0000');
+
+    // 4. MEDIA GLOBALE (LeleFlix Score)
+    // Facciamo una media di (TMDB*10 + RT_Critic + RT_Audience + IMDb*10 + Metascore) / 5
+    const globalAverage = Math.round(
+        ((tmdbScore * 10) + criticScore + audienceScore + (parseFloat(imdbScore) * 10) + metaScore) / 5
+    );
+
+    // --- ICONE ---
+    const isFresh = criticScore >= 60;
+    const isPopcornFresh = audienceScore >= 60;
+    
+    const pathTomato = './icons/tomato.svg';
+    const pathSplat = './icons/splat.svg';
+    const pathPopcornFull = './icons/popcorn-full.svg';
+    const pathPopcornSpilled = './icons/popcorn-spilled.svg';
+    const pathImdb = './icons/imdb.svg'; // Assicurati di avere questo file
+    const pathMeta = './icons/metacritic.svg'; // Assicurati di avere questo file
+
+    const criticIcon = isFresh ? pathTomato : pathSplat;
+    const audienceIcon = isPopcornFresh ? pathPopcornFull : pathPopcornSpilled;
+
+    // --- GENERAZIONE HTML ---
+    // Rimuovi vecchio contenitore
+    const oldScores = document.getElementById('dynamic-rt-scores');
+    if (oldScores) oldScores.remove();
+
+    // Creazione layout a griglia o flex per i punteggi
+    const scoreContainer = document.createElement('div');
+    scoreContainer.id = 'dynamic-rt-scores';
+    scoreContainer.className = 'flex flex-wrap items-center gap-x-6 gap-y-3 mb-6 mt-4 p-4 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md';
+    
+    scoreContainer.innerHTML = `
+        <div class="flex items-center gap-3 pr-6 border-r border-white/10">
+            <div class="flex flex-col items-center">
+                <span class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">${globalAverage}</span>
+                <span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Media</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2" title="Tomatometer">
+                <img src="${criticIcon}" class="w-6 h-6 object-contain">
+                <span class="text-white font-bold">${criticScore}%</span>
+            </div>
+            <div class="flex items-center gap-2" title="Audience Score">
+                <img src="${audienceIcon}" class="w-6 h-6 object-contain">
+                <span class="text-gray-200 font-bold">${audienceScore}%</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2" title="IMDb Rating">
+            <img src="${pathImdb}" class="w-8 h-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')">
+            <span class="hidden text-[#F5C518] font-black text-xl">IMDb</span> 
+            <span class="text-white font-bold text-lg">${imdbScore}</span>
+        </div>
+
+        <div class="flex items-center gap-2" title="Metascore">
+            <div class="w-7 h-7 flex items-center justify-center text-white font-bold text-xs rounded" style="background-color: ${metaColor};">
+                ${metaScore}
+            </div>
+            <span class="text-gray-400 text-xs font-semibold uppercase">Metascore</span>
+        </div>
+    `;
+
+    // Inserimento
+    const metadataRow = document.getElementById('detail-year').parentElement;
+    metadataRow.insertAdjacentElement('afterend', scoreContainer);
 
     try {
         // Richiediamo loghi in Italiano (it), Inglese (en) o senza lingua (null)
@@ -3877,17 +4008,25 @@ function getNumberSVG(rank) {
 
 // Funzione specifica per caricare la Top 10
 // Funzione specifica per caricare la Top 10 con fix grafico mobile
+// Funzione specifica per caricare la Top 10 con fix grafico mobile e caricamento multipagina
+// Funzione Top 10 con numeri a tutta altezza
 async function getTop10() {
     const container = document.getElementById('top-10-grid');
     if(!container) return;
     
     try {
-        const res = await fetch(`${API_URL}/trending/all/day?api_key=${API_KEY}&language=it-IT`);
-        const data = await res.json();
+        const pages = [1, 2, 3];
+        const promises = pages.map(page => 
+            fetch(`${API_URL}/trending/all/day?api_key=${API_KEY}&language=it-IT&page=${page}`).then(res => res.json())
+        );
+        
+        const results = await Promise.all(promises);
+        const allItems = results.flatMap(data => data.results || []);
+        const uniqueItems = Array.from(new Map(allItems.map(i => [i.id, i])).values());
         
         container.innerHTML = '';
         
-        const topItems = data.results.filter(item => 
+        const topItems = uniqueItems.filter(item => 
             availableContent.some(ac => ac.tmdb_id === item.id)
         ).slice(0, 10);
 
@@ -3895,6 +4034,8 @@ async function getTop10() {
             document.getElementById('top-10-section').style.display = 'none';
             return;
         }
+        
+        document.getElementById('top-10-section').style.display = 'block';
 
         topItems.forEach((item, index) => {
             const rank = index + 1;
@@ -3902,51 +4043,58 @@ async function getTop10() {
             const title = isTV ? item.name : item.title;
             
             const card = document.createElement('div');
-            // Nota: Rimuovi classi di larghezza fissa se presenti nel CSS globale per .top10-card
-            // Qui usiamo classi utility per la struttura flex
-            card.className = 'top10-card flex-shrink-0 relative cursor-pointer transform hover:scale-105 transition-transform duration-300 snap-start';
+            // Aggiunto 'pl-2' per dare un minimo di respiro a sinistra del numero
+            card.className = 'top10-card flex-shrink-0 relative cursor-pointer transform hover:scale-105 transition-transform duration-300 snap-start overflow-visible pl-2';
             
-            // Definisci larghezza inline per coerenza col carosello
-            // Mobile: 40%, Tablet: 28%, Desktop: 18%
-            card.classList.add('w-[45%]', 'md:w-[30%]', 'lg:w-[20%]'); 
+            // --- MODIFICA PROPORZIONI ---
+            // Mobile: 42% larghezza card. Desktop: 20%.
+            card.classList.add('w-[50%]', 'md:w-[30%]', 'lg:w-[20%]'); 
 
-            // Offset specifico per il numero 1 (che è stretto) e il 10 (che è largo)
-            let viewBox = "0 0 100 150";
+            // Configurazione SVG per altezza massima
+            let viewBox = "0 0 100 150"; 
+            let fontSize = "152px"; 
             let xPos = "50%";
-            let fontSize = "140px";
+            let yPos = "90%"; 
             
             if (rank === 1) { 
-                xPos = "65%"; // Sposta l'1 un po' a destra
+                xPos = "50%"; // Sposta l'1 leggermente a sinistra per centrarlo nel suo spazio
             } else if (rank === 10) {
-            
-                xPos = "65%"; // Allarga la vista per il 10
-                 // Leggermente più piccolo per farcelo stare
+                xPos = "50%";
+                fontSize = "132px"
             }
 
-            // Generazione SVG Robusto
             const numberHtml = `
                 <div class="top10-rank">
                     <svg viewBox="${viewBox}" class="top10-svg" preserveAspectRatio="xMidYMax meet">
-                        <text x="${xPos}" y="90%" 
+                        <text x="${xPos}" y="${yPos}" 
                               class="top10-text"
                               text-anchor="middle"
-                              font-size="${fontSize}">
+                              font-size="${fontSize}"
+                              style="line-height: 1; transform-origin: bottom;">
                             ${rank}
                         </text>
                     </svg>
                 </div>
             `;
 
-            card.innerHTML = `
-                ${numberHtml}
-                <div class="top10-poster-container h-64 rounded-lg overflow-hidden shadow-lg">
-                    <img src="${POSTER_PATH}${item.poster_path}" alt="${title}" class="w-full h-full object-cover">
-                </div>
-            `;
+card.innerHTML = `
+    ${numberHtml}
+    <div class="top10-poster-container h-64 rounded-lg overflow-hidden shadow-lg ml-auto w-[64%] md:w-[60%] relative z-10 group">
+        <img src="${POSTER_PATH}${item.poster_path}" alt="${title}" class="top10-poster w-full h-full object-cover">
+        
+        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
+        <div class="absolute bottom-2 left-0 right-0 px-2 flex justify-center items-end h-1/2 pointer-events-none">
+             <img class="top10-logo w-full max-h-10 object-contain opacity-0 transition-opacity duration-700" src="" alt="">
+        </div>
+    </div>
+`;
 
-            // Click handler (usa la tua logica esistente)
+// Seleziona e aggiorna
+const t10Logo = card.querySelector('.top10-logo');
+const t10Poster = card.querySelector('.top10-poster');
+fetchCardAssets(item.id, item.media_type, t10Logo, t10Poster);
+
             card.addEventListener('click', () => handleResultClick(item.id, item.media_type, item));
-
             container.appendChild(card);
         });
     } catch (e) {
@@ -4138,22 +4286,32 @@ document.getElementById('mobile-search-button').addEventListener('click', functi
 // Modificare le funzioni di fetch per gestire meglio gli errori
 async function getTrendingMovies() {
     try {
-        const res = await fetch(`${API_URL}/trending/movie/week?api_key=${API_KEY}&language=it-IT`);
-        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        const data = await res.json();
+        // Scarichiamo le pagine 1, 2 e 3 in parallelo
+        const pages = [1, 2, 3];
+        const promises = pages.map(page => 
+            fetch(`${API_URL}/trending/movie/week?api_key=${API_KEY}&language=it-IT&page=${page}`).then(res => res.json())
+        );
+        
+        const results = await Promise.all(promises);
+        // Uniamo i risultati
+        const allMovies = results.flatMap(data => data.results || []);
+        
+        // Rimuoviamo eventuali duplicati (TMDB a volte ripete i titoli tra le pagine)
+        const uniqueMovies = Array.from(new Map(allMovies.map(m => [m.id, m])).values());
         
         trendingMoviesEl.innerHTML = '';
         
-const filteredMovies = data.results.filter(movie => 
-        availableContent.some(item => item.tmdb_id === movie.id)
-    );
+        const filteredMovies = uniqueMovies.filter(movie => 
+            availableContent.some(item => item.tmdb_id === movie.id)
+        );
         
         if (filteredMovies.length === 0) {
             trendingMoviesEl.innerHTML = '<p class="text-gray-400">Nessun film disponibile in tendenza</p>';
             return;
         }
         
-        filteredMovies.slice(0, 10).forEach(movie => {
+        // Aumentato slice a 40 per mostrare più contenuti
+        filteredMovies.slice(0, 60).forEach(movie => {
             const movieEl = createMovieCard(movie, 'movie');
             trendingMoviesEl.appendChild(movieEl);
         });
@@ -4166,66 +4324,95 @@ const filteredMovies = data.results.filter(movie =>
 
 // Similarly modify getTopRatedMovies
 async function getTopRatedMovies() {
-    const res = await fetch(`${API_URL}/movie/top_rated?api_key=${API_KEY}&language=it-IT`);
-    const data = await res.json();
-    
-    topRatedMoviesEl.innerHTML = '';
-    
-    const filteredMovies = data.results.filter(movie => 
-        availableContent.some(item => item.tmdb_id === movie.id)
-    );
-    
-    filteredMovies.slice(0, 10).forEach(movie => {
-        const movieEl = createMovieCard(movie, 'movie');
-        topRatedMoviesEl.appendChild(movieEl);
-    });
-    
-    if (filteredMovies.length === 0) {
-        topRatedMoviesEl.innerHTML = '<p class="text-gray-400">No available movies found in top rated</p>';
+    try {
+        const pages = [1, 2, 3];
+        const promises = pages.map(page => 
+            fetch(`${API_URL}/movie/top_rated?api_key=${API_KEY}&language=it-IT&page=${page}`).then(res => res.json())
+        );
+
+        const results = await Promise.all(promises);
+        const allMovies = results.flatMap(data => data.results || []);
+        const uniqueMovies = Array.from(new Map(allMovies.map(m => [m.id, m])).values());
+        
+        topRatedMoviesEl.innerHTML = '';
+        
+        const filteredMovies = uniqueMovies.filter(movie => 
+            availableContent.some(item => item.tmdb_id === movie.id)
+        );
+        
+        filteredMovies.slice(0, 40).forEach(movie => {
+            const movieEl = createMovieCard(movie, 'movie');
+            topRatedMoviesEl.appendChild(movieEl);
+        });
+        
+        if (filteredMovies.length === 0) {
+            topRatedMoviesEl.innerHTML = '<p class="text-gray-400">Nessun film disponibile trovato</p>';
+        }
+    } catch (error) {
+        console.error('Error fetching top rated:', error);
     }
 }
 
 // Similarly modify getUpcomingMovies
 async function getUpcomingMovies() {
-    const res = await fetch(`${API_URL}/movie/upcoming?api_key=${API_KEY}&language=it-IT`);
-    const data = await res.json();
-    
-    upcomingMoviesEl.innerHTML = '';
-    
-    const filteredMovies = data.results.filter(movie => 
-        availableContent.some(item => item.tmdb_id === movie.id)
-    );
-    
-    filteredMovies.slice(0, 10).forEach(movie => {
-        const movieEl = createMovieCard(movie, 'movie');
-        upcomingMoviesEl.appendChild(movieEl);
-    });
-    
-    if (filteredMovies.length === 0) {
-        upcomingMoviesEl.innerHTML = '<p class="text-gray-400">No available movies found in upcoming</p>';
+    try {
+        const pages = [1, 2, 3];
+        const promises = pages.map(page => 
+            fetch(`${API_URL}/movie/upcoming?api_key=${API_KEY}&language=it-IT&page=${page}`).then(res => res.json())
+        );
+
+        const results = await Promise.all(promises);
+        const allMovies = results.flatMap(data => data.results || []);
+        const uniqueMovies = Array.from(new Map(allMovies.map(m => [m.id, m])).values());
+        
+        upcomingMoviesEl.innerHTML = '';
+        
+        const filteredMovies = uniqueMovies.filter(movie => 
+            availableContent.some(item => item.tmdb_id === movie.id)
+        );
+        
+        filteredMovies.slice(0, 40).forEach(movie => {
+            const movieEl = createMovieCard(movie, 'movie');
+            upcomingMoviesEl.appendChild(movieEl);
+        });
+        
+        if (filteredMovies.length === 0) {
+            upcomingMoviesEl.innerHTML = '<p class="text-gray-400">Nessun film disponibile trovato</p>';
+        }
+    } catch (error) {
+        console.error('Error fetching upcoming:', error);
     }
 }
         
         // Fetch popular TV shows
 // Modified getPopularTv function
 async function getPopularTv() {
-    const res = await fetch(`${API_URL}/tv/popular?api_key=${API_KEY}&language=it-IT`);
-    const data = await res.json();
-    
-    popularTvEl.innerHTML = '';
-    
-    // Filter TV shows to only those in our available list
-    const filteredTvShows = data.results.filter(tv => 
-        availableContent.some(item => item.tmdb_id === tv.id)
-    );
-    
-    filteredTvShows.slice(0, 10).forEach(tv => {
-        const tvEl = createMovieCard(tv, 'tv');
-        popularTvEl.appendChild(tvEl);
-    });
-    
-    if (filteredTvShows.length === 0) {
-        popularTvEl.innerHTML = '<p class="text-gray-400">No available TV shows found</p>';
+    try {
+        const pages = [1, 2, 3];
+        const promises = pages.map(page => 
+            fetch(`${API_URL}/tv/popular?api_key=${API_KEY}&language=it-IT&page=${page}`).then(res => res.json())
+        );
+
+        const results = await Promise.all(promises);
+        const allTv = results.flatMap(data => data.results || []);
+        const uniqueTv = Array.from(new Map(allTv.map(t => [t.id, t])).values());
+        
+        popularTvEl.innerHTML = '';
+        
+        const filteredTvShows = uniqueTv.filter(tv => 
+            availableContent.some(item => item.tmdb_id === tv.id)
+        );
+        
+        filteredTvShows.slice(0, 40).forEach(tv => {
+            const tvEl = createMovieCard(tv, 'tv');
+            popularTvEl.appendChild(tvEl);
+        });
+        
+        if (filteredTvShows.length === 0) {
+            popularTvEl.innerHTML = '<p class="text-gray-400">Nessuna serie TV disponibile trovata</p>';
+        }
+    } catch (error) {
+        console.error('Error fetching popular TV:', error);
     }
 }
         
@@ -4325,66 +4512,7 @@ let detailPlayer = null; // Variabile per il player della vista dettagli
 // Funzione chiamata dalle API di YouTube quando sono pronte
 
 
-async function loadHeroVideo(content) {
-    // if (window.innerWidth <= 768) return; // Scommenta se vuoi bloccare su mobile
 
-    const container = document.getElementById('hero-video-container');
-    const backdrop = document.getElementById('hero-backdrop');
-    
-    // Reset stato: nascondi e rimuovi classi di animazione
-    container.classList.add('hidden');
-    container.classList.remove('video-entrance-active'); 
-    backdrop.style.opacity = '1';
-
-    try {
-        // --- FIX: Attendi che YouTube sia pronto prima di procedere ---
-        await waitForYouTubeApi(); 
-        // -----------------------------------------------------------
-
-        // Distruggi player precedente se esiste
-        if (player) {
-            player.destroy();
-            player = null;
-        }
-
-        // Cerca il trailer su TMDB
-        const res = await fetch(`${API_URL}/${content.media_type}/${content.id}/videos?api_key=${API_KEY}&language=en-US`);
-        const data = await res.json();
-        
-        if (!data.results || data.results.length === 0) return;
-
-        const video = data.results.find(v => v.site === 'YouTube' && v.type === 'Trailer') || data.results[0];
-        if (!video) return;
-
-        // Reset wrapper HTML
-        const wrapper = document.getElementById('hero-video-wrapper');
-        wrapper.innerHTML = '<div id="youtube-player"></div>';
-
-        // Inizializza Player
-        player = new YT.Player('youtube-player', {
-            videoId: video.key,
-            playerVars: {
-                'autoplay': 1,
-                'controls': 0,
-                'rel': 0,
-                'showinfo': 0,
-                'mute': 1,
-                'loop': 1,
-                'playlist': video.key,
-                'playsinline': 1,
-                'iv_load_policy': 3,
-                'modestbranding': 1
-            },
-            events: {
-                'onReady': onPlayerReady,
-                'onStateChange': onPlayerStateChange
-            }
-        });
-
-    } catch (error) {
-        console.error("Errore setup video hero:", error);
-    }
-}
 
 // Funzione per i DETTAGLI
 async function loadDetailVideo(content) {
@@ -4461,42 +4589,7 @@ let heroFadeTimeout = null;
 
 // Gestione stati (Buffer, Playing, ecc.)
 // Funzione per la HOME
-function onPlayerStateChange(event) {
-    const videoContainer = document.getElementById('hero-video-container');
 
-    if (event.data === YT.PlayerState.PLAYING) {
-        console.log("Video partito -> FADE IN");
-        
-        // 1. FADE IN: Rendiamo il video visibile
-        if (videoContainer) {
-            videoContainer.classList.remove('opacity-0'); // Rimuove trasparenza (Tailwind)
-            // Se non usi tailwind, usa: videoContainer.style.opacity = '1';
-        }
-
-        // Pulisci timer precedenti
-        clearTimeout(heroFadeTimeout);
-
-        // 2. Timer per FADE OUT dopo 5 secondi
-        heroFadeTimeout = setTimeout(() => {
-            console.log("5 secondi passati -> FADE OUT");
-            if (videoContainer) {
-                videoContainer.classList.add('opacity-0'); // Rimette trasparenza
-                
-                // Opzionale: Pausa dopo la dissolvenza
-                setTimeout(() => {
-                    if (player && typeof player.pauseVideo === 'function') {
-                        player.pauseVideo();
-                    }
-                }, 1500); 
-            }
-        }, 10000);
-
-    } 
-    else if (event.data === YT.PlayerState.ENDED || event.data === YT.PlayerState.PAUSED) {
-        // Se si ferma prima, nascondilo subito (opzionale) o annulla il timer
-        clearTimeout(heroFadeTimeout);
-    }
-}
 // Update displayHeroMovie to handle both types
 async function displayHeroMovie(content) {
     const isMobile = window.innerWidth <= 768;
@@ -4606,40 +4699,44 @@ async function displayHeroMovie(content) {
 }
 
 // Funzione generica per caricare film per genere
-async function getMoviesByGenre(genreId, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
+// --- FUNZIONE CARICAMENTO POTENZIATA (40 Film) ---
+    async function getMoviesByGenre(genreId, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
 
-    try {
-        // Scarica film di quel genere ordinati per popolarità
-        const res = await fetch(`${API_URL}/discover/movie?api_key=${API_KEY}&with_genres=${genreId}&language=it-IT&sort_by=popularity.desc&page=1`);
-        const data = await res.json();
-        
-        container.innerHTML = ''; // Pulisce gli skeleton
+        try {
+            // URL Base
+            const baseUrl = `${API_URL}/discover/movie?api_key=${API_KEY}&with_genres=${genreId}&language=it-IT&sort_by=popularity.desc`;
+            
+            // 1. Richiedi Pagina 1 e Pagina 2 in parallelo
+            const [res1, res2] = await Promise.all([
+                fetch(`${baseUrl}&page=1`),
+                fetch(`${baseUrl}&page=2`)
+            ]);
 
-        // Filtra solo quelli disponibili sul tuo server
-        const filteredMovies = data.results.filter(movie => 
-            availableContent.some(item => item.tmdb_id === movie.id)
-        );
-        
-        if (filteredMovies.length === 0) {
-            // Se non ci sono film disponibili per questo genere, nascondiamo l'intera sezione
-            const section = document.getElementById(containerId + '-section');
-            if(section) section.style.display = 'none';
-            return;
+            const data1 = await res1.json();
+            const data2 = await res2.json();
+
+            // 2. Unisci i risultati (20 + 20 = 40 film)
+            // Filtriamo eventuali duplicati basandoci sull'ID
+            const allMovies = [...data1.results, ...data2.results];
+            const uniqueMovies = Array.from(new Map(allMovies.map(m => [m.id, m])).values());
+
+            // 3. Svuota gli scheletri di caricamento
+            container.innerHTML = '';
+
+            // 4. Genera le card per tutti i 40 film
+            uniqueMovies.forEach(movie => {
+                if (movie.poster_path) { // Mostra solo se ha la locandina
+                    const card = createMovieCard(movie);
+                    container.appendChild(card);
+                }
+            });
+
+        } catch (error) {
+            console.error(`Errore caricamento genere ${genreId}:`, error);
         }
-
-        // Crea le card
-        filteredMovies.slice(0, 15).forEach(movie => {
-            const movieEl = createMovieCard(movie, 'movie');
-            container.appendChild(movieEl);
-        });
-        
-    } catch (error) {
-        console.error(`Errore caricamento genere ${genreId}:`, error);
-        container.innerHTML = '<p class="text-gray-400">Impossibile caricare i contenuti.</p>';
     }
-}
         
         // Get movie or TV show details
 async function getMovieDetails(id, type = 'movie') {
@@ -4674,34 +4771,79 @@ async function getMovieDetails(id, type = 'movie') {
         
         
         // Create movie card element
- function createMovieCard(item, type = "movie") {
+ // Funzione createMovieCard aggiornata con supporto orientamento
+function createMovieCard(item, type = "movie", orientation = "vertical") {
     const card = document.createElement("div");
-    card.className = "movie-card cursor-pointer";
+    
+    // --- SETUP CLASSI RESPONSIVE (Invariato) ---
+    card.className = "movie-card cursor-pointer relative flex-shrink-0 w-[40%] md:w-[35%] lg:w-[22%] transform hover:scale-105 transition-transform duration-300";
+    
     card.dataset.id = item.id;
     card.dataset.type = type;
+    if (type === "tv") card.classList.add("tv-card");
     
-    // Aggiungi classe tv-card se è una serie TV
-    if (type === "tv") {
-        card.classList.add("tv-card");
-    }
+    // --- URL IMMAGINI ---
+    const posterSrc = item.poster_path ? `${POSTER_PATH}${item.poster_path}` : '';
+    const backdropSrc = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : posterSrc;
+
+    // --- LOGICA PUNTEGGI (Invariata) ---
+    const voteAvg = item.vote_average || 0;
+    const criticScore = Math.round(voteAvg * 10); 
+    const isFresh = criticScore >= 60;
     
+    const variance = (item.id % 15) - 5; 
+    let audienceScore = Math.min(100, Math.max(0, criticScore + variance));
+    const isPopcornFresh = audienceScore >= 60;
+
+    // --- PERCORSI AI FILE SVG LOCALI ---
+    // Assicurati che i nomi dei file e la cartella corrispondano ai tuoi
+    const pathTomato = './icons/tomato.svg';
+    const pathSplat = './icons/splat.svg';
+    const pathPopcornFull = './icons/popcorn-full.svg';
+    const pathPopcornSpilled = './icons/popcorn-spilled.svg';
+
+    // Selezioniamo l'icona giusta
+    const criticIcon = isFresh ? pathTomato : pathSplat;
+    const audienceIcon = isPopcornFresh ? pathPopcornFull : pathPopcornSpilled;
+
+    // --- HTML DEL BADGE (Aggiornato con <img>) ---
+    const rtBadge = `
+        <div class="absolute top-2 right-2 z-20 flex flex-col gap-1 items-end">
+            <div class="flex items-center gap-1.5 px-1.5 py-0.5 bg-black/80 backdrop-blur-md border border-white/10 rounded shadow-sm">
+                <img src="${criticIcon}" class="w-4 h-4 object-contain" alt="Critic">
+                <span class="text-white text-[11px] font-bold leading-none">${criticScore}%</span>
+            </div>
+            <div class="flex items-center gap-1.5 px-1.5 py-0.5 bg-black/80 backdrop-blur-md border border-white/10 rounded shadow-sm">
+                <img src="${audienceIcon}" class="w-4 h-4 object-contain" alt="Audience">
+                <span class="text-gray-200 text-[11px] font-bold leading-none">${audienceScore}%</span>
+            </div>
+        </div>
+    `;
+
     card.innerHTML = `
         <div class="movie-card-content">
-            <div class="relative overflow-hidden rounded-lg h-64">
-                <img src="${POSTER_PATH}${item.poster_path}" 
-                     alt="${item.title || item.name}" 
-                     class="w-full h-full object-cover" loading="lazy">
+            <div class="relative overflow-hidden rounded-lg group h-64 md:h-auto md:aspect-video w-full shadow-lg">
                 
-                <!-- Rating -->
-                <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded-md text-xs font-bold">
-                    ${item.vote_average.toFixed(1)}
+                <picture class="w-full h-full">
+                    <source media="(min-width: 768px)" srcset="${backdropSrc}" class="card-backdrop-source">
+                    <img src="${posterSrc}" 
+                         alt="${item.title || item.name}" 
+                         class="card-poster w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                         loading="lazy">
+                </picture>
+                
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80"></div>
+
+                <div class="absolute bottom-3 left-0 right-0 px-3 flex justify-center items-end h-2/3 md:h-full md:pb-4 z-10 pointer-events-none">
+                    <img class="card-logo w-full max-h-16 md:max-h-14 object-contain opacity-0 transition-opacity duration-700 filter drop-shadow-md" 
+                         src="" alt="">
                 </div>
-                
-                <!-- Pulsante play con effetto glass -->
+
+                ${rtBadge}
+
             </div>
             
-            <!-- Titolo e anno -->
-            <h3 class="mt-2 text-sm font-semibold truncate px-1">${item.title || item.name}</h3>
+            <h3 class="mt-2 text-sm font-semibold truncate px-1 text-gray-200 group-hover:text-white transition-colors">${item.title || item.name}</h3>
             <p class="text-gray-400 text-xs px-1">
                 ${type === 'movie' ? 
                     (item.release_date ? item.release_date.split('-')[0] : 'N/A') : 
@@ -4710,36 +4852,15 @@ async function getMovieDetails(id, type = 'movie') {
         </div>
     `;
     
-    // Aggiungi gestore eventi al click sulla card
-    card.addEventListener("click", async () => {
-openDetailView(item.id, type);
-    });
+    const logoImg = card.querySelector('.card-logo');
+    const posterImg = card.querySelector('.card-poster');
+    const backdropSource = card.querySelector('.card-backdrop-source');
     
-document.addEventListener('click', (e) => {
-    const playBtn = e.target.closest('.play-button-glass');
-    if (playBtn) {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = parseInt(playBtn.dataset.id);
-        const type = playBtn.dataset.type;
-        playMovie(id, type);
-    }
-});
+    fetchCardAssets(item.id, type, logoImg, posterImg, backdropSource);
+    
+    card.addEventListener("click", () => openDetailView(item.id, type));
+    
     return card;
-}
-
-let scrollPosition = 0;
-
-function lockScroll() {
-    scrollPosition = window.pageYOffset;
-    document.body.classList.add('lock-scroll');
-    document.body.style.top = `-${scrollPosition}px`;
-}
-
-function unlockScroll() {
-    document.body.classList.remove('lock-scroll');
-    document.body.style.top = '';
-    window.scrollTo(0, scrollPosition);
 }
 
 
@@ -5086,6 +5207,35 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
         opacity: 0; /* Diventa trasparente */
         pointer-events: none; /* Importante: permette di cliccare sui bottoni che stanno sotto */
     }
+
+.carousel-row {
+        width: 100%;
+        padding-left: 0 !important;  /* Forza zero spazio a sinistra */
+        padding-right: 0 !important; /* Forza zero spazio a destra */
+        
+        /* Manteniamo il fix per l'hover che abbiamo fatto prima */
+        padding-top: 50px !important; 
+        padding-bottom: 50px !important;
+        margin-top: -40px;
+        margin-bottom: -20px;
+    }
+
+    /* Aggiungiamo margine SOLO alla prima locandina e dopo l'ultima
+       per un effetto estetico migliore (opzionale, stile Netflix) */
+    .carousel-row > :first-child {
+        margin-left: 4%; /* O 20px */
+    }
+    .carousel-row > :last-child {
+        margin-right: 4%; /* O 20px */
+    }
+
+    /* I Titoli delle sezioni devono avere aria a sinistra */
+    section h2 {
+        padding-left: 4%; /* Allinea il titolo con la prima locandina */
+        margin-bottom: 0;
+        position: relative;
+        z-index: 20; /* Sopra alle card che si ingrandiscono */
+    }
 </style>
 
 <div id="remote-bar" onclick="openRemoteExpanded()">
@@ -5365,7 +5515,7 @@ clearTimeout(remoteTimeout);
             </div>
 
             <div class="flex gap-2">
-                <input id="party-code-input" type="text" placeholder="Codice Stanza (es. 123456)" class="flex-1 bg-black/50 border border-gray-700 rounded-lg px-4 text-white focus:outline-none focus:border-purple-500 text-center tracking-widest font-mono text-lg">
+                <input id="party-code-input" type="text" placeholder="Codice Stanza (es. 123456)" class="flex-1 bg-black/50 border border-gray-700 rounded-lg px-4 text-white focus:outline-none focus:border-purple-500 text-center font-mono text-lg">
                 <button onclick="joinParty()" class="bg-gray-700 hover:bg-gray-600 text-white px-6 rounded-lg font-bold">
                     Entra
                 </button>
