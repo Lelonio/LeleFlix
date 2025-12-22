@@ -571,9 +571,11 @@ const cleanup = () => {
                     window.location.href = intentUrl;
                 } 
                 else if (isIOS) {
-                    // IOS: Player Nativo (Safari gestisce m3u8)
-                    window.open(videoUrl, '_blank');
-                } 
+                    // IOS: Player Nativo
+                    // Usare window.location.href forza Safari ad aprire il player video a tutto schermo
+                    // invece di provare a scaricare il file in un nuovo tab.
+                    window.location.href = videoUrl;
+                }
                 else {
                     // DESKTOP: Mini Player Web (per evitare il download del file m3u8)
                     const w = window.open('', '_blank');
