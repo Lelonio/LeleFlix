@@ -3218,7 +3218,7 @@ async function getClientIP() {
 // Inizializza quando il DOM è pronto
 document.addEventListener('DOMContentLoaded', function() {
     // Aspetta che la pagina sia completamente caricata
-    setTimeout(displayContinueWatching, 1000);
+    displayContinueWatching();
 });
 </script>
     <script src="js/player.js" defer></script>
@@ -3256,6 +3256,27 @@ document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', () => {
     clearSearch(); // nasconde la vista ricerca se attiva
   });
+});
+
+// --- LAZY LOAD OBSERVER PER GLI ASSET ---
+// Scarica loghi e immagini textless solo quando la card entra nel viewport
+const assetObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const card = entry.target;
+            // Recupera i dati salvati sulla card
+            const { id, type, logoImg, posterImg, backdropSource } = card.assetData;
+            
+            // Avvia il download degli asset pesanti
+            fetchCardAssets(id, type, logoImg, posterImg, backdropSource);
+            
+            // Smetti di osservare questa card (fatto una volta, basta)
+            observer.unobserve(card);
+        }
+    });
+}, {
+    rootMargin: '200px 0px', // Inizia a caricare quando la card è a 200px dallo schermo (anticipo)
+    threshold: 0.01
 });
 
 async function searchMedia(query) {
@@ -4904,12 +4925,26 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
         </div>
     `;
     
-    const logoImg = card.querySelector('.card-logo');
+const logoImg = card.querySelector('.card-logo');
     const posterImg = card.querySelector('.card-poster');
     const backdropSource = card.querySelector('.card-backdrop-source');
     
-    fetchCardAssets(item.id, type, logoImg, posterImg, backdropSource);
+    // INVECE DI CHIAMARE SUBITO fetchCardAssets:
+    // fetchCardAssets(item.id, type, logoImg, posterImg, backdropSource); <--- RIMUOVI
     
+    // 1. Salviamo i dati necessari direttamente sull'oggetto DOM della card
+    card.assetData = {
+        id: item.id,
+        type: type,
+        logoImg: logoImg,
+        posterImg: posterImg,
+        backdropSource: backdropSource
+    };
+    
+    // 2. Diciamo all'observer di vigilare su questa card
+    assetObserver.observe(card);
+    
+    // Gestore click (invariato)
     card.addEventListener("click", () => openDetailView(item.id, type));
     
     return card;
