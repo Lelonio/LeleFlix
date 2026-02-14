@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeleFlix - Accedi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- RESET E BASE --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            /* Partiamo con lo stile LeleFlix */
+            background-color: #141414;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            transition: background 1s ease; /* Transizione morbida per il cambio colore */
+        }
+
+        /* --- STILE FAKE LOGIN (LeleFlix Theme) --- */
+        #leleflix-login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #141414;
+            background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://assets.nflxext.com/ffe/siteui/vlv3/f841d4c7-10e1-40af-bcae-07a3f8dc141a/f6d7434e-d6de-4185-a6d4-c77a2d08737b/IT-it-20220502-popsignuptwoweeks-perspective_alpha_website_small.jpg'); /* Immagine di sfondo generica Netflix-like scura */
+            background-size: cover;
+            background-position: center;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Inter', sans-serif;
+            transition: opacity 1.5s ease, visibility 1.5s ease;
+        }
+
+        /* Overlay scuro sopra l'immagine */
+        #leleflix-login-overlay::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: -1;
+        }
+
+        /* Logo LeleFlix Finto */
+        .lele-logo {
+            font-family: 'Inter', sans-serif;
+            color: #E50914; /* Rosso LeleFlix */
+            font-size: 3rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .login-box {
+            background: rgba(0, 0, 0, 0.75);
+            padding: 60px 68px 40px;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 450px;
+            min-height: 500px;
+        }
+
+        .login-title {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 28px;
+        }
+
+        .lele-input-group {
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .lele-input {
+            width: 100%;
+            background: #333;
+            border: 0;
+            border-radius: 4px;
+            color: #fff;
+            height: 50px;
+            line-height: 50px;
+            padding: 0 20px;
+            font-size: 16px;
+        }
+
+        .lele-input:focus {
+            background: #454545;
+            outline: none;
+            border-bottom: 2px solid #E50914;
+        }
+
+        .lele-input::placeholder {
+            color: #8c8c8c;
+        }
+
+        .lele-btn-submit {
+            background-color: #E50914;
+            color: white;
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 4px;
+            border: none;
+            margin-top: 24px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .lele-btn-submit:hover {
+            background-color: #f40612;
+        }
+
+        .login-footer {
+            color: #737373;
+            font-size: 13px;
+            margin-top: 16px;
+            text-align: right;
+        }
+
+        .login-help {
+            display: flex;
+            justify-content: space-between;
+            color: #b3b3b3;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .new-to-lele {
+            margin-top: 40px;
+            color: #737373;
+            font-size: 16px;
+        }
+        .new-to-lele span {
+            color: #fff;
+            cursor: pointer;
+        }
+        .new-to-lele span:hover {
+            text-decoration: underline;
+        }
+
+        /* Classe per nascondere il login */
+        .fade-out {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* --- STILI SAN VALENTINO (Nascosti all'inizio) --- */
+        #main-experience {
+            opacity: 0;
+            display: none; /* Fisicamente rimosso all'inizio */
+            transition: opacity 2s ease;
+        }
+
+        #main-experience.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Sfondo body San Valentino (applicato via JS) */
+        body.valentine-mode {
+            background: linear-gradient(135deg, #FFE5E5 0%, #FFF0F5 25%, #FFE8F0 50%, #FFF5F8 75%, #FFFBF7 100%);
+            font-family: 'Cormorant Garamond', serif;
+        }
+
+        /* ... STILI PRECEDENTI DEL MESSAGGIO ... */
+        :root {
+            --rose: #E67E7E;
+            --deep-rose: #C44D58;
+            --shadow: rgba(196, 77, 88, 0.15);
+        }
+
+        /* Sfondo animato San Valentino */
+        .valentine-bg-layer::before {
+            content: ''; position: fixed; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(230, 126, 126, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(196, 77, 88, 0.12) 0%, transparent 50%);
+            animation: morphBackground 15s ease-in-out infinite; z-index: -1;
+        }
+        @keyframes morphBackground {
+            0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            33% { transform: translate(-5%, 5%) rotate(5deg) scale(1.05); }
+            66% { transform: translate(5%, -5%) rotate(-5deg) scale(0.95); }
+        }
+
+        /* Contenitore */
+        .container { max-width: 480px; margin: 0 auto; padding: 20px; position: relative; z-index: 1; }
+        
+        /* Header */
+        .header { text-align: center; padding: 40px 20px 20px; animation: fadeInDown 1.2s ease-out; }
+        .header h1 {
+            font-family: 'Playfair Display', serif; font-size: 2.8rem; font-weight: 900;
+            color: var(--deep-rose); margin: 0 0 10px 0; line-height: 1.1;
+        }
+        .subtitle { font-size: 1.3rem; color: var(--rose); font-weight: 300; letter-spacing: 0.05em; font-family: 'Cormorant Garamond', serif; }
+
+        /* Cuore */
+        .reveal-container {
+            position: relative; min-height: 300px;
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+        }
+        .heart-button {
+            position: relative; margin-top: 40px; font-size: 100px; color: var(--rose);
+            cursor: pointer; transition: all 0.3s ease; filter: drop-shadow(0 10px 30px var(--shadow));
+            animation: heartBeat 1.5s ease-in-out infinite; z-index: 10; display: block;
+        }
+        @keyframes heartBeat { 0%, 100% { transform: scale(1); } 25% { transform: scale(1.1); } 50% { transform: scale(1); } }
+        .heart-button.clicked { animation: explode 0.6s ease-out forwards; transform-origin: center center; }
+        @keyframes explode { 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(2); opacity: 0; pointer-events: none; } }
+
+        .tap-instruction {
+            position: relative; top: 20px; font-family: 'Playfair Display', serif;
+            font-size: 1.1rem; color: var(--deep-rose); text-align: center;
+            animation: fadeInOut 2s ease-in-out infinite;
+        }
+        @keyframes fadeInOut { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+
+        /* Contenuto Nascosto */
+        .content-hidden { display: none; }
+        .content-revealed { display: block; }
+        
+        .card {
+            background: white; border-radius: 24px; padding: 40px 30px; margin: 30px 0;
+            box-shadow: 0 20px 60px var(--shadow); position: relative; overflow: hidden;
+            animation: slideUpFade 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+        }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(50px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+        .message { font-size: 1.25rem; line-height: 1.8; color: #333; margin-bottom: 25px; text-align: center; font-family: 'Cormorant Garamond', serif; }
+        .message p { margin-bottom: 25px; }
+        
+        .highlight { color: var(--deep-rose); font-weight: 600; position: relative; display: inline-block; }
+        .highlight::after { content: ''; position: absolute; bottom: 2px; left: 0; width: 100%; height: 8px; background: var(--rose); opacity: 0.2; z-index: -1; }
+        
+        .love-note {
+            background: linear-gradient(135deg, var(--rose) 0%, var(--deep-rose) 100%);
+            color: white; padding: 30px; border-radius: 16px; margin: 30px 0;
+            font-size: 1.15rem; line-height: 1.7; text-align: center; font-style: italic; font-family: 'Cormorant Garamond', serif;
+            box-shadow: 0 10px 30px rgba(196, 77, 88, 0.3);
+        }
+        
+        .signature { text-align: right; font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--deep-rose); margin-top: 40px; font-weight: 400; }
+        .signature::before { content: '— '; }
+        
+        .footer { text-align: center; padding: 40px 20px; animation: fadeIn 2s ease-out 1s both; font-family: 'Cormorant Garamond', serif; }
+        .date { font-size: 1rem; color: var(--rose); letter-spacing: 0.1em; text-transform: uppercase; }
+
+        /* Scroll Reveal */
+        .reveal-on-scroll { opacity: 0; transform: translateY(30px); transition: all 1s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .reveal-on-scroll.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* Media Queries */
+        @media (max-width: 768px) {
+            .login-box { padding: 40px 20px; min-height: auto; }
+            .lele-logo { font-size: 2.5rem; }
+            .header { padding-top: 20px; }
+            .heart-button { font-size: 80px; margin-top: 20px; }
+        }
+
+        /* Cuori sfondo */
+        .background-hearts { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+        .bg-heart { position: absolute; font-size: 40px; color: var(--rose); opacity: 0; animation: floatHeart 20s ease-in-out infinite; }
+        .bg-heart:nth-child(1) { left: 10%; animation-delay: 0s; font-size: 30px; }
+        .bg-heart:nth-child(2) { left: 25%; animation-delay: 3s; font-size: 45px; }
+        .bg-heart:nth-child(3) { left: 45%; animation-delay: 6s; font-size: 35px; }
+        .bg-heart:nth-child(4) { left: 60%; animation-delay: 9s; font-size: 50px; }
+        .bg-heart:nth-child(5) { left: 75%; animation-delay: 12s; font-size: 38px; }
+        .bg-heart:nth-child(6) { left: 90%; animation-delay: 15s; font-size: 42px; }
+        @keyframes floatHeart {
+            0% { bottom: -10%; opacity: 0; transform: translateX(0) rotate(0deg); }
+            10% { opacity: 0.15; } 50% { opacity: 0.08; transform: translateX(20px) rotate(15deg); }
+            90% { opacity: 0.15; } 100% { bottom: 110%; opacity: 0; transform: translateX(-20px) rotate(-15deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="leleflix-login-overlay">
+        <div class="lele-logo">LELEFLIX</div>
+
+        <div class="login-box">
+            <h1 class="login-title">Registrati</h1>
+            <form id="fakeLoginForm">
+                <div class="lele-input-group">
+                    <input type="text" class="lele-input" placeholder="Email o numero di telefono" required>
+                </div>
+                <div class="lele-input-group">
+                    <input type="password" class="lele-input" placeholder="Password" required>
+                </div>
+                <button type="submit" class="lele-btn-submit">Registrati</button>
+                
+                <div class="login-help">
+                    <div>
+                        <input type="checkbox" id="rememberMe" checked>
+                        <label for="rememberMe">Ricordami</label>
+                    </div>
+                    <div>Serve aiuto?</div>
+                </div>
+            </form>
+
+            <div class="new-to-lele">
+                <div style="margin-top: 15px; font-size: 13px;">
+                    Questa pagina è protetta da Google reCAPTCHA per assicurarsi che tu non sia un robot.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-experience" class="valentine-bg-layer">
+        
+        <div class="background-hearts">
+            <div class="bg-heart">♥</div><div class="bg-heart">♥</div><div class="bg-heart">♥</div>
+            <div class="bg-heart">♥</div><div class="bg-heart">♥</div><div class="bg-heart">♥</div>
+        </div>
+        
+        <div class="container">
+            <div class="header">
+                <h1>Buon <br/> San Valentino</h1>
+                <div class="subtitle">A Lisa, con tutto il cuore</div>
+            </div>
+            
+            <div class="reveal-container">
+    <div class="heart-button" id="heartButton">♥</div>
+    <div class="tap-instruction" id="tapInstruction">Tocca il cuore</div>
+    
+    <div id="hiddenContent" class="content-hidden">
+        <div class="card">
+            <div class="card-content">
+                <div class="message">
+                    <p class="reveal-on-scroll">Rilke diceva che l'amore consiste in <span class="highlight">due solitudini che si proteggono</span>. <br/> Io ho trovato in te qualcosa di più: una presenza che trasforma anche il silenzio in un posto dove stare <span class="highlight">bene</span>.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="love-note reveal-on-scroll">
+            "Non ti ho cercata. Sei entrata in silenzio e hai cambiato tutto — non con un gesto grande, ma con quella presenza che ormai non riesco più a immaginare assente.  <br/> Non so cosa ci aspetta. So solo che il futuro mi spaventa meno da quando so che ci sei anche tu dall'altra parte."
+        </div>
+
+        <div class="signature reveal-on-scroll">
+            Emanuele
+        </div>
+    </div>
+</div>
+            
+            <div class="footer">
+                <div class="date">San Valentino 2026</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // ELEMENTI
+            const loginForm = document.getElementById('fakeLoginForm');
+            const loginOverlay = document.getElementById('leleflix-login-overlay');
+            const mainExperience = document.getElementById('main-experience');
+            const heartButton = document.getElementById('heartButton');
+            const hiddenContent = document.getElementById('hiddenContent');
+            const tapInstruction = document.getElementById('tapInstruction');
+
+            // --- 1. GESTIONE LOGIN ---
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault(); // Niente reload
+                
+                // Dissolvenza Login
+                loginOverlay.classList.add('fade-out');
+                
+                // Cambio background e mostra contenuto
+                setTimeout(() => {
+                    // Cambia il colore del body da nero a rosa sfumato
+                    document.body.classList.add('valentine-mode');
+                    
+                    // Rimuovi fisicamente l'overlay per evitare problemi di click
+                    setTimeout(() => loginOverlay.style.display = 'none', 1000);
+                    
+                    // Mostra la sorpresa
+                    mainExperience.classList.add('active');
+                }, 800);
+            });
+            
+            // --- 2. FUNZIONE SCROLL REVEAL ---
+            function initScrollReveal() {
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '0px',
+                    threshold: 0.15
+                };
+                const observer = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, observerOptions);
+                const scrollElements = document.querySelectorAll('.reveal-on-scroll');
+                scrollElements.forEach(el => observer.observe(el));
+            }
+
+            // --- 3. GESTIONE CUORE ---
+            heartButton.addEventListener('click', function() {
+                heartButton.classList.add('clicked');
+                tapInstruction.style.opacity = '0';
+                
+                setTimeout(() => {
+                    hiddenContent.classList.remove('content-hidden');
+                    hiddenContent.classList.add('content-revealed');
+                    
+                    setTimeout(() => {
+                        heartButton.style.display = 'none';
+                        tapInstruction.style.display = 'none';
+                        // ATTIVA LO SCROLL REVEAL
+                        initScrollReveal();
+                    }, 100);
+                }, 400);
+            });
+            
+            // Effetto tocco card
+            setTimeout(() => {
+                const cards = document.querySelectorAll('.card');
+                cards.forEach(card => {
+                    card.addEventListener('click', function() {
+                        this.style.transition = 'transform 0.3s ease';
+                        this.style.transform = 'scale(0.98)';
+                        setTimeout(() => { this.style.transform = 'scale(1)'; }, 300);
+                    });
+                });
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
