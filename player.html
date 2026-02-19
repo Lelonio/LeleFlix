@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeleFlix Player</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.3.0/dist/hls.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* --- STILI UI MIGLIORATI (TV FRIENDLY) --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            user-select: none;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: black;
+            overflow: hidden;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* OVERLAY E GRADIENTI */
+        .controls-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 60%, transparent 100%);
+            padding: 0 5% 50px 5%; /* Safe Zone laterale */
+            opacity: 0;
+            transition: opacity 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 35vh;
+            pointer-events: none; /* Permette click sul video sottostante se necessario */
+        }
+        
+        /* Riabilita pointer events per i controlli */
+        .controls-overlay > * { pointer-events: auto; }
+
+        .controls-overlay.visible { opacity: 1; }
+
+        /* VIDEO INFO (TITOLI) */
+        .video-info {
+            position: absolute;
+            top: 40px;
+            left: 5%;
+            right: 5%;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 20;
+        }
+
+        .video-info.visible { opacity: 1; }
+
+        .video-title {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .video-subtitle {
+            font-size: 24px;
+            color: #dcdcdc;
+            font-weight: 400;
+        }
+
+        /* PROGRESS BAR */
+        .progress-container {
+            margin-bottom: 30px;
+            width: 100%;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .progress-bar { /* Classe richiesta dalla logica originale per click handling */
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #e50914;
+            width: 0%;
+            transition: width 0.1s linear; /* 0.1s come originale per fluidità */
+            box-shadow: 0 0 10px rgba(229, 9, 20, 0.7);
+        }
+
+        .time-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 20px;
+            font-weight: 500;
+            color: #eee;
+            text-shadow: 1px 1px 2px black;
+        }
+
+        /* CONTROLLI (Bottoni) */
+        .controls-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            background: rgba(255,255,255,0.15);
+            border: 3px solid transparent;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(5px);
+        }
+
+        .control-btn.play-pause {
+            width: 100px;
+            height: 100px;
+            font-size: 40px;
+            background: rgba(255,255,255,0.25);
+        }
+
+        .control-btn:focus, .control-btn:hover {
+            outline: none;
+            background: #e50914;
+            transform: scale(1.15);
+            border-color: white;
+            box-shadow: 0 0 20px rgba(229, 9, 20, 0.6);
+        }
+
+        /* LOADING SPINNER */
+        .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border: 6px solid rgba(255,255,255,0.3);
+            border-top: 6px solid #e50914;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+            z-index: 50;
+        }
+        
+        /* Mantieni icona spinner interna per compatibilità se il JS la cerca, anche se CSS fa il lavoro */
+        .loading-spinner i { display: none; }
+
+        @keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* NOTIFICHE EPISODIO */
+        .episode-notification {
+            position: absolute;
+            top: 10%;
+            right: 5%; /* Posizionamento laterale moderno */
+            left: auto;
+            transform: translateX(50px);
+            background: rgba(20, 20, 20, 0.95);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 8px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Centrato come originale */
+            gap: 20px;
+            z-index: 100;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-left: 5px solid #e50914;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: none;
+            min-width: 300px;
+        }
+
+        .episode-notification.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .episode-notification i {
+            font-size: 30px;
+            color: #e50914;
+            margin-bottom: 0; /* Override originale */
+        }
+
+        /* CLOSE BTN */
+        .close-btn {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            z-index: 25;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex; /* Centra icona */
+            align-items: center;
+            justify-content: center;
+        }
+
+        .controls-overlay.visible ~ .close-btn { opacity: 1; }
+        .close-btn:focus, .close-btn:hover { background: #e50914; border-color: #e50914; opacity: 1; }
+
+        /* ERRORI E PLACEHOLDER */
+        .error-message, .video-placeholder {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10,10,10,0.95);
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+            border: 1px solid #333;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            display: none;
+            z-index: 60;
+        }
+
+        .error-message i, .video-placeholder i {
+            font-size: 50px;
+            color: #e50914;
+            margin-bottom: 20px;
+        }
+
+        .error-message p, .video-placeholder p {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #ccc;
+        }
+
+        .error-btn {
+            background: #e50914;
+            border: none;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 4px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .error-btn:hover, .error-btn:focus {
+            background: #b2070f;
+            transform: scale(1.05);
+        }
+
+        /* Animazioni originali mantenute */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        .fa-arrow-circle-left, .fa-arrow-circle-right { animation: pulse 1.5s infinite; }
+        .fa-ban { color: #e50914; animation: none; }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <video id="videoPlayer" preload="auto"></video>
+
+        <div class="loading-spinner" id="loadingSpinner">
+            <i class="fas fa-spinner"></i> </div>
+
+        <div class="episode-notification" id="episodeNotification">
+            <i class="fas" id="episodeNotificationIcon"></i>
+            <div id="episodeNotificationText"></div>
+        </div>
+        
+        <div class="video-placeholder" id="videoPlaceholder" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>Problema nel caricamento del video</p>
+            <button class="error-btn" id="retryPlaceholderBtn">Riprova</button>
+        </div>
+        
+        <div class="video-info" id="videoInfo">
+            <div class="video-title" id="videoTitle"></div>
+            <div class="video-subtitle" id="videoSubtitle"></div>
+        </div>
+        
+        <button class="close-btn" id="closeBtn" title="Chiudi">
+            <i class="fas fa-times"></i>
+        </button>
+        
+        <div class="controls-overlay" id="controlsOverlay">
+            
+            <div class="controls-buttons">
+                <button class="control-btn" id="rewindBtn" title="Riavvolgi 10s">
+                    <i class="fas fa-backward"></i>
+                </button>
+                <button class="control-btn play-pause" id="playPauseBtn" title="Play/Pausa">
+                    <i class="fas fa-play" id="playPauseIcon"></i>
+                </button>
+                <button class="control-btn" id="forwardBtn" title="Avanti 10s">
+                    <i class="fas fa-forward"></i>
+                </button>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="time-info" style="margin-bottom: 10px;">
+                    <span id="currentTime">00:00</span>
+                    <span id="duration">00:00</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="error-message" id="errorMessage">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p id="errorText"></p>
+            <button class="error-btn" id="retryBtn">Riprova</button>
+            <button class="error-btn" id="closeErrorBtn" style="margin-left: 10px; background: #333;">Chiudi</button>
+        </div>
+    </div>
+
+    <script>
+    if (typeof AbortController === 'undefined') {
+        console.log("AbortController not supported, adding polyfill");
+        
+        window.AbortController = function() {
+            this.signal = {
+                aborted: false,
+                onabort: null
+            };
+            
+            this.abort = function() {
+                this.signal.aborted = true;
+                if (typeof this.signal.onabort === 'function') {
+                    this.signal.onabort();
+                }
+            };
+        };
+        
+        // Polyfill per fetch con supporto signal (molto basilare)
+        var originalFetch = window.fetch;
+        window.fetch = function(url, options) {
+            if (options && options.signal && options.signal.aborted) {
+                return Promise.reject(new Error('Request aborted'));
+            }
+            
+            return originalFetch.apply(this, arguments);
+        };
+    }
+    // Variabili globali
+    var PROXY_BASE_URL = 'https://api.leleflix.store/proxy';
+    var PROGRESS_API_URL = 'https://api.leleflix.store/progress/save';
+
+    var video = document.getElementById('videoPlayer');
+    var playPauseBtn = document.getElementById('playPauseBtn');
+    var playPauseIcon = document.getElementById('playPauseIcon');
+    var rewindBtn = document.getElementById('rewindBtn');
+    var forwardBtn = document.getElementById('forwardBtn');
+    var closeBtn = document.getElementById('closeBtn');
+    var controlsOverlay = document.getElementById('controlsOverlay');
+    var videoInfo = document.getElementById('videoInfo');
+    var progressContainer = document.getElementById('progressContainer');
+    var progressFill = document.getElementById('progressFill');
+    var currentTimeSpan = document.getElementById('currentTime');
+    var durationSpan = document.getElementById('duration');
+    var videoTitle = document.getElementById('videoTitle');
+    var videoSubtitle = document.getElementById('videoSubtitle');
+    var loadingSpinner = document.getElementById('loadingSpinner');
+    var errorMessage = document.getElementById('errorMessage');
+    var errorText = document.getElementById('errorText');
+    var retryBtn = document.getElementById('retryBtn');
+    var closeErrorBtn = document.getElementById('closeErrorBtn');
+    var videoPlaceholder = document.getElementById('videoPlaceholder');
+    var retryPlaceholderBtn = document.getElementById('retryPlaceholderBtn');
+    var episodeNotification = document.getElementById('episodeNotification');
+    var episodeNotificationText = document.getElementById('episodeNotificationText');
+    var episodeNotificationIcon = document.getElementById('episodeNotificationIcon');
+    var currentAbortSignal = null;
+    var currentTVData = null;
+    var hls;
+    var controlsVisible = false;
+    var hideControlsTimer;
+    var isSeeking = false;
+    var currentToken = null;
+    var isTizen = false;
+    var currentStreamId = null;
+    var abortController = null;
+    var content = null;
+    var lastProgressSave = 0;
+    var lastSavedTime = 0;
+
+    // Rileva se siamo su Tizen
+    function detectTizen() {
+        try {
+            return (typeof tizen !== 'undefined' && 
+                (navigator.userAgent.includes('Tizen') || 
+                    navigator.userAgent.includes('SmartTV') ||
+                    navigator.userAgent.includes('TV')));
+        } catch (e) {
+            return false;
+        }
+    }
+
+    window.onload = function() {              
+        isTizen = detectTizen();
+        console.log("Is Tizen:", isTizen);
+        
+        init();
+        
+        if (isTizen) {
+            try {
+                tizen.tvinputdevice.registerKeyBatch(['MediaRewind', 'MediaFastForward','MediaPlay','MediaPause']);
+                console.log("Tizen keys registered");
+            } catch (e) {
+                console.error("Error registering Tizen keys:", e);
+            }
+        }
+    };
+
+    // Funzione per generare un ID univoco per lo stream
+    function generateStreamId() {
+        return Math.random().toString(36).substring(2, 15) + 
+            Math.random().toString(36).substring(2, 15);
+    }
+
+    // Funzione per ottenere l'IP del client
+    function getClientIP(callback) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'https://api.ipify.org?format=json', true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+            if (xhr.status === 200) {
+                try {
+                var data = JSON.parse(xhr.responseText);
+                callback(data.ip);
+                } catch (e) {
+                callback('anon-' + navigator.userAgent.substring(0, 10) + '-' + Date.now());
+                }
+            } else {
+                callback('anon-' + navigator.userAgent.substring(0, 10) + '-' + Date.now());
+            }
+            }
+        };
+        xhr.send();
+    }
+
+    // Funzione per salvare il progresso della riproduzione
+    function savePlaybackProgress() {
+        // Salva solo se è passato almeno 1 secondo dall'ultimo salvataggio
+        var now = Date.now();
+        if (now - lastProgressSave < 1000) {
+            return;
+        }
+        
+        if (!content || !video.duration || video.duration <= 0) {
+            return;
+        }
+        
+        var currentTime = video.currentTime;
+        var duration = video.duration;
+        
+        // Salva solo se ha guardato almeno il 5% ma non più del 95%
+        var progressPercentage = (currentTime / duration) * 100;
+        if (progressPercentage < 5 || progressPercentage > 95) {
+            return;
+        }
+        
+        getClientIP(function(ip) {
+            var progressData = {
+            ip: ip,
+            tmdbId: content.id,
+            contentType: content.media_type || 'movie',
+            season: content.season_number || null,
+            episode: content.episode_number || null,
+            currentTime: currentTime,
+            duration: duration,
+            title: document.getElementById('videoTitle').textContent || 'Senza titolo'
+            };
+            
+            // Invia i dati al server
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', PROGRESS_API_URL, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify(progressData));
+            
+            lastProgressSave = now;
+        });
+    }
+
+    // Configura il tracciamento del progresso
+    function setupProgressTracking() {
+        var progressUpdateHandler = function() {
+            if (!video.paused) {
+            var currentTime = Math.floor(video.currentTime);
+            // Salva ogni 30 secondi
+            if (currentTime % 30 === 0 && currentTime !== lastSavedTime) {
+                savePlaybackProgress();
+                lastSavedTime = currentTime;
+            }
+            }
+        };
+        
+        // Salva il progresso ogni 30 secondi durante la riproduzione
+        video.addEventListener('timeupdate', progressUpdateHandler);
+        
+        // Salva anche quando l'utente mette in pausa
+        video.addEventListener('pause', function() {
+            savePlaybackProgress();
+        });
+        
+        // Salva quando si chiude il player
+        window.addEventListener('beforeunload', function() {
+            savePlaybackProgress();
+        });
+    }
+
+    // Modifica la funzione init() per impostare il tempo de ripresa
+    function init() {
+        var params = getUrlParams();
+        var type = params.type || 'movie';
+        currentToken = Date.now();
+        loadingSpinner.style.display = 'block';
+
+        // Ottieni il resumeTime dai parametri dell'URL
+        var resumeTime = parseFloat(params.resumeTime) || 0;
+        console.log("Tempo di ripresa richiesto: " + resumeTime + " secondi");
+        
+        if (type === 'movie') {
+            loadMovie(params.movieId, resumeTime);
+        } else if (type === 'tv') {
+            loadTVEpisode(params.tvId, params.season, params.episode, resumeTime);
+        } else {
+            showError("Tipo di contenuto non supportato");
+        }
+        
+        // Configura il tracciamento del progresso
+        setupProgressTracking();
+    }
+
+    function getUrlParams() {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        var params = {};
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split("=");
+            params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+        }
+        return params;
+    }
+
+    function loadMovie(movieId, resumeTime) {
+        if (!movieId) {
+            showError("Parametro movieId mancante");
+            return;
+        }
+
+        fetch("https://api.themoviedb.org/3/movie/" + movieId + "?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT")
+            .then(function (res) { return res.json(); })
+            .then(function (tmdb) {
+            if (!tmdb || !tmdb.title) throw new Error("Errore TMDB");
+
+            videoTitle.textContent = tmdb.title;
+            videoSubtitle.textContent = tmdb.release_date ? tmdb.release_date.substring(0, 4) : '';
+
+            // Crea l'oggetto content
+            content = {
+                id: movieId,
+                media_type: 'movie',
+                title: tmdb.title
+            };
+
+            return fetchStreamUrl('movie', movieId);
+            })
+            .then(function (streamData) {
+            if (!streamData || !streamData.url) throw new Error("Nessun URL disponibile");
+
+            setupEventListeners();
+            startPlayback(streamData.url, resumeTime);
+            })
+            .catch(function (err) {
+            console.error(err);
+            showError("Errore durante il caricamento del film");
+            });
+    }
+
+    function loadTVEpisode(tvId, seasonNumber, episodeNumber, resumeTime) {
+        if (!tvId || !seasonNumber || !episodeNumber) {
+            showError("Parametri mancanti per la serie TV");
+            return;
+        }
+
+        // Assicurati che la notifica sia visibile durante il caricamento
+        loadingSpinner.style.display = 'block';
+        
+        // Resetta i dati precedenti
+        currentTVData = {
+            tvId: tvId,
+            season: seasonNumber,
+            episode: episodeNumber,
+            totalEpisodes: 0,
+            totalSeasons: 0
+        };
+
+        // Prima otteniamo i metadati dell'episodio
+        fetch("https://api.themoviedb.org/3/tv/" + tvId + "/season/" + seasonNumber + "/episode/" + episodeNumber + "?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT")
+            .then(function (res) { return res.json(); })
+            .then(function (episodeData) {
+            if (!episodeData || !episodeData.name) throw new Error("Errore nel caricamento dei metadati");
+
+            // Ottieni anche i dati della serie per il titolo e il numero totale di episodi
+            return fetch("https://api.themoviedb.org/3/tv/" + tvId + "?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT")
+                .then(function (res) { return res.json(); })
+                .then(function (showData) {
+                videoTitle.textContent = showData.name || 'Serie TV';
+                videoSubtitle.textContent = "S" + seasonNumber + "E" + episodeNumber + " • " + episodeData.name;
+                
+                // Memorizza il numero totale di stagioni
+                currentTVData.totalSeasons = showData.number_of_seasons || 0;
+                
+                // Crea l'oggetto content
+                content = {
+                    id: tvId,
+                    media_type: 'tv',
+                    name: showData.name,
+                    title: showData.name,
+                    season_number: parseInt(seasonNumber),
+                    episode_number: parseInt(episodeNumber),
+                    tv_data: showData
+                };
+                
+                // Ottieni il numero totale di episodi nella stagione corrente
+                return fetch("https://api.themoviedb.org/3/tv/" + tvId + "/season/" + seasonNumber + "?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT");
+                });
+            })
+            .then(function (res) { return res.json(); })
+            .then(function (seasonData) {
+            if (seasonData && seasonData.episodes) {
+                currentTVData.totalEpisodes = seasonData.episodes.length;
+            }
+            
+            return fetchStreamUrl('series', tvId, seasonNumber, episodeNumber);
+            })
+            .then(function (streamData) {
+            if (!streamData || !streamData.url) throw new Error("Nessun URL disponibile");
+
+            setupEventListeners();
+            startPlayback(streamData.url, resumeTime);
+
+            })
+            .catch(function (err) {
+            console.error(err);
+            showError("Errore durante il caricamento dell'episodio");
+            });
+    }
+
+    // Funzione per ottenere l'URL dello stream con streamId
+    function fetchStreamUrl(type, id, season, episode) {
+        // Genera un nuovo streamId
+        currentStreamId = generateStreamId();
+        console.log("Generated streamId:", currentStreamId);
+        
+        // Crea l'URL della richiesta
+        var url = PROXY_BASE_URL + "/" + type + "/" + id;
+        
+        if (type === 'series') {
+            url = PROXY_BASE_URL + "/series/" + id + "/" + season + "/" + episode;
+        }
+        
+        // Aggiungi lo streamId come parametro
+        url += "?streamId=" + currentStreamId;
+        
+        console.log("Fetching stream from:", url);
+        
+        // Gestione dell'abort per Tizen (fallback per browser che non supportano AbortController)
+        var abortTimeout = null;
+        
+        // Crea un oggetto per gestire l'abort manualmente
+        var abortSignal = {
+            aborted: false,
+            abort: function() {
+                this.aborted = true;
+                if (abortTimeout) {
+                    clearTimeout(abortTimeout);
+                }
+            }
+        };
+        
+        // Sostituisci AbortController con la nostra implementazione
+        if (typeof AbortController === 'undefined') {
+            console.log("AbortController not supported, using fallback");
+            currentAbortSignal = abortSignal;
+        } else {
+            // Crea un nuovo abort controller per browser moderni
+            if (abortController) {
+                abortController.abort();
+            }
+            abortController = new AbortController();
+            currentAbortSignal = abortController.signal;
+        }
+        
+        // Timeout per la richiesta
+        abortTimeout = setTimeout(function() {
+            if (abortSignal && !abortSignal.aborted) {
+                abortSignal.aborted = true;
+                console.log("Request timeout");
+                throw new Error('Request timeout');
+            }
+        }, 10000);
+        
+        // Effettua la richiesta con supporto per abort manuale
+        return new Promise(function(resolve, reject) {
+            // Controlla se la richiesta è stata abortita prima di iniziare
+            if (abortSignal.aborted) {
+                reject(new Error('Request aborted'));
+                return;
+            }
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            
+            xhr.onreadystatechange = function() {
+                if (abortSignal.aborted) {
+                    xhr.abort();
+                    reject(new Error('Request aborted'));
+                    return;
+                }
+                
+                if (xhr.readyState === 4) {
+                    clearTimeout(abortTimeout);
+                    
+                    if (abortSignal.aborted) {
+                        reject(new Error('Request aborted'));
+                        return;
+                    }
+                    
+                    if (xhr.status === 200) {
+                        try {
+                            var data = JSON.parse(xhr.responseText);
+                            resolve(data);
+                        } catch (e) {
+                            reject(new Error('Failed to parse response'));
+                        }
+                    } else {
+                        reject(new Error('Failed to fetch stream URL: ' + xhr.status));
+                    }
+                }
+            };
+            
+            xhr.onerror = function() {
+                clearTimeout(abortTimeout);
+                reject(new Error('Network error'));
+            };
+            
+            xhr.ontimeout = function() {
+                clearTimeout(abortTimeout);
+                reject(new Error('Request timeout'));
+            };
+            
+            // Imposta timeout per XHR
+            xhr.timeout = 10000;
+            xhr.send();
+        });
+    }
+
+    function loadPreviousEpisode() {
+        if (!currentTVData) return;
+        
+        // Interrompi la riproduzione corrente
+        video.pause();
+        if (hls) hls.destroy();
+        
+        var newEpisode = parseInt(currentTVData.episode) - 1;
+        var newSeason = parseInt(currentTVData.season);
+        
+        // Mostra immediatamente il feedback
+        if (newEpisode < 1) {
+            if (newSeason > 1) {
+                showEpisodeNotification("Stagione " + (newSeason-1) + "\nEpisodio " + currentTVData.totalEpisodes, 'fa-arrow-circle-left');
+                newSeason--;
+                newEpisode = currentTVData.totalEpisodes;
+            } else {
+                showEpisodeNotification("Primo episodio", 'fa-ban');
+                return;
+            }
+        } else {
+            showEpisodeNotification("Stagione " + newSeason + "\nEpisodio " + newEpisode, 'fa-arrow-circle-left');
+        }
+        
+        // Ritardo per far vedere il messaggio prima del caricamento
+        setTimeout(function() {
+            loadTVEpisode(currentTVData.tvId, newSeason, newEpisode);
+        }, 300);
+    }
+
+    function loadNextEpisode() {
+        if (!currentTVData) return;
+        
+        // Interrompi la riproduzione corrente
+        video.pause();
+        if (hls) hls.destroy();
+        
+        var newEpisode = parseInt(currentTVData.episode) + 1;
+        var newSeason = parseInt(currentTVData.season);
+        
+        // Mostra immediatamente il feedback
+        if (newEpisode > currentTVData.totalEpisodes) {
+            if (newSeason < currentTVData.totalSeasons) {
+                showEpisodeNotification("Stagione " + (newSeason+1) + "\nEpisodio 1", 'fa-arrow-circle-right');
+                newSeason++;
+                newEpisode = 1;
+            } else {
+                showEpisodeNotification("Ultimo episodio", 'fa-ban');
+                return;
+            }
+        } else {
+            showEpisodeNotification("Stagione " + newSeason + "\nEpisodio " + newEpisode, 'fa-arrow-circle-right');
+        }
+        
+        // Ritardo per far vedere il messaggio prima del caricamento
+        setTimeout(function() {
+            loadTVEpisode(currentTVData.tvId, newSeason, newEpisode);
+        }, 300);
+    }
+
+    function showEpisodeNotification(message, iconClass) {
+        // Assicurati che gli elementi esistano
+        if (!episodeNotification || !episodeNotificationText || !episodeNotificationIcon) {
+            console.error("Elementi di notifica non trovati");
+            return;
+        }
+
+        // Nascondi altri elementi che potrebbero sovrapporsi
+        loadingSpinner.style.display = 'none';
+        errorMessage.style.display = 'none';
+        videoPlaceholder.style.display = 'none';
+        
+        // Imposta il messaggio e l'icona
+        episodeNotificationText.textContent = message;
+        episodeNotificationIcon.className = 'fas ' + iconClass;
+        
+        // Mostra la notifica con animazione
+        episodeNotification.style.animation = 'fadeIn 0.3s forwards';
+        episodeNotification.classList.add('visible');
+        
+        // Pulisci eventuali timeout precedenti
+        if (episodeNotification.timeout) {
+            clearTimeout(episodeNotification.timeout);
+        }
+        
+        // Nascondi dopo 2 secondi
+        episodeNotification.timeout = setTimeout(function() {
+            episodeNotification.classList.remove('visible');
+            episodeNotification.style.animation = '';
+        }, 2000);
+    }
+
+    function setupEventListeners() {
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        rewindBtn.addEventListener('click', function () { seek(-10); });
+        forwardBtn.addEventListener('click', function () { seek(10); });
+        closeBtn.addEventListener('click', closePlayer);
+        retryBtn.addEventListener('click', function() {
+            var params = getUrlParams();
+            if (params.type === 'movie') {
+                loadMovie(params.movieId);
+            } else {
+                loadTVEpisode(params.tvId, params.season, params.episode);
+            }
+        });
+        retryPlaceholderBtn.addEventListener('click', function() {
+            var params = getUrlParams();
+            if (params.type === 'movie') {
+                loadMovie(params.movieId);
+            } else {
+                loadTVEpisode(params.tvId, params.season, params.episode);
+            }
+        });
+        closeErrorBtn.addEventListener('click', closePlayer);
+        progressContainer.addEventListener('click', handleProgressClick);
+        video.addEventListener('click', toggleControls);
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('mousemove', showControls);
+        video.addEventListener('timeupdate', updateProgress);
+        
+        // Gestione specifica per Tizen - eventi di seek
+        if (isTizen) {
+            document.addEventListener('keydown', handleTizenKeyDown);
+        }
+    }
+
+    // Gestione specifica per i tasti Tizen
+    function handleTizenKeyDown(e) {
+        // Gestione tasti del telecomando Tizen
+        if (e.keyCode === 412) { // Previous Episode
+            if (currentTVData) {
+                loadPreviousEpisode();
+            }
+            e.preventDefault();
+        } else if (e.keyCode === 417) { // Next Episode
+            if (currentTVData) {
+                loadNextEpisode();
+            }
+            e.preventDefault();
+        } else if (e.keyCode === 10009) { // Return (Tizen)
+            e.preventDefault();
+            closePlayer();
+        } else if (e.keyCode === 19) { // Pause
+            if (!video.paused) {
+                video.pause();
+                playPauseIcon.className = 'fas fa-play';
+            }
+            e.preventDefault();
+        } else if (e.keyCode === 18) { // Play
+            if (video.paused) {
+                video.play();
+                playPauseIcon.className = 'fas fa-pause';
+            }
+            e.preventDefault();
+        }
+    }
+
+    // Modifica la funzione startPlayback per gestire correttamente il resume time
+    function startPlayback(streamUrl, resumeTime) {
+        errorMessage.style.display = 'none';
+        videoPlaceholder.style.display = 'none';
+        loadingSpinner.style.display = 'block';
+        
+        // Per Tizen, usa un approccio diverso
+        if (isTizen) {
+            startTizenPlayback(streamUrl, resumeTime);
+        } else {
+            startStandardPlayback(streamUrl, resumeTime);
+        }
+    }
+
+    function startStandardPlayback(streamUrl, resumeTime) {
+        console.log("Starting playback with URL:", streamUrl);
+        
+        // Aggiungi streamId all'URL dello stream
+        var finalStreamUrl = streamUrl;
+        if (currentStreamId && streamUrl.includes('api.leleflix.store')) {
+            finalStreamUrl = streamUrl + (streamUrl.includes('?') ? '&' : '?') + 'streamId=' + currentStreamId;
+        }
+        
+        video.src = finalStreamUrl;
+        
+        // Configura HLS.js per la riproduzione
+        if (Hls.isSupported()) {
+            hls = new Hls({
+                debug: false,
+                enableWorker: true,
+                lowLatencyMode: true,
+                backBufferLength: 90,
+                // Aggiungi configurazioni per gestire meglio gli errori
+                fragLoadingTimeOut: 10000,
+                manifestLoadingTimeOut: 10000,
+                levelLoadingTimeOut: 10000
+            });
+            
+            hls.loadSource(video.src);
+            hls.attachMedia(video);
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                console.log("Manifest parsed successfully");
+                // Nascondi il loading spinner
+                loadingSpinner.style.display = 'none';
+                
+                // Se abbiamo una posizione di resume valida, seeka a quella posizione
+                if (resumeTime > 0) {
+                    video.currentTime = resumeTime;
+                }
+                
+                // Avvia la riproduzione
+                video.play().then(function() {
+                    playPauseIcon.className = 'fas fa-pause';
+                    console.log("Playback started successfully");
+                }).catch(function(e) {
+                    console.log("Auto-play prevented:", e);
+                    playPauseIcon.className = 'fas fa-play';
+                });
+            });
+            
+            hls.on(Hls.Events.ERROR, function(event, data) {
+                console.error("HLS error:", data.type, data.details);
+                
+                if (data.fatal) {
+                    switch(data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            console.error("Network error:", data.details);
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            console.error("Media error:", data.details);
+                            hls.recoverMediaError();
+                            break;
+                        default:
+                            console.error("Fatal error:", data.details);
+                            break;
+                    }
+                }
+            });
+            
+            // Gestione del buffering
+            hls.on(Hls.Events.BUFFER_CREATED, function() {
+                console.log("Buffer created");
+            });
+            
+            hls.on(Hls.Events.BUFFER_APPENDED, function() {
+                console.log("Buffer appended");
+            });
+            
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            // Supporto nativo per HLS (Safari)
+            video.addEventListener('loadedmetadata', function() {
+                loadingSpinner.style.display = 'none';
+                if (resumeTime > 0) {
+                    video.currentTime = resumeTime;
+                }
+                video.play().catch(function(e) {
+                    console.log("Auto-play prevented:", e);
+                    playPauseIcon.className = 'fas fa-play';
+                });
+            });
+            
+            video.addEventListener('error', function(e) {
+                console.error("Video error:", e);
+                showError("Errore durante il caricamento del video");
+            });
+        }
+    }
+
+    // Aggiungi questa funzione per gestire la chiusura pulita
+    function cleanupPlayer() {
+        console.log("Cleaning up player...");
+        
+        // Salva il progresso prima di chiudere
+        savePlaybackProgress();
+        
+        // Annulla eventuali richieste in corso
+        if (abortController) {
+            console.log("Aborting ongoing requests (AbortController)");
+            abortController.abort();
+            abortController = null;
+        }
+        
+        // Annulla richieste manuali (per Tizen)
+        if (currentAbortSignal && typeof currentAbortSignal.abort === 'function') {
+            console.log("Aborting ongoing requests (manual)");
+            currentAbortSignal.abort();
+        }
+        
+        // Ferma e pulisci HLS
+        if (hls) {
+            console.log("Destroying HLS instance");
+            hls.destroy();
+            hls = null;
+        }
+        
+        // Ferma e pulisci il video
+        if (video) {
+            console.log("Stopping video playback");
+            video.pause();
+            video.removeAttribute('src');
+            video.load();
+        }
+        
+        // Resetta lo streamId
+        currentStreamId = null;
+        currentAbortSignal = null;
+        console.log("Player cleanup completed");
+    }
+
+    function startTizenPlayback(streamUrl, resumeTime) {
+        // Per Tizen, usa un approccio più semplice e diretto
+        console.log("Starting Tizen playback");
+        
+        video.src = streamUrl;
+        video.load();
+        
+        var loaded = false;
+        
+        var onLoaded = function() {
+            if (loaded) return;
+            loaded = true;
+            
+            loadingSpinner.style.display = 'none';
+            
+            if (resumeTime > 0) {
+                video.currentTime = resumeTime;
+            }
+            
+            video.play().then(function() {
+                playPauseIcon.className = 'fas fa-pause';
+            }).catch(function(e) {
+                console.log("Tizen play error:", e);
+                playPauseIcon.className = 'fas fa-play';
+                videoPlaceholder.style.display = 'block';
+            });
+        };
+        
+        video.addEventListener('loadeddata', onLoaded);
+        video.addEventListener('canplay', onLoaded);
+        
+        // Timeout per gestire il caso in cui il video non si carichi
+        setTimeout(function() {
+            if (!loaded) {
+                console.log("Tizen playback timeout");
+                loadingSpinner.style.display = 'none';
+                videoPlaceholder.style.display = 'block';
+            }
+        }, 10000);
+    }
+
+    function togglePlayPause() {
+        if (video.paused) {
+            video.play();
+            playPauseIcon.className = 'fas fa-pause';
+        } else {
+            video.pause();
+            playPauseIcon.className = 'fas fa-play';
+        }
+        showControls();
+    }
+
+    function seek(seconds) {
+        // Per Tizen, usa un approccio più conservativo per il seek
+        if (isTizen) {
+            var newTime = Math.max(0, Math.min(video.duration, video.currentTime + seconds));
+            
+            // Se il video non è pronto, aspetta
+            if (video.readyState < 2) {
+                console.log("Video not ready for seeking");
+                return;
+            }
+            
+            video.currentTime = newTime;
+        } else {
+            video.currentTime = video.currentTime + seconds;
+        }
+        showControls();
+    }
+
+    function handleProgressClick(e) {
+        var rect = progressContainer.getBoundingClientRect();
+        var pos = (e.clientX - rect.left) / rect.width;
+        
+        // Per Tizen, verifica che il video sia pronto per il seek
+        if (isTizen && video.readyState < 2) {
+            console.log("Video not ready for seeking");
+            return;
+        }
+        
+        video.currentTime = pos * video.duration;
+        showControls();
+    }
+
+    function updateProgress() {
+        if (!isSeeking && video.duration) {
+            var percent = (video.currentTime / video.duration) * 100;
+            progressFill.style.width = percent + '%';
+            currentTimeSpan.textContent = formatTime(video.currentTime);
+            durationSpan.textContent = formatTime(video.duration);
+        }
+    }
+
+    function formatTime(seconds) {
+        var mins = Math.floor(seconds / 60);
+        var secs = Math.floor(seconds % 60);
+        return mins + ':' + (secs < 10 ? '0' : '') + secs;
+    }
+
+    function toggleControls() {
+        if (controlsVisible) {
+            hideControls();
+        } else {
+            showControls();
+        }
+    }
+
+    function showControls() {
+        controlsVisible = true;
+        controlsOverlay.classList.add('visible');
+        videoInfo.classList.add('visible');
+        closeBtn.style.opacity = '1';
+        resetControlsTimer();
+    }
+
+    function hideControls() {
+        controlsVisible = false;
+        controlsOverlay.classList.remove('visible');
+        videoInfo.classList.remove('visible');
+        closeBtn.style.opacity = '0';
+    }
+
+    function resetControlsTimer() {
+        clearTimeout(hideControlsTimer);
+        hideControlsTimer = setTimeout(hideControls, 3000);
+    }
+
+    function handleKeyDown(e) {
+        switch (e.key) {
+            case ' ':
+            case 'Enter':
+                togglePlayPause();
+                break;
+            case 'MediaPlay':
+                if (video.paused) {
+                    video.play();
+                    playPauseIcon.className = 'fas fa-pause';
+                }
+                break;
+            case 'MediaPause':
+                if (!video.paused) {
+                    video.pause();
+                    playPauseIcon.className = 'fas fa-play';
+                }
+                break;
+            case 'ArrowLeft':
+                seek(-10);
+                break;
+            case 'ArrowRight':
+                seek(10);
+                break;
+            case 'f':
+            case 'F':
+                toggleFullscreen();
+                break;
+            case 'Escape':
+                closePlayer();
+                break;
+        }
+    }
+
+    function showError(message) {
+        errorText.textContent = message;
+        errorMessage.style.display = 'none';
+        loadingSpinner.style.display = 'none';
+        videoPlaceholder.style.display = 'none';
+    }
+
+    function closePlayer() {
+        console.log("Closing player...");
+        cleanupPlayer();
+        
+        // Torna alla pagina precedente
+        setTimeout(function() {
+            window.location.href = 'tv.html';
+        }, 100);
+    }
+
+    // Aggiungi gestione dell'evento beforeunload
+    window.addEventListener('beforeunload', function() {
+        console.log("Page is unloading, cleaning up player");
+        cleanupPlayer();
+    });
+
+    // Aggiungi gestione degli errori globali
+    window.addEventListener('error', function(e) {
+        console.error("Global error:", e.error);
+    });
+
+    window.addEventListener('unhandledrejection', function(e) {
+        console.error("Unhandled promise rejection:", e.reason);
+    });
+        
+
+    function toggleFullscreen() {
+        var container = document.querySelector('.video-container');
+        if (!document.fullscreenElement) {
+            if (container.requestFullscreen) {
+                container.requestFullscreen().then(function() {
+                    if (screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock('landscape').catch(function(err) {
+                            console.warn('Orientation lock failed:', err);
+                        });
+                    }
+                });
+            } else if (container.webkitRequestFullscreen) {
+                container.webkitRequestFullscreen();
+            }
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+        }
+    }
+    </script>
+</body>
+</html>
