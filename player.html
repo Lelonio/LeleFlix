@@ -297,8 +297,7 @@
 </head>
 <body>
     <div class="video-container">
-        <video id="videoPlayer" preload="auto"></video>
-
+<video id="videoPlayer" preload="auto" autoplay playsinline></video>
         <div class="loading-spinner" id="loadingSpinner">
             <i class="fas fa-spinner"></i> </div>
 
@@ -999,6 +998,8 @@
             hls.on(Hls.Events.MANIFEST_PARSED, function() {
                 console.log("Manifest parsed successfully");
                 // Nascondi il loading spinner
+                                    const lvl = hls.levels.findIndex(l => l.height === 1080);
+                    if (lvl >= 0) hls.currentLevel = lvl;
                 loadingSpinner.style.display = 'none';
                 
                 // Se abbiamo una posizione di resume valida, seeka a quella posizione
@@ -1106,44 +1107,78 @@
     }
 
     function startTizenPlayback(streamUrl, resumeTime) {
-        // Per Tizen, usa un approccio più semplice e diretto
-        console.log("Starting Tizen playback");
+        console.log("Starting Tizen playback (Robust Mode)");
         
-        video.src = streamUrl;
-        video.load();
-        
+        // 1. Configura i listener PRIMA di impostare la sorgente
         var loaded = false;
+        var playAttempts = 0;
+        var maxAttempts = 3;
+
+        var attemptPlay = function() {
+            var promise = video.play();
+            
+            if (promise !== undefined) {
+                promise.then(function() {
+                    console.log("Tizen playback started successfully");
+                    playPauseIcon.className = 'fas fa-pause';
+                    loadingSpinner.style.display = 'none';
+                    videoPlaceholder.style.display = 'none';
+                }).catch(function(e) {
+                    console.warn("Tizen play error (" + playAttempts + "):", e);
+                    playPauseIcon.className = 'fas fa-play';
+                    
+                    // Riprova se non abbiamo superato il limite
+                    if (playAttempts < maxAttempts) {
+                        playAttempts++;
+                        console.log("Retrying playback in 500ms...");
+                        setTimeout(attemptPlay, 500);
+                    } else {
+                        // Fallimento definitivo
+                        loadingSpinner.style.display = 'none';
+                        // Mostra un bottone gigante di play o il placeholder
+                        // videoPlaceholder.style.display = 'block'; // O lascia che l'utente prema play
+                    }
+                });
+            }
+        };
         
         var onLoaded = function() {
             if (loaded) return;
             loaded = true;
             
-            loadingSpinner.style.display = 'none';
+            console.log("Video loaded data/canplay");
             
             if (resumeTime > 0) {
-                video.currentTime = resumeTime;
+                // Su Tizen il seek immediato a volte è problematico, facciamolo con cautela
+                try {
+                    video.currentTime = resumeTime;
+                } catch(e) {
+                    console.warn("Seek error:", e);
+                }
             }
             
-            video.play().then(function() {
-                playPauseIcon.className = 'fas fa-pause';
-            }).catch(function(e) {
-                console.log("Tizen play error:", e);
-                playPauseIcon.className = 'fas fa-play';
-                videoPlaceholder.style.display = 'block';
-            });
+            attemptPlay();
         };
+        
+        // Pulisci listener precedenti (per sicurezza) e aggiungi i nuovi
+        video.removeEventListener('loadeddata', onLoaded);
+        video.removeEventListener('canplay', onLoaded);
         
         video.addEventListener('loadeddata', onLoaded);
         video.addEventListener('canplay', onLoaded);
         
-        // Timeout per gestire il caso in cui il video non si carichi
+        // 2. Imposta la sorgente e carica
+        video.src = streamUrl;
+        video.load();
+        
+        // 3. Timeout di sicurezza
         setTimeout(function() {
             if (!loaded) {
-                console.log("Tizen playback timeout");
+                console.log("Tizen playback timeout - forcing loading state off");
                 loadingSpinner.style.display = 'none';
-                videoPlaceholder.style.display = 'block';
+                videoPlaceholder.style.display = 'block'; // Mostra errore se non ha caricato nulla
             }
-        }, 10000);
+        }, 15000); // Aumentato a 15s per reti lente
     }
 
     function togglePlayPause() {
@@ -1274,6 +1309,17 @@
     }
 
     function closePlayer() {
+
+        // --- FIX: Invia segnale di chiusura PRIMA di distruggere tutto ---
+        // Nota: usiamo una variabile globale 'socket' che deve essere accessibile qui. 
+        // Se 'socket' è dentro la closure IIFE in fondo, spostala fuori o accedi tramite window.
+        if (window.appSocket && window.appSocket.connected) {
+            window.appSocket.emit('player_status_update', { 
+                isPlaying: false, 
+                isClosed: true,
+                title: document.getElementById('videoTitle').textContent 
+            });
+        }
         console.log("Closing player...");
         cleanupPlayer();
         
@@ -1322,5 +1368,259 @@
         }
     }
     </script>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<script>
+(function() {
+    // Definizione Socket (ES5)
+    var socket = null;
+    var videoEl = document.getElementById('videoPlayer');
+    var titleEl = document.getElementById('videoTitle');
+    var lastUpdate = 0;
+
+    try {
+        socket = io('https://api.leleflix.store'); // Tuo URL
+    } catch(e) {
+        console.error("Errore inizializzazione Socket:", e);
+        return;
+    }
+
+    // Funzione per inviare lo stato
+function sendStatus() {
+        if (!socket || !socket.connected || !videoEl) return;
+        
+        var title = 'Video TV';
+        if (titleEl && titleEl.textContent) title = titleEl.textContent;
+
+        // --- MODIFICA: Recupera ID e Tipo per il controller remoto ---
+        var tmdbId = null;
+        var mediaType = null;
+        // L'oggetto 'content' è globale e viene popolato in loadMovie/loadTVEpisode
+        if (typeof content !== 'undefined' && content) {
+            tmdbId = content.id;
+            mediaType = content.media_type;
+        }
+        // -------------------------------------------------------------
+
+        socket.emit('player_status_update', {
+            isPlaying: !videoEl.paused,
+            currentTime: videoEl.currentTime || 0,
+            duration: videoEl.duration || 0,
+            title: title,
+            device: 'TV Tizen',
+            // Inviamo i nuovi dati
+            tmdbId: tmdbId,
+            mediaType: mediaType
+        });
+    }
+
+    function openRemoteDetails() {
+        if (lastRemoteStatus && lastRemoteStatus.tmdbId) {
+            // 1. Chiudi il telecomando espanso (così vediamo la pagina sotto)
+            closeRemoteExpanded();
+            
+            // 2. Apri la vista dettagli usando la funzione nativa di index.html
+            // openDetailView(id, type) è la funzione principale del tuo sito
+            if (typeof openDetailView === 'function') {
+                openDetailView(lastRemoteStatus.tmdbId, lastRemoteStatus.mediaType || 'movie');
+            } else {
+                console.error("Funzione openDetailView non trovata");
+            }
+        } else {
+            alert("Dati dettaglio non disponibili");
+        }
+    }
+
+    // --- 1. EVENTI SOCKET ---
+    socket.on('connect', function() {
+        console.log("TV Connected to Controller");
+        // Invia subito lo stato appena connesso
+        setTimeout(sendStatus, 500);
+    });
+
+    // --- GESTIONE COMANDI ---
+    socket.on('execute_remote_command', function(cmd) {
+        if (!videoEl) return;
+        console.log("Comando ricevuto:", cmd.action);
+
+        switch(cmd.action) {
+            case 'play':
+                // Forza Play
+                videoEl.play().catch(function(e) { console.error("Errore play:", e); });
+                break;
+            
+            case 'pause':
+                // Forza Pausa
+                videoEl.pause();
+                break;
+            
+            case 'toggle':
+                // Inverte lo stato (utile se il tasto non sa lo stato attuale)
+                if (videoEl.paused) {
+                    videoEl.play().catch(function(e) { console.error("Errore play:", e); });
+                } else {
+                    videoEl.pause();
+                }
+                break;
+
+            case 'stop':
+                if (typeof closePlayer === 'function') closePlayer();
+                break;
+
+            case 'seek':
+                if (cmd.value === 'forward') videoEl.currentTime += 10;
+                else if (cmd.value === 'rewind') videoEl.currentTime -= 10;
+                else if (typeof cmd.value === 'number') videoEl.currentTime = cmd.value;
+                break;
+        }
+        
+        // Mostra l'interfaccia della TV per dare feedback visivo
+        if (typeof showControls === 'function') showControls();
+    });
+
+    // --- 2. TRACKING VIDEO ROBUSTO ---
+    
+    // Usa timeupdate con throttle (max 1 volta al secondo)
+    // Questo assicura che lo stato venga inviato SEMPRE mentre il video va
+    videoEl.addEventListener('timeupdate', function() {
+        var now = Date.now();
+        if (now - lastUpdate > 1000) { // Max 1 update al secondo
+            sendStatus();
+            lastUpdate = now;
+        }
+    });
+
+    // Eventi puntuali per risposta immediata
+    videoEl.addEventListener('play', sendStatus);
+    videoEl.addEventListener('pause', sendStatus);
+    videoEl.addEventListener('seeked', sendStatus);
+    
+    // Gestione chiusura
+    window.addEventListener('unload', function() {
+        if (socket) {
+            socket.emit('player_status_update', { isPlaying: false, isClosed: true });
+        }
+    });
+
+})();
+</script>
+<script>
+(function() {
+    var socket = null;
+    var videoEl = document.getElementById('videoPlayer');
+    var titleEl = document.getElementById('videoTitle');
+    var lastUpdate = 0;
+
+    try {
+        socket = io('https://api.leleflix.store');
+        // --- ESPONI IL SOCKET GLOBALMENTE PER closePlayer() ---
+        window.appSocket = socket; 
+    } catch(e) {
+        console.error("Errore inizializzazione Socket:", e);
+        return;
+    }
+
+    function sendStatus() {
+        if (!socket || !socket.connected || !videoEl) return;
+        
+        var title = 'Video TV';
+        if (titleEl && titleEl.textContent) title = titleEl.textContent;
+
+        socket.emit('player_status_update', {
+            isPlaying: !videoEl.paused,
+            currentTime: videoEl.currentTime || 0,
+            duration: videoEl.duration || 0,
+            title: title,
+            device: 'TV Tizen'
+        });
+    }
+
+    // --- TRACKING EVENTI ---
+    // Aggiungiamo un check per non inviare update se stiamo chiudendo
+    var isClosing = false;
+
+    videoEl.addEventListener('timeupdate', function() {
+        if(isClosing) return;
+        var now = Date.now();
+        if (now - lastUpdate > 1000) { 
+            sendStatus();
+            lastUpdate = now;
+        }
+    });
+
+    videoEl.addEventListener('play', sendStatus);
+    videoEl.addEventListener('pause', sendStatus);
+    videoEl.addEventListener('seeked', sendStatus);
+
+    socket.on('get_player_status', function() {
+        console.log("Richiesta stato ricevuta da un nuovo client");
+        sendStatus();
+    });
+// Riferimento al video (aggiornato dinamicamente per sicurezza)
+    var videoEl = document.getElementById('videoPlayer');
+
+    socket.on('execute_remote_command', function(cmd) {
+        // Recupera l'elemento se perso
+        if (!videoEl) videoEl = document.getElementById('videoPlayer');
+        if (!videoEl) return;
+
+        console.log("Comando ricevuto:", cmd.action);
+
+        switch(cmd.action) {
+            case 'toggle':
+                // FIX: Logica Toggle Robusta
+                if (videoEl.paused) {
+                    var p = videoEl.play();
+                    if (p !== undefined) {
+                        p.catch(function(e) { console.error("Play error:", e); });
+                    }
+                } else {
+                    videoEl.pause();
+                }
+                break;
+
+            case 'play':
+                // Forza Play solo se in pausa
+                if (videoEl.paused) {
+                    var p = videoEl.play();
+                    if (p !== undefined) p.catch(function(e) { console.log(e); });
+                }
+                break;
+            
+            case 'pause':
+                // Forza Pausa solo se in riproduzione
+                if (!videoEl.paused) videoEl.pause();
+                break;
+            
+            case 'stop':
+                if (typeof closePlayer === 'function') closePlayer();
+                else window.history.back();
+                break;
+
+            case 'seek':
+                var newTime = videoEl.currentTime;
+                if (cmd.value === 'forward') newTime += 10;
+                else if (cmd.value === 'rewind') newTime -= 10;
+                else if (typeof cmd.value === 'number') newTime = cmd.value;
+                
+                videoEl.currentTime = newTime;
+                break;
+        }
+        
+        // Feedback visivo sulla TV
+        if (typeof showControls === 'function') showControls();
+    });
+
+    // Fallback di chiusura
+    window.addEventListener('beforeunload', function() {
+        isClosing = true;
+        if (socket) {
+            socket.emit('player_status_update', { isPlaying: false, isClosed: true });
+        }
+    });
+
+})();
+</script>
 </body>
 </html>
