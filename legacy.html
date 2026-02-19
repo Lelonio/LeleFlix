@@ -8,8 +8,137 @@
   <title>LeleFlix</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-<script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
+  
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap:;
+    style-src * 'self' 'unsafe-inline';
+    script-src * 'self' 'unsafe-inline' 'unsafe-eval';
+    img-src * 'self' data: https://image.tmdb.org;
+    frame-src * 'self' https://www.youtube.com https://youtube.com;
+    connect-src * 'self';
+  ">
+  
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.1.5"></script>
 <script src="https://luke-chang.github.io/js-spatial-navigation/spatial_navigation.js"></script>  
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<style>
+    /* Stili Overlay Cast (Invariati) */
+    #cast-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+    }
+    #cast-overlay.active {
+        display: flex;
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .cast-icon-wrapper {
+        position: relative;
+        width: 100px; height: 100px;
+        display: flex; display: -webkit-flex;
+        align-items: center; justify-content: center;
+        background-color: #E50914;
+        border-radius: 50%;
+        margin-bottom: 30px;
+        box-shadow: 0 0 20px rgba(229, 9, 20, 0.5);
+        z-index: 2;
+    }
+    .cast-ripple {
+        position: absolute; top: 50%; left: 50%;
+        -webkit-transform: translate(-50%, -50%); transform: translate(-50%, -50%);
+        width: 100px; height: 100px;
+        border: 2px solid rgba(229, 9, 20, 0.8);
+        border-radius: 50%;
+        -webkit-animation: ripple 2s linear infinite; animation: ripple 2s linear infinite;
+        z-index: 1;
+    }
+    .cast-ripple:nth-child(2) { -webkit-animation-delay: 0.5s; animation-delay: 0.5s; }
+    .cast-ripple:nth-child(3) { -webkit-animation-delay: 1s; animation-delay: 1s; }
+    @-webkit-keyframes ripple {
+        0% { width: 100px; height: 100px; opacity: 0.8; border-width: 4px; }
+        100% { width: 300px; height: 300px; opacity: 0; border-width: 0px; }
+    }
+    @keyframes ripple {
+        0% { width: 100px; height: 100px; opacity: 0.8; border-width: 4px; }
+        100% { width: 300px; height: 300px; opacity: 0; border-width: 0px; }
+    }
+    .cast-text { color: white; font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+    .cast-subtext { color: #a3a3a3; font-size: 18px; }
+</style>
+
+<script>
+    (function() {
+        var socket = io('https://api.leleflix.store'); // Assicurati che l'URL sia corretto
+
+        function showCastAnimation(title) {
+            var overlay = document.getElementById('cast-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'cast-overlay';
+                var html = '';
+                html += '<div class="cast-icon-wrapper">';
+                html += '  <i class="fas fa-satellite-dish" style="color:white; font-size:40px;"></i>';
+                html += '  <div class="cast-ripple"></div><div class="cast-ripple"></div><div class="cast-ripple"></div>';
+                html += '</div>';
+                html += '<div class="cast-text">Ricezione segnale LeleCast...</div>';
+                html += '<div class="cast-subtext" id="cast-title">Preparazione: ' + (title || '') + '</div>';
+                overlay.innerHTML = html;
+                document.body.appendChild(overlay);
+            } else {
+                document.getElementById('cast-title').textContent = 'Preparazione: ' + (title || '');
+            }
+            setTimeout(function() { overlay.className = 'active'; }, 10);
+            return overlay;
+        }
+
+        socket.on('connect', function() {
+            console.log("TV connessa a LeleCast");
+        });
+
+        socket.on('remote_play_trigger', function(content) {
+            console.log("Comando ricevuto:", content);
+            
+            // 1. Mostra animazione
+            showCastAnimation(content.title || content.name);
+
+            // 2. Chiudi eventuali pagine dettagli aperte
+            var details = document.getElementById('series-details-page');
+            if (details) details.style.display = 'none';
+
+            // 3. Avvia il player dopo 1.5s
+            setTimeout(function() {
+                var type = content.media_type || 'movie';
+                var id = content.id;
+                
+                // Costruisci URL per player.html
+                var targetUrl = '';
+                
+                if (type === 'tv') {
+                    var season = content.season_number || 1;
+                    var episode = content.episode_number || 1;
+                    targetUrl = 'player.html?tvId=' + id + '&season=' + season + '&episode=' + episode + '&type=tv';
+                } else {
+                    targetUrl = 'player.html?movieId=' + id + '&type=movie';
+                }
+
+                // Esegui il redirect
+                window.location.href = targetUrl;
+                
+            }, 1500);
+        });
+    })();
+</script>
+
 
 <style>
 
@@ -1187,15 +1316,501 @@ html {
     --target-opacity: 0.25;
 }
 
+/* --- TOP 10 NETFLIX STYLE (FIXED) --- */
+
+.row-item.top10-rank {
+    /* Dimensione totale dell'area cliccabile */
+    width: 320px; 
+    height: 260px; /* Altezza sufficiente per numero e poster */
+    position: relative;
+    
+    /* Rimuovi stili che creano il "quadrato" */
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important; /* Permette al numero di uscire se serve */
+    
+    /* Margine negativo per avvicinarle visivamente */
+    margin-right: -20px;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Contenitore SVG del Numero */
+.top10-svg-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 140px; /* Larghezza del numero */
+    height: 100%;
+    z-index: 20; /* Sopra l'immagine parzialmente */
+    pointer-events: none; /* Il click deve passare */
+}
+
+.top10-rank-svg text {
+    /* Stile del numero: Scuro con bordo chiaro */
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 800;
+    fill: #000000;
+    stroke: #595959; /* Grigio chiaro per il bordo */
+    stroke-width: 3px;
+}
+
+/* Contenitore Immagine (Poster) */
+.top10-img-wrapper {
+    position: absolute;
+    right: 20px; /* Spostato a destra per lasciare posto al numero */
+    bottom: 0;
+    width: 160px; /* Larghezza poster standard */
+    height: 240px; /* Altezza poster */
+    z-index: 10;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 5px 10px rgba(0,0,0,0.5);
+    transition: transform 0.3s, border 0.3s;
+}
+
+.top10-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* --- EFFETTI FOCUS --- */
+
+/* Quando l'elemento ha il focus, ingrandiamo tutto leggermente */
+.row-item.top10-rank:focus,
+.row-item.top10-rank.tv-focused {
+    transform: scale(1.1);
+    z-index: 100; /* Porta in primo piano sopra le altre */
+    outline: none;
+}
+
+/* Bordo bianco SOLO attorno all'immagine quando ha il focus */
+.row-item.top10-rank:focus .top10-img-wrapper,
+.row-item.top10-rank.tv-focused .top10-img-wrapper {
+    border: 3px solid white;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.8);
+}
+
+/* --- AGGIUNTA AL CSS TOP 10 --- */
+
+/* Assicuriamo che le info stiano sopra l'immagine */
+.top10-img-wrapper .row-item-info {
+    z-index: 20; /* Sopra l'immagine */
+    width: 100%;
+    padding: 10px; /* Padding leggermente ridotto per lo spazio stretto */
+}
+
+/* Riduciamo leggermente il font del titolo nella Top 10 */
+.top10-img-wrapper .row-item-title {
+    font-size: 14px; /* Un po' più piccolo dello standard */
+    white-space: normal; /* Permetti al testo di andare a capo se serve */
+    line-height: 1.2;
+    max-height: 2.4em; /* Limita a 2 righe */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Nascondiamo i metadati (anno/genere) nella Top 10 per pulizia, se presenti */
+.top10-img-wrapper .row-item-meta {
+    display: none; 
+}
 
 
+/* --- STILE TRAILER BACKGROUND (FIXED) --- */
 
+/* Contenitore video: deve tagliare le parti in eccesso (zoom) */
+.hero-video-container {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 70%; /* Copre l'area dell'immagine hero */
+    height: 100%;
+    z-index: 1; /* Livello base */
+    overflow: hidden; /* FONDAMENTALE: nasconde lo zoom del video */
+    pointer-events: none;
+    background: #000; /* Sfondo nero per evitare flash */
+}
+
+/* L'iframe zoomato per togliere le bande nere */
+.hero-video-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    opacity: 0;
+    transition: opacity 2s ease-in-out; /* Entrata molto lenta */
+    
+    /* TRUCCO PER RIEMPIRE LO SCHERMO (ZOOM) */
+    /* 1.5x zoom taglia le bande nere sopra/sotto e ai lati */
+    transform: scale(1.5); 
+    transform-origin: center center;
+}
+
+.hero-video-iframe.visible {
+    opacity: 1;
+}
+
+/* Backdrop Immagine: Parte SOPRA il video (z-index 2) */
+.hero-backdrop {
+    position: absolute; /* Assicurati che sia absolute */
+    top: 0;
+    right: 0;
+    width: 70%;
+    height: 100%;
+    background-size: cover;
+    background-position: center top;
+    z-index: 2; /* Sta SOPRA il video inizialmente */
+    transition: opacity 1.5s ease-out; /* Fade out lento */
+    opacity: 1;
+}
+
+/* Classe per nascondere l'immagine */
+.hero-backdrop.hidden-for-video {
+    opacity: 0 !important; /* Forza la sparizione */
+}
+
+/* Vignette (Sfumatura): Sta sopra a tutto (z-index 3) */
+.hero-vignette {
+    z-index: 3;
+    pointer-events: none;
+}
+
+/* --- NETFLIX EXACT MATCH STYLE --- */
+
+.nfx-container {
+    padding: 0 4% 50px 4%;
+    width: 100%;
+    position: relative;
+    z-index: 10;
+}
+
+/* HERO SECTION (Logo, Bottoni, Meta) */
+.nfx-hero-block {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    /* Lasciamo spazio per il video sopra (circa 40-50% altezza viewport) */
+    padding-top: 35vh; 
+    margin-bottom: 30px;
+}
+
+.nfx-logo {
+    width: 450px;
+    max-width: 60%;
+    margin-bottom: 20px;
+    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.8));
+}
+
+/* Bottoni */
+.nfx-buttons-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.nfx-btn-play {
+    background: white;
+    color: black;
+    border: none;
+    padding: 10px 30px;
+    font-size: 22px;
+    font-weight: bold;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+.nfx-btn-play:focus, .nfx-btn-play.tv-focused {
+    transform: scale(1.05);
+    background: #ffcccc; /* Feedback visivo leggero */
+    outline: 4px solid rgba(255,255,255,0.3);
+}
+
+.nfx-btn-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.4);
+    background: rgba(30,30,30,0.6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+.nfx-btn-circle:focus, .nfx-btn-circle.tv-focused {
+    transform: scale(1.1);
+    border-color: white;
+    background: rgba(255,255,255,0.2);
+}
+
+/* Meta Data (Sotto i bottoni come screenshot) */
+.nfx-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 18px;
+    color: #a3a3a3;
+    font-weight: bold;
+    margin-bottom: 30px;
+}
+.nfx-meta-match { color: #46d369; }
+.nfx-badge {
+    border: 1px solid #777;
+    padding: 0 5px;
+    font-size: 14px;
+    border-radius: 2px;
+    color: #ccc;
+}
+
+/* GRID LAYOUT (Descrizione SX | Cast DX) */
+.nfx-grid-layout {
+    display: flex;
+    gap: 60px;
+    margin-bottom: 60px;
+}
+
+.nfx-col-desc {
+    flex: 2; /* 66% larghezza */
+}
+.nfx-overview-text {
+    font-size: 20px;
+    line-height: 1.4;
+    color: white;
+    text-shadow: 1px 1px 2px black;
+}
+
+.nfx-col-tags {
+    flex: 1; /* 33% larghezza */
+    font-size: 15px;
+    line-height: 1.6;
+}
+.nfx-tag-label { color: #777; margin-right: 5px; }
+.nfx-tag-val { color: #fff; cursor: pointer; }
+.nfx-tag-val:hover { text-decoration: underline; }
+
+/* SEZIONE EPISODI */
+.nfx-episodes-header {
+    display: flex;
+    justify-content: space-between; /* Titolo a SX, Stagioni a DX */
+    align-items: center;
+    border-bottom: 1px solid #404040;
+    padding-bottom: 15px;
+    margin-bottom: 0;
+}
+
+.nfx-ep-title-main {
+    font-size: 28px;
+    font-weight: bold;
+    color: white;
+}
+
+/* Selettore Stagioni spostato a destra */
+.nfx-season-selector-right {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    max-width: 40%;
+    justify-content: flex-end;
+}
+.nfx-season-btn {
+    background: #242424;
+    border: 1px solid #4d4d4d;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+.nfx-season-btn.active {
+    background: #444;
+    border-color: white;
+}
+.nfx-season-btn:focus, .nfx-season-btn.tv-focused {
+    transform: scale(1.05);
+    background: white;
+    color: black;
+}
+
+/* Lista Episodi (Layout Screenshot) */
+.nfx-episode-item {
+    display: flex;
+    align-items: center;
+    padding: 25px 15px;
+    border-bottom: 1px solid #333;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+.nfx-episode-item:focus, .nfx-episode-item.tv-focused {
+    background: #333;
+    border-radius: 4px;
+    outline: none;
+}
+
+/* Numero grande a sinistra */
+.nfx-item-num {
+    font-size: 26px;
+    color: #d2d2d2;
+    font-weight: bold;
+    width: 50px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+/* Thumbnail */
+.nfx-item-thumb {
+    width: 150px;
+    height: 84px;
+    border-radius: 4px;
+    object-fit: cover;
+    margin: 0 25px;
+    flex-shrink: 0;
+    background: #222;
+}
+
+/* Info Testo */
+.nfx-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.nfx-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 8px;
+}
+.nfx-item-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+}
+.nfx-item-dur {
+    font-size: 16px;
+    color: white;
+}
+.nfx-item-desc {
+    font-size: 14px;
+    color: #a3a3a3;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* GRADIENTE DI SFONDO (Fondamentale) */
+.hero-vignette-strong {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 3;
+    background: linear-gradient(to bottom, 
+        rgba(0,0,0,0.3) 0%, 
+        rgba(0,0,0,0) 20%, 
+        rgba(20,20,20,0.6) 50%, 
+        #141414 85%);
+    pointer-events: none;
+}
+/* --- CSS AGGIORNATO PER FULL WIDTH & LAYOUT PULITO --- */
+
+/* 1. Sfondo e Video a Tutta Larghezza */
+.hero-video-container,
+.hero-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0; /* Forza sinistra */
+    width: 100% !important; /* Forza larghezza totale */
+    height: 100%;
+    z-index: 1;
+    overflow: hidden;
+    background: #000;
+}
+
+/* Vignette più scura per leggere il testo sopra il video a tutto schermo */
+.hero-vignette-strong {
+    background: linear-gradient(to top, 
+        #141414 10%, 
+        rgba(20,20,20,0.8) 30%, 
+        rgba(0,0,0,0.4) 60%, 
+        rgba(0,0,0,0.6) 100%); /* Un po' più scuro in alto per header */
+}
+
+/* 2. Hero Block: Padding aggiustato per il layout full screen */
+.nfx-hero-block {
+    padding-top: 30vh; /* Spazio in alto trasparente */
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 20; /* Sopra il video */
+    width: 50%; /* Il contenuto testuale occupa la metà sinistra */
+}
+
+/* Logo Hero */
+.nfx-logo {
+    width: 100%; 
+    max-width: 500px; /* Dimensione massima */
+    margin-bottom: 20px;
+    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.8));
+    display: block;
+}
+
+/* 3. Selettore Stagioni: Nuova posizione sopra "Episodi" */
+/* --- FIX SELETTORE STAGIONI --- */
+.nfx-season-selector-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    
+    /* MODIFICHE QUI: */
+    /* 1. Aumentiamo il padding per ospitare lo zoom del bottone */
+    padding: 15px 15px 25px 15px; 
+    
+    /* 2. Compensiamo visivamente con margini negativi */
+    margin-top: -15px;
+    margin-left: -15px;
+    width: calc(100% + 30px); /* Allarghiamo per compensare il margin-left */
+    
+    border-bottom: 1px solid #333;
+    overflow-x: auto;
+    overflow-y: visible; /* Assicura che la verticale non tagli */
+}
+
+/* Nascondiamo la scrollbar estetica ma manteniamo la funzione */
+.nfx-season-selector-bar::-webkit-scrollbar {
+    height: 4px; /* Scrollbar molto sottile se necessario, o display:none */
+    background: transparent;
+}
+.nfx-season-selector-bar::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 2px;
+}
+
+/* Header Episodi semplificato */
+.nfx-episodes-header {
+    margin-bottom: 10px;
+    /* Rimosso border-bottom da qui, spostato al selettore */
+    border: none; 
+}
+
+/* Aggiustamento Layout Griglia */
+.nfx-grid-layout {
+    width: 100%; /* Occupa tutto */
+    margin-bottom: 40px;
+    position: relative; 
+    z-index: 20;
+}
 </style>
 
 <script>
   var nextBackgroundLayer = null;
 var currentAnimationTimeout = null;
 var isAnimating = false;
+var trailerTimeout = null;
+var lastPageScrollPosition = 0; 
 // Aggiungi questo script per gestire lo sfondo dinamico con backdrop
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -1478,6 +2093,8 @@ TizenNavigation.prototype.focusElement = function(index) {
   <h2 class="row-title">Continua a guardare</h2>
   <div class="row" id="continue-watching-row"></div>
 </section>
+
+<div id="top10-container"></div>
 
 <div id="trending-container"></div>
 
@@ -2155,13 +2772,104 @@ function closeModalUI() {
     }
 }
 
+// --- FUNZIONE SPECIFICA PER TOP 10 CON NUMERI ---
+// --- FUNZIONE TOP 10 STILE NETFLIX (ES5 COMPATIBILE) ---
+function displayTop10(containerId, title) {
+    var container = document.getElementById(containerId);
+    
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'rows-container'; 
+        container.id = containerId;
+        var trending = document.getElementById('trending-container');
+        if (trending) {
+            trending.parentNode.insertBefore(container, trending);
+        } else {
+            document.querySelector('.main-content').appendChild(container);
+        }
+    }
 
+    if (!container.classList.contains('rows-container')) {
+        container.classList.add('rows-container');
+    }
+
+    container.innerHTML = '<h2 class="row-title">' + title + '</h2>' +
+                          '<div class="row" id="' + containerId + '-row" style="padding-top:20px; padding-bottom:40px;"></div>';
+
+    var row = document.getElementById(containerId + '-row');
+    row.innerHTML = '<div style="padding:20px;">Caricamento...</div>';
+
+    fetch('https://api.themoviedb.org/3/movie/popular?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT&region=IT&page=1')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            // CORREZIONE QUI:
+            // 1. Prendiamo TUTTI i risultati della pagina (di solito 20)
+            var items = data.results; 
+            
+            // 2. Filtriamo PRIMA di tagliare
+            if (typeof availableContent !== 'undefined' && availableContent.length > 0) {
+                 items = items.filter(function(item) {
+                    return availableContent.some(function(c) { return c.tmdb_id === item.id; });
+                });
+            }
+
+            // 3. ORA prendiamo i primi 10 disponibili
+            items = items.slice(0, 10);
+
+            if (items.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            var html = items.map(function(item, index) {
+                var rank = index + 1;
+                var poster = item.poster_path ? 'https://image.tmdb.org/t/p/w342' + item.poster_path : '';
+                var titleText = item.title || item.name; 
+                
+                var clickAction = 'watchMovie(' + item.id + ')'; 
+                if (item.first_air_date) { 
+                    clickAction = 'showTVSeasons(' + item.id + ', \'tv\')';
+                }
+
+                var svgNumber = 
+                    '<svg class="top10-rank-svg" width="100%" height="100%" viewBox="0 0 100 200">' +
+                        '<text x="75" y="180" text-anchor="middle" ' +
+                        'font-family="Helvetica, Arial, sans-serif" font-weight="800" ' +
+                        'fill="#000" stroke="#595959" stroke-width="3" ' +
+                        'font-size="190" letter-spacing="-10">' + 
+                        rank + 
+                        '</text>' +
+                    '</svg>';
+
+                return [
+                    '<div class="row-item top10-rank focusable" tabindex="0" onclick="' + clickAction + '">',
+                        '<div class="top10-svg-container">' + svgNumber + '</div>',
+                        
+                        '<div class="top10-img-wrapper">',
+                            '<img src="' + poster + '" loading="lazy" alt="' + titleText + '">',
+                            '<div class="row-item-info">',
+                                 '<h3 class="row-item-title">' + titleText + '</h3>',
+                            '</div>',
+                        '</div>',
+                    '</div>'
+                ].join('');
+            }).join('');
+
+            row.innerHTML = html;
+            
+            if (typeof navigation !== 'undefined') {
+                navigation.updateAfterContentLoad();
+            }
+        });
+}
     // Load trending content
 window.onload = async function() {
   
   try {
     // Prima carica i contenuti disponibili
     await loadAvailableContent();
+
+    displayTop10('top10-container', 'Top 10 in Italia oggi');
     
     // Poi carica i contenuti trending e altre categorie
     await displayTrending('trending-movies-tv', 'Tendenze');
@@ -2467,8 +3175,7 @@ TizenNavigation.prototype.setupScrollHandlers = function() {
 
 // Metodo scrollIntoViewForTizen
 TizenNavigation.prototype.scrollIntoViewForTizen = function(element) {
-    // Scroll ottimizzato per Tizen TV con animazione fluida
-    var row = element.closest('.row');
+    var row = element.closest('.row') || element.closest('.similar-row-scroll');
     if (!row) return;
 
     var rowRect = row.getBoundingClientRect();
@@ -2476,37 +3183,15 @@ TizenNavigation.prototype.scrollIntoViewForTizen = function(element) {
     var rowScrollLeft = row.scrollLeft;
     var rowWidth = row.clientWidth;
     
-    // Calcola la posizione desiderata
+    // Calcola posizione per centrare
     var elementLeft = elementRect.left - rowRect.left + rowScrollLeft;
-    var elementRight = elementRect.right - rowRect.left + rowScrollLeft;
     var targetPosition = elementLeft - (rowWidth / 2) + (elementRect.width / 2);
     
-    // Applica lo scroll con animazione
+    // Scroll fluido nativo/polyfill (senza callback bloccanti)
     row.scrollTo({
         left: targetPosition,
         behavior: 'smooth'
     });
-    
-    // Fallback per browser che non supportano scroll-behavior smooth
-    if (!('scrollBehavior' in document.documentElement.style)) {
-        var start = rowScrollLeft;
-        var change = targetPosition - start;
-        var startTime = performance.now();
-        var duration = 300; // ms
-        
-        var self = this;
-        var animateScroll = function(currentTime) {
-            var elapsed = currentTime - startTime;
-            var progress = Math.min(elapsed / duration, 1);
-            row.scrollLeft = start + change * progress;
-            
-            if (progress < 1) {
-                requestAnimationFrame(animateScroll);
-            }
-        };
-        
-        requestAnimationFrame(animateScroll);
-    }
 };
 
 // Metodo navigateLeft
@@ -2514,26 +3199,46 @@ TizenNavigation.prototype.navigateLeft = function() {
     var current = this.focusableElements[this.currentIndex];
     if (!current) return;
 
-    // console.log('⬅️ Navigazione sinistra');
-
-    // Se siamo in una row, naviga nella stessa row
-    if (current.closest('.row')) {
-        var rowItems = Array.prototype.slice.call(current.closest('.row').querySelectorAll('.focusable'));
+    // 1. Navigazione INTERNA alla riga (Veloce/Standard)
+    if (current.closest('.row') || current.closest('.similar-row-scroll')) {
+        var parentRow = current.closest('.row') || current.closest('.similar-row-scroll');
+        var rowItems = Array.prototype.slice.call(parentRow.querySelectorAll('.focusable'));
         var currentRowIndex = rowItems.indexOf(current);
         
+        // Se c'è un elemento precedente NELLA STESSA RIGA
         if (currentRowIndex > 0) {
-            var newElement = rowItems[currentRowIndex - 1];
-            var globalIndex = this.focusableElements.indexOf(newElement);
+            var prevRowItem = rowItems[currentRowIndex - 1];
+            var globalIndex = this.focusableElements.indexOf(prevRowItem);
             if (globalIndex !== -1) {
+                // USA IL METODO STANDARD (Immediato)
                 this.focusElement(globalIndex);
                 return;
             }
         }
     }
     
-    // Navigazione generale - vai al precedente
+    // 2. Navigazione ESTERNA (Cambio Riga/Sezione) -> Usa effetto FLUIDO
     if (this.currentIndex > 0) {
-        this.focusElement(this.currentIndex - 1);
+        var prevGlobalIndex = this.currentIndex - 1;
+        var prevElement = this.focusableElements[prevGlobalIndex];
+        
+        var currentContainer = current.closest('.rows-container');
+        var prevContainer = prevElement.closest('.rows-container');
+        
+        if (currentContainer !== prevContainer && prevContainer) {
+            // CAMBIO RIGA RILEVATO: Scrolla la pagina, poi focus
+            var self = this;
+            var navbar = document.querySelector('.navbar');
+            var navbarHeight = navbar ? navbar.offsetHeight : 0;
+            var targetPosition = prevContainer.getBoundingClientRect().top + window.pageYOffset - navbarHeight - 20;
+            
+            this.smoothScrollTo(targetPosition, function() {
+                self.focusElement(prevGlobalIndex);
+            });
+        } else {
+            // Navigazione standard
+            this.focusElement(prevGlobalIndex);
+        }
     }
 };
 
@@ -2542,26 +3247,47 @@ TizenNavigation.prototype.navigateRight = function() {
     var current = this.focusableElements[this.currentIndex];
     if (!current) return;
 
-    // console.log('➡️ Navigazione destra');
-
-    // Se siamo in una row, naviga nella stessa row
-    if (current.closest('.row')) {
-        var rowItems = Array.prototype.slice.call(current.closest('.row').querySelectorAll('.focusable'));
+    // 1. Navigazione INTERNA alla riga (Veloce/Standard)
+    if (current.closest('.row') || current.closest('.similar-row-scroll')) {
+        var parentRow = current.closest('.row') || current.closest('.similar-row-scroll');
+        var rowItems = Array.prototype.slice.call(parentRow.querySelectorAll('.focusable'));
         var currentRowIndex = rowItems.indexOf(current);
         
+        // Se c'è un elemento successivo NELLA STESSA RIGA
         if (currentRowIndex < rowItems.length - 1) {
-            var newElement = rowItems[currentRowIndex + 1];
-            var globalIndex = this.focusableElements.indexOf(newElement);
+            var nextRowItem = rowItems[currentRowIndex + 1];
+            var globalIndex = this.focusableElements.indexOf(nextRowItem);
             if (globalIndex !== -1) {
+                // USA IL METODO STANDARD (Immediato)
                 this.focusElement(globalIndex);
                 return;
             }
         }
     }
     
-    // Navigazione generale - vai al successivo
+    // 2. Navigazione ESTERNA (Cambio Riga/Sezione) -> Usa effetto FLUIDO
     if (this.currentIndex < this.focusableElements.length - 1) {
-        this.focusElement(this.currentIndex + 1);
+        var nextGlobalIndex = this.currentIndex + 1;
+        var nextElement = this.focusableElements[nextGlobalIndex];
+        
+        // Controlla se stiamo cambiando container (es. da riga 1 a riga 2)
+        var currentContainer = current.closest('.rows-container');
+        var nextContainer = nextElement.closest('.rows-container');
+        
+        if (currentContainer !== nextContainer && nextContainer) {
+            // CAMBIO RIGA RILEVATO: Scrolla la pagina, poi focus
+            var self = this;
+            var navbar = document.querySelector('.navbar');
+            var navbarHeight = navbar ? navbar.offsetHeight : 0;
+            var targetPosition = nextContainer.getBoundingClientRect().top + window.pageYOffset - navbarHeight - 20;
+            
+            this.smoothScrollTo(targetPosition, function() {
+                self.focusElement(nextGlobalIndex);
+            });
+        } else {
+            // Navigazione standard (es. pulsanti header)
+            this.focusElement(nextGlobalIndex);
+        }
     }
 };
 
@@ -2578,151 +3304,194 @@ TizenNavigation.prototype.ensureHeaderVisible = function() {
     }
 };
 
+TizenNavigation.prototype.isInDetailsPage = function() {
+    var detailsPage = document.getElementById('series-details-page');
+    // Controlla se la pagina dettagli è visibile
+    return detailsPage && detailsPage.style.display === 'block';
+};
+
 // Metodo navigateUp
 // Metodo navigateUp aggiornato per gestire Ricerche Recenti e Header
+// SOSTITUISCI IL METODO navigateUp ESISTENTE CON QUESTO:
 TizenNavigation.prototype.navigateUp = function() {
   var current = this.focusableElements[this.currentIndex];
   if (!current) return;
 
-  // --- 1. Da Ricerche Recenti a Input Ricerca ---
+  // --- FIX: NAVIGAZIONE ISTANTANEA PER PAGINA DETTAGLI ---
+    if (this.isInDetailsPage()) {
+        // Logica geometrica semplice e veloce per i dettagli
+        var currentRect = current.getBoundingClientRect();
+        var bestMatch = -1;
+        var bestDistance = Infinity;
+
+        for (var i = 0; i < this.focusableElements.length; i++) {
+            if (i === this.currentIndex) continue;
+            var el = this.focusableElements[i];
+            var rect = el.getBoundingClientRect();
+
+            // Deve essere SOPRA
+            if (rect.bottom <= currentRect.top + 10) { 
+                // Calcola distanza Euclidea semplice
+                var dx = (currentRect.left + currentRect.width/2) - (rect.left + rect.width/2);
+                var dy = currentRect.top - rect.bottom;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < bestDistance) {
+                    bestDistance = dist;
+                    bestMatch = i;
+                }
+            }
+        }
+
+        if (bestMatch !== -1) {
+            // Scroll standard non bloccante
+            this.focusElement(bestMatch);
+            // Assicurati che sia visibile
+            var targetEl = this.focusableElements[bestMatch];
+            var container = document.querySelector('.nfx-container'); // Container scrollabile dettagli
+            if (container) {
+                // Semplice scrollIntoView se supportato o calcolo manuale
+                 try { targetEl.scrollIntoView({block: "center", behavior: "smooth"}); } catch(e){}
+            }
+        }
+        return; // STOP QUI per i dettagli
+    }
+
+  // 1. Gestione Ricerche Recenti (Logica esistente)
   if (current.closest('#recent-searches-container')) {
       var searchInput = document.getElementById('search-input');
       if (searchInput) {
-          // Scrolla in cima per vedere bene l'input
           window.scrollTo({ top: 0, behavior: 'smooth' });
-          
           var idx = this.focusableElements.indexOf(searchInput);
-          if (idx !== -1) {
-              this.focusElement(idx);
-              return;
-          }
+          if (idx !== -1) this.focusElement(idx);
+          return;
       }
   }
 
-  // --- 2. Da Prima Riga Contenuti a Ricerche Recenti (o Input) ---
-  // Verifica se siamo in un contenitore di righe o nei risultati
-  var parentRow = current.closest('.rows-container, .search-results');
-  if (parentRow) {
-      // Identifica qual è la PRIMA riga visibile nella pagina
-      var allContainers = document.querySelectorAll('.rows-container, .search-results');
-      var firstVisible = null;
-      
-      for (var k = 0; k < allContainers.length; k++) {
-          // Controlla che sia visibile (display non none e altezza > 0)
-          if (allContainers[k].style.display !== 'none' && allContainers[k].offsetHeight > 0) {
-              firstVisible = allContainers[k];
-              break;
-          }
-      }
+  var targetElement = null;
+  var targetIndex = -1;
 
-      // Se siamo effettivamente nella prima riga visibile
-      if (parentRow === firstVisible) {
+  // --- LOGICA RIGHE: Cerca la riga sopra ---
+  var currentRowContainer = current.closest('.rows-container');
+  
+  if (currentRowContainer) {
+      var allContainers = Array.prototype.slice.call(document.querySelectorAll('.rows-container'));
+      allContainers = allContainers.filter(function(el) {
+          return el.style.display !== 'none' && el.offsetHeight > 0;
+      });
+
+      var currentContainerIndex = allContainers.indexOf(currentRowContainer);
+
+      // SE C'È UN CONTAINER SOPRA
+      if (currentContainerIndex > 0) {
+          var prevContainer = allContainers[currentContainerIndex - 1];
+          var targetItems = prevContainer.querySelectorAll('.focusable');
           
-          // A. Prova ad andare alle Ricerche Recenti (se visibili)
-          var recentWrapper = document.getElementById('recent-searches-wrapper');
-          if (recentWrapper && recentWrapper.style.display !== 'none') {
-              var chips = recentWrapper.querySelectorAll('.recent-chip');
-              if (chips.length > 0) {
-                  // Cerca il chip più vicino orizzontalmente per naturalezza
-                  var currentRect = current.getBoundingClientRect();
-                  var bestChipIdx = 0;
-                  var minDist = Infinity;
-                  
-                  for(var c=0; c<chips.length; c++) {
-                      var chipRect = chips[c].getBoundingClientRect();
-                      // Distanza orizzontale tra i centri
-                      var dist = Math.abs((chipRect.left + chipRect.width/2) - (currentRect.left + currentRect.width/2));
-                      if (dist < minDist) {
-                          minDist = dist;
-                          bestChipIdx = c;
-                      }
-                  }
-                  
-                  var targetChip = chips[bestChipIdx];
-                  var idx = this.focusableElements.indexOf(targetChip);
-                  if (idx !== -1) {
-                      this.smoothScrollTo(0); // Assicura che l'header sia visibile
-                      this.focusElement(idx);
-                      return;
+          if (targetItems.length > 0) {
+              // Cerca elemento più vicino orizzontalmente
+              var currentRect = current.getBoundingClientRect();
+              var minDiffX = Infinity;
+
+              for (var i = 0; i < targetItems.length; i++) {
+                  var item = targetItems[i];
+                  var rect = item.getBoundingClientRect();
+                  var centerX1 = currentRect.left + (currentRect.width / 2);
+                  var centerX2 = rect.left + (rect.width / 2);
+                  var diffX = Math.abs(centerX1 - centerX2);
+
+                  if (diffX < minDiffX) {
+                      minDiffX = diffX;
+                      targetElement = item;
+                      targetIndex = this.focusableElements.indexOf(item);
                   }
               }
           }
-          
-          // B. Se non ci sono ricerche recenti, vai all'Input Ricerca
-          var searchInput = document.getElementById('search-input');
-          if (searchInput) {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              var inputIdx = this.focusableElements.indexOf(searchInput);
-              if (inputIdx !== -1) {
-                  this.focusElement(inputIdx);
-                  return;
-              }
+      } 
+      // SE SIAMO NEL PRIMO CONTAINER (indice 0)
+      else if (currentContainerIndex === 0) {
+          // Fallback per andare all'header/search
+          // Cerchiamo geometricamente sopra
+      }
+  }
+
+  // --- LOGICA GEOMETRICA (Fallback se non abbiamo trovato tramite righe) ---
+  if (!targetElement) {
+      var currentRect = current.getBoundingClientRect();
+      var bestDistance = Infinity;
+
+      for (var i = 0; i < this.focusableElements.length; i++) {
+        var element = this.focusableElements[i];
+        if (i === this.currentIndex) continue;
+        
+        var rect = element.getBoundingClientRect();
+        
+        if (rect.bottom <= currentRect.top + 20) {
+          var distY = currentRect.top - rect.bottom;
+          var distX = Math.abs((rect.left + rect.width / 2) - (currentRect.left + currentRect.width / 2));
+          var totalDist = distY + (distX * 0.5);
+
+          if (totalDist < bestDistance) {
+            bestDistance = totalDist;
+            targetElement = element;
+            targetIndex = i;
           }
+        }
       }
   }
-  // ---------------------------------------------------------
 
-  // --- 3. Logica Geometrica Standard (Fallback) ---
-  // Se siamo già in cima alla pagina e non c'è niente sopra
-  if (window.pageYOffset <= 0) {
-    var elementsAbove = this.focusableElements.filter(function(el, i) {
-      return i < this.currentIndex && 
-             el.getBoundingClientRect().bottom <= current.getBoundingClientRect().top;
-    }.bind(this));
-    
-    if (elementsAbove.length === 0) {
-      return; 
-    }
-  }
+  // --- ESECUZIONE MOVIMENTO (FIX FLUIDITÀ) ---
+  if (targetElement && targetIndex !== -1) {
+      var self = this;
+      var targetRow = targetElement.closest('.rows-container');
 
-  var currentRect = current.getBoundingClientRect();
-  var bestMatch = null;
-  var bestDistance = Infinity;
-  var self = this;
-
-  // Cerca elementi sopra quello corrente
-  for (var i = 0; i < this.focusableElements.length; i++) {
-    var element = this.focusableElements[i];
-    if (i === this.currentIndex) continue;
-    
-    var rect = element.getBoundingClientRect();
-    
-    // Check geometrico standard
-    if (rect.bottom <= currentRect.top + 20) { // Tolleranza 20px
-      var distance = Math.abs(rect.left - currentRect.left) + (currentRect.top - rect.bottom);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestMatch = i;
+      if (targetRow) {
+          // 1. Calcola DOVE dobbiamo scrollare
+          var navbar = document.querySelector('.navbar');
+          var navbarHeight = navbar ? navbar.offsetHeight : 0;
+          
+          // La posizione target è la top della riga + offset pagina attuale - altezza navbar - margine
+          var targetPosition = targetRow.getBoundingClientRect().top + window.pageYOffset - navbarHeight - 20;
+          
+          // 2. Esegui scroll PRIMA
+          this.smoothScrollTo(targetPosition, function() {
+              // 3. Dai il focus SOLO QUANDO LO SCROLL È FINITO (Callback)
+              self.focusElement(targetIndex);
+          });
+      } else {
+          // Se stiamo andando all'header (non è una riga), scrolla a 0 e poi focus
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          setTimeout(function(){
+              self.focusElement(targetIndex);
+          }, 300);
       }
-    }
   }
+};
 
-  if (bestMatch !== null) {
-    var targetElement = this.focusableElements[bestMatch];
-    var targetRow = targetElement.closest('.rows-container');
-    
-    if (targetRow) {
-      // Gestione scroll per elementi sopra
-      var navbar = document.querySelector('.navbar');
-      var navbarHeight = navbar ? navbar.offsetHeight : 0;
-      var targetPosition = targetRow.getBoundingClientRect().top + window.pageYOffset;
-      var offsetPosition = targetPosition - navbarHeight - 20; 
+TizenNavigation.prototype.navigateUpGeometricFallback = function(current) {
+      var currentRect = current.getBoundingClientRect();
+      var bestDistance = Infinity;
+      var targetIndex = -1;
+
+      for (var i = 0; i < this.focusableElements.length; i++) {
+        if (i === this.currentIndex) continue;
+        var element = this.focusableElements[i];
+        var rect = element.getBoundingClientRect();
+        
+        if (rect.bottom <= currentRect.top + 20) {
+          var distY = currentRect.top - rect.bottom;
+          var distX = Math.abs((rect.left + rect.width / 2) - (currentRect.left + currentRect.width / 2));
+          var totalDist = distY + (distX * 0.5);
+          if (totalDist < bestDistance) {
+            bestDistance = totalDist;
+            targetIndex = i;
+          }
+        }
+      }
       
-      this.smoothScrollTo(offsetPosition, function() {
-        self.focusElement(bestMatch);
-      });
-    } else {
-      this.focusElement(bestMatch);
-    }
-  } else {
-    // Se non trovi nulla geometricamente e siamo in alto, scrolla a 0
-    if (this.currentIndex > 0 && window.pageYOffset > 0) {
-      this.smoothScrollTo(0, function() {
-        // Opzionale: focus sul primo elemento (spesso il logo o l'input)
-        // self.focusElement(0); 
-      });
-    }
-  }
+      if (targetIndex !== -1) {
+          this.focusElement(targetIndex);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
 };
 
 
@@ -2820,6 +3589,40 @@ TizenNavigation.prototype.smoothScrollTo = function(targetPosition) {
 TizenNavigation.prototype.navigateDown = function() {
   var current = this.focusableElements[this.currentIndex];
   if (!current) return;
+
+  // --- FIX: NAVIGAZIONE ISTANTANEA PER PAGINA DETTAGLI ---
+    if (this.isInDetailsPage()) {
+        var currentRect = current.getBoundingClientRect();
+        var bestMatch = -1;
+        var bestDistance = Infinity;
+
+        for (var i = 0; i < this.focusableElements.length; i++) {
+            if (i === this.currentIndex) continue;
+            var el = this.focusableElements[i];
+            var rect = el.getBoundingClientRect();
+
+            // Deve essere SOTTO
+            if (rect.top >= currentRect.bottom - 10) { 
+                var dx = (currentRect.left + currentRect.width/2) - (rect.left + rect.width/2);
+                var dy = rect.top - currentRect.bottom;
+                // Privilegia l'allineamento verticale (dx * 2)
+                var dist = Math.sqrt((dx*2)*(dx*2) + dy*dy);
+
+                if (dist < bestDistance) {
+                    bestDistance = dist;
+                    bestMatch = i;
+                }
+            }
+        }
+
+        if (bestMatch !== -1) {
+            this.focusElement(bestMatch);
+            // Scroll semplice per mantenere visibile
+            var targetEl = this.focusableElements[bestMatch];
+            try { targetEl.scrollIntoView({block: "center", behavior: "smooth"}); } catch(e){}
+        }
+        return;
+    }
 
   // --- FIX NAVIGAZIONE: Da Ricerche Recenti a Contenuti ---
   // Se siamo in un chip delle ricerche recenti, forza la navigazione alla prima sezione disponibile
@@ -3023,81 +3826,62 @@ function enableScroll() {
 TizenNavigation.prototype.handleBack = function() {
     console.log('🔙 Tasto Back/ESC premuto');
 
-    // Se siamo nella ricerca con testo inserito, pulisci la ricerca
+    // Gestione Search (Invariata)
     var searchInput = document.getElementById("search-input");
     var searchResults = document.getElementById("search-results");
     
     if (searchInput && searchInput.value.trim() !== '') {
-        // Se c'è testo nella ricerca, puliscilo e torna alla home
         searchInput.value = '';
         searchResults.style.display = 'none';
-        
-        // Mostra tutte le sezioni nascoste
         var allSections = document.querySelectorAll('.rows-container');
         for (var i = 0; i < allSections.length; i++) {
-            if (allSections[i].id !== 'search-results') {
-                allSections[i].style.display = 'block';
-            }
+            if (allSections[i].id !== 'search-results') allSections[i].style.display = 'block';
         }
-        
-        // Aggiorna la navigazione
         this.refreshFocusableElements();
         this.focusElement(0);
         return;
     }
     
-    // Se ci sono risultati di ricerca visibili, torna alla home
     if (searchResults.style.display === 'block') {
-        searchResults.style.display = 'none';
-        
-        // Mostra tutte le sezioni nascoste
-        var allSections = document.querySelectorAll('.rows-container');
-        for (var j = 0; j < allSections.length; j++) {
-            if (allSections[j].id !== 'search-results') {
-                allSections[j].style.display = 'block';
-            }
-        }
-        
-        // Aggiorna la navigazione
-        this.refreshFocusableElements();
-        this.focusElement(0);
+        goToHome();
         return;
     }
 
-// --- NUOVA GESTIONE STACK ---
+    // --- GESTIONE STACK (FIX TIMING) ---
     var top = this.peekState();
     if (top) {
-        // Se lo stato ha una funzione di chiusura personalizzata (come la nostra pagina serie)
         if (typeof top.onClose === 'function') {
-            top.onClose(); // Chiama closeSeriesPage()
+            top.onClose(); // Avvia animazione chiusura (dura 300ms)
         } else if (top.type === 'modal') {
-             closeModalUI(); // Fallback per vecchi modali se ne usi ancora
+             closeModalUI(); 
         }
 
-        // Rimuovi dallo stack
         this.popState();
         
-        // Ripristina focus
         var self = this;
+        
+        // Timeout aumentato a 350ms (era 100ms)
+        // Deve essere MAGGIORE della durata dell'animazione CSS (300ms)
+        // per garantire che la pagina sotto sia visibile e scrollata correttamente
         setTimeout(function() {
             self.refreshFocusableElements();
+            
+            // Ripristina il focus sull'elemento precedente
             if (top.previousElement && document.body.contains(top.previousElement)) {
-                // Trova l'indice del vecchio elemento
                 var idx = self.focusableElements.indexOf(top.previousElement);
-                if (idx !== -1) self.focusElement(idx);
-                else self.focusFirstElement();
+                if (idx !== -1) {
+                    self.focusElement(idx);
+                } else {
+                    self.focusFirstElement();
+                }
             } else {
                 self.focusFirstElement();
             }
-        }, 100);
+        }, 350); 
         
         return;
     }
 
-
-
-    
-    // Se non c'è nient'altro da fare, torna alla home
     goToHome();
 };
 
@@ -3176,7 +3960,7 @@ async function displayTrending(containerId, title) {
     // Filtra solo i contenuti disponibili
     const filteredTrending = trendingData.results.filter(item => 
       availableContent.some(content => content.tmdb_id === item.id)
-    ).slice(0, 20);
+    ).slice(0, 30);
     
     displayRow(filteredTrending, containerId, title);
   } catch (error) {
@@ -3364,37 +4148,33 @@ if (recentWrapper) recentWrapper.style.display = 'none';
 /* --- LOGICA PAGINA SERIE TV (NETFLIX STYLE) --- */
 
 function showTVSeasons(tvId, type) {
-    // 1. Prepara l'interfaccia
+    lastPageScrollPosition = window.pageYOffset;
+    
     var detailsPage = document.getElementById('series-details-page');
     var navbar = document.getElementById('navbar');
     var mainContent = document.querySelector('.main-content');
     
-    // Nascondi home, mostra dettagli
     if (navbar) navbar.style.display = 'none';
     if (mainContent) mainContent.style.display = 'none';
     detailsPage.style.display = 'block';
-    
-    // Loading state
     detailsPage.innerHTML = '<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; color:white;"><i class="fas fa-spinner fa-spin fa-3x"></i></div>';
 
-    // Gestione stato navigazione (Push State)
     if (navigation) {
         navigation.pushState({
-            type: 'page', // Tipo pagina, non modale
-            id: 'series-details',
+            type: 'page', id: 'series-details',
             previousElement: navigation.focusableElements[navigation.currentIndex] || null,
-            onClose: function() {
-                // Funzione da chiamare quando si torna indietro
-                closeSeriesPage();
-            }
+            onClose: function() { closeSeriesPage(); }
         });
     }
 
-    // 2. Fetch Dati (Serie + Immagini + Stagioni)
     var apiKey = '1e8c9083f94c62dd66fb2105cd7b613b';
+    
     Promise.all([
-        fetch('https://api.themoviedb.org/3/tv/' + tvId + '?api_key=' + apiKey + '&language=it-IT&append_to_response=images,content_ratings'),
-        fetch('https://api.themoviedb.org/3/tv/' + tvId + '/season/1?api_key=' + apiKey + '&language=it-IT') // Carica subito la stagione 1
+        // RIMOSSO 'videos' dalla lista append_to_response
+        fetch('https://api.themoviedb.org/3/tv/' + tvId + '?api_key=' + apiKey + '&language=it-IT&append_to_response=images,content_ratings,credits,keywords&include_image_language=it,en,null'),
+        
+        fetch('https://api.themoviedb.org/3/tv/' + tvId + '/season/1?api_key=' + apiKey + '&language=it-IT')
+        // RIMOSSO fetch video inglese
     ])
     .then(function(responses) {
         return Promise.all([responses[0].json(), responses[1].json()]);
@@ -3403,10 +4183,11 @@ function showTVSeasons(tvId, type) {
         var series = data[0];
         var season1 = data[1];
         
+        // Passiamo solo i dati serie, niente video
         renderSeriesPage(tvId, series, season1);
     })
     .catch(function(err) {
-        console.error("Errore caricamento serie:", err);
+        console.error("Errore serie:", err);
         closeSeriesPage();
     });
 }
@@ -3414,164 +4195,195 @@ function showTVSeasons(tvId, type) {
 function renderSeriesPage(tvId, series, currentSeasonData) {
     var detailsPage = document.getElementById('series-details-page');
     
-    // Dati Hero
+    // Dati Grafici
     var backdrop = series.backdrop_path ? 'https://image.tmdb.org/t/p/original' + series.backdrop_path : '';
-    // Cerca logo (se esiste)
+    
+    // Logica Logo
     var logoUrl = '';
     if (series.images && series.images.logos && series.images.logos.length > 0) {
-        // Cerca logo in italiano o inglese o prendi il primo
-        var logo = series.images.logos.find(function(l) { return l.iso_639_1 === 'it'; }) || series.images.logos[0];
-        logoUrl = 'https://image.tmdb.org/t/p/w500' + logo.file_path;
+        var logo = series.images.logos.find(function(l) { return l.iso_639_1 === 'it'; });
+        if (!logo) logo = series.images.logos.find(function(l) { return l.iso_639_1 === 'en'; });
+        if (!logo) logo = series.images.logos[0];
+        if (logo) logoUrl = 'https://image.tmdb.org/t/p/w500' + logo.file_path;
     }
 
+    // Dati Testuali
     var year = series.first_air_date ? series.first_air_date.substring(0, 4) : '';
-    var rating = series.vote_average ? Math.round(series.vote_average * 10) + '% Match' : '';
-    var seasonsCount = series.number_of_seasons + (series.number_of_seasons === 1 ? ' Stagione' : ' Stagioni');
+    var seasonsText = series.number_of_seasons + (series.number_of_seasons === 1 ? ' stagione' : ' stagioni');
+    var vote = series.vote_average ? Math.round(series.vote_average * 10) : 'New';
+    
+    var castStr = 'N/D';
+    if (series.credits && series.credits.cast) {
+        castStr = series.credits.cast.slice(0, 4).map(function(c) { return c.name; }).join(', ');
+    }
+    var genreStr = 'N/D';
+    if (series.genres) {
+        genreStr = series.genres.map(function(g) { return g.name; }).join(', ');
+    }
 
     var html = [];
 
-    // 1. Sfondo
-    html.push('<div class="hero-backdrop" style="background-image: url(\'' + backdrop + '\');"></div>');
-    html.push('<div class="hero-vignette"></div>');
+    // --- 1. SOLO BACKDROP STATICO (Niente Video) ---
+    // Rimossa la div hero-video-container
+    html.push('<div id="hero-backdrop-img" class="hero-backdrop" style="background-image: url(\'' + backdrop + '\'); opacity: 1;"></div>');
+    html.push('<div class="hero-vignette-strong"></div>');
 
-    // 2. Contenuto
-    html.push('<div class="details-content">');
-    
-    // COLONNA SINISTRA
-    html.push('<div class="details-left-col">');
-    if (logoUrl) {
-        html.push('<img src="' + logoUrl + '" class="details-logo" alt="' + series.name + '">');
-    } else {
-        html.push('<h1 class="details-title-text">' + series.name + '</h1>');
-    }
-    
-    html.push('<div class="details-meta">');
-    html.push('<span>' + year + '</span>');
-    html.push('<span>' + seasonsCount + '</span>');
-    html.push('<span style="border:1px solid #aaa; padding:0 4px; font-size:14px;">HD</span>');
-    html.push('</div>');
+    // --- 2. CONTENUTO ---
+    html.push('<div class="nfx-container" style="position:relative; z-index: 10;">');
 
-    html.push('<p class="details-overview">' + (series.overview || 'Nessuna trama disponibile.') + '</p>');
+        // A. HERO BLOCK
+        html.push('<div class="nfx-hero-block">');
+            
+            if (logoUrl) {
+                html.push('<img src="' + logoUrl + '" class="nfx-logo" alt="' + series.name + '">');
+            } else {
+                html.push('<h1 class="details-title-text" style="font-size:60px; margin-bottom:20px;">' + series.name + '</h1>');
+            }
 
-    html.push('<div class="action-buttons">');
-    // Tasto Riproduci (avvia S1E1 o l'ultimo visto - logica base qui S1E1)
-    html.push('<button class="btn-hero btn-play focusable" id="btn-play-series" onclick="initAndPlayTVEpisode(' + tvId + ', 1, 1)"><i class="fas fa-play"></i> Riproduci</button>');
-    // Tasto Info o Aggiungi lista (visuale)
-    html.push('</div>'); // end actions
-    html.push('</div>'); // end left col
+            // BOTTONI
+            html.push('<div class="nfx-buttons-row">');
+                html.push('<button class="nfx-btn-play focusable" id="btn-play-series" onclick="initAndPlayTVEpisode(' + tvId + ', 1, 1)"><i class="fas fa-play"></i> Riproduci</button>');
+            html.push('</div>');
 
-    // COLONNA DESTRA (EPISODI)
-    html.push('<div class="details-right-col">');
-    
-    // Selettore Stagioni
-    html.push('<div class="season-selector">');
-    for (var i = 1; i <= series.number_of_seasons; i++) {
-        var activeClass = (i === 1) ? 'active' : '';
-        html.push('<button class="season-btn focusable ' + activeClass + '" onclick="loadSeasonEpisodes(' + tvId + ', ' + i + ', this)">Stagione ' + i + '</button>');
-    }
-    html.push('</div>');
+            // META DATA
+            html.push('<div class="nfx-meta-row">');
+                html.push('<span class="nfx-meta-match">' + vote + '% Match</span>');
+                html.push('<span>' + year + '</span>');
+                html.push('<span>' + seasonsText + '</span>');
+                html.push('<span class="nfx-badge">HD</span>');
+            html.push('</div>');
+            
+        html.push('</div>');
 
-    // Lista Episodi Container
-    html.push('<div id="episodes-list-container" class="episodes-list">');
-    html.push(generateEpisodesHTML(tvId, 1, currentSeasonData.episodes)); // Renderizza subito S1
-    html.push('</div>');
+        // B. GRID
+        html.push('<div class="nfx-grid-layout">');
+            html.push('<div class="nfx-col-desc">');
+                html.push('<p class="nfx-overview-text">' + (series.overview || 'Trama non disponibile.') + '</p>');
+            html.push('</div>');
+            html.push('<div class="nfx-col-tags">');
+                html.push('<div style="margin-bottom:10px;"><span class="nfx-tag-label">Cast:</span> <span class="nfx-tag-val">' + castStr + '</span></div>');
+                html.push('<div><span class="nfx-tag-label">Generi:</span> <span class="nfx-tag-val">' + genreStr + '</span></div>');
+            html.push('</div>');
+        html.push('</div>');
 
-    html.push('</div>'); // end right col
-    html.push('</div>'); // end content
+        // C. EPISODI
+        html.push('<div class="nfx-episodes-section">');
+            
+            html.push('<div class="nfx-season-selector-bar">');
+            for (var i = 1; i <= series.number_of_seasons; i++) {
+                var activeClass = (i === 1) ? 'active' : '';
+                html.push('<button class="nfx-season-btn focusable ' + activeClass + '" onclick="loadSeasonEpisodes(' + tvId + ', ' + i + ', this, false)">Stagione ' + i + '</button>');
+            }
+            html.push('</div>');
+
+            html.push('<div class="nfx-episodes-header">');
+                html.push('<div class="nfx-ep-title-main">Episodi</div>');
+            html.push('</div>');
+
+            html.push('<div id="episodes-list-container">');
+                html.push(generateEpisodesScreenshotStyle(tvId, 1, currentSeasonData.episodes));
+            html.push('</div>');
+
+        html.push('</div>');
+
+    html.push('</div>'); // end container
 
     detailsPage.innerHTML = html.join('');
 
-    // FOCUS INIZIALE
+    // RIMOSSO: startTrailerSequence
+
     if (navigation) {
-        // Aggiorna navigazione per la nuova vista
         navigation.refreshFocusableElements();
         var playBtn = document.getElementById('btn-play-series');
         if (playBtn) {
-            // Piccolo delay per il rendering
             setTimeout(function() { 
-                // Cerca l'indice del playBtn
                 var idx = navigation.focusableElements.indexOf(playBtn);
                 if (idx !== -1) navigation.focusElement(idx);
             }, 100);
         }
     }
-}
+} 
 
 // Funzione helper per caricare dinamicamente altre stagioni
-function loadSeasonEpisodes(tvId, seasonNum, btnElement) {
-    // Gestione visuale tabs
-    var btns = document.querySelectorAll('.season-btn');
+// Aggiungi parametro 'isHorizontal' alla funzione esistente
+function loadSeasonEpisodes(tvId, seasonNum, btnElement, isHorizontal) {
+    var btns = document.querySelectorAll('.nfx-season-btn'); // Nota la classe nuova
     for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
     btnElement.classList.add('active');
 
     var container = document.getElementById('episodes-list-container');
-    container.innerHTML = '<div style="padding:20px; color:#aaa;"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
+    container.innerHTML = '<div style="padding:20px; color:#aaa;">Caricamento...</div>';
 
     fetch('https://api.themoviedb.org/3/tv/' + tvId + '/season/' + seasonNum + '?api_key=1e8c9083f94c62dd66fb2105cd7b613b&language=it-IT')
         .then(function(res) { return res.json(); })
         .then(function(data) {
-            container.innerHTML = generateEpisodesHTML(tvId, seasonNum, data.episodes);
-            if (navigation) navigation.refreshFocusableElements(); // Ricalcola focusable per i nuovi episodi
-        })
-        .catch(function() {
-            container.innerHTML = 'Errore caricamento episodi.';
+            if (isHorizontal) {
+                // Pagina Film (Simili)
+                container.innerHTML = generateEpisodesHorizontalHTML(tvId, seasonNum, data.episodes);
+            } else {
+                // Pagina Serie (Screenshot Style)
+                container.innerHTML = generateEpisodesScreenshotStyle(tvId, seasonNum, data.episodes);
+            }
+            if (navigation) navigation.refreshFocusableElements();
         });
 }
 
+
 // Genera HTML per la lista episodi
-function generateEpisodesHTML(tvId, seasonNum, episodes) {
-    if (!episodes || episodes.length === 0) return 'Nessun episodio trovato.';
+// Genera HTML per episodi in formato Card Orizzontale
+function generateEpisodesScreenshotStyle(tvId, seasonNum, episodes) {
+    if (!episodes || episodes.length === 0) return '<div style="padding:20px; color:#666;">Nessun episodio.</div>';
 
     return episodes.map(function(ep) {
         var thumb = ep.still_path ? 'https://image.tmdb.org/t/p/w300' + ep.still_path : '';
-        // Fallback immagine
         var imgHtml = thumb 
-            ? '<img src="' + thumb + '" class="ep-thumb" loading="lazy">' 
-            : '<div class="ep-thumb" style="background:#333; display:flex; align-items:center; justify-content:center;"><i class="fas fa-play"></i></div>';
+            ? '<img src="' + thumb + '" class="nfx-item-thumb" loading="lazy">'
+            : '<div class="nfx-item-thumb" style="display:flex;align-items:center;justify-content:center;color:#555;"><i class="fas fa-film"></i></div>';
 
         return [
-            '<div class="episode-row focusable" tabindex="0" ',
-                'onclick="initAndPlayTVEpisode(' + tvId + ', ' + seasonNum + ', ' + ep.episode_number + ')">',
-                '<div class="ep-number">' + ep.episode_number + '</div>',
+            '<div class="nfx-episode-item focusable" tabindex="0" ',
+                 'onclick="initAndPlayTVEpisode(' + tvId + ', ' + seasonNum + ', ' + ep.episode_number + ')">',
+                
+                // 1. Numero
+                '<div class="nfx-item-num">' + ep.episode_number + '</div>',
+                
+                // 2. Thumbnail
                 imgHtml,
-                '<div class="ep-info">',
-                    '<div class="ep-title">' + (ep.name || 'Episodio ' + ep.episode_number) + '</div>',
-                    '<div class="ep-desc">' + (ep.overview || 'Nessuna trama disponibile') + '</div>',
+                
+                // 3. Info
+                '<div class="nfx-item-info">',
+                    '<div class="nfx-item-header">',
+                        '<span class="nfx-item-title">' + (ep.name || 'Episodio ' + ep.episode_number) + '</span>',
+                        '<span class="nfx-item-dur">' + (ep.runtime ? ep.runtime + 'm' : '') + '</span>',
+                    '</div>',
+                    '<div class="nfx-item-desc">' + (ep.overview || '') + '</div>',
                 '</div>',
-                '<div class="ep-duration">' + (ep.runtime ? ep.runtime + 'm' : '') + '</div>',
+
             '</div>'
         ].join('');
     }).join('');
 }
-
 function closeSeriesPage() {
+    // Rimossa chiamata a stopTrailer();
+
     var detailsPage = document.getElementById('series-details-page');
     var navbar = document.getElementById('navbar');
     var mainContent = document.querySelector('.main-content');
     
-    // 1. Aggiungi classe per animazione uscita
     detailsPage.classList.add('closing-animation');
     
-    // 2. Aspetta la fine dell'animazione (300ms come nel CSS)
     setTimeout(function() {
-        // Nascondi effettivamente
         detailsPage.style.display = 'none';
         detailsPage.classList.remove('closing-animation');
-        detailsPage.innerHTML = ''; // Pulisci memoria
+        detailsPage.innerHTML = ''; 
         
-        // Mostra il resto
         if (navbar) navbar.style.display = 'flex';
-        if (mainContent) mainContent.style.display = 'block';
-
-        // 3. Ripristina focus
-        if (navigation && navigation.stateStack.length === 0) {
-            navigation.refreshFocusableElements();
-            
-            // Cerca di ripristinare il focus sull'elemento da cui eravamo partiti
-            // (La logica handleBack di solito gestisce questo, ma questo è un fallback manuale)
-            navigation.focusFirstElement(); 
+        
+        if (mainContent) {
+            mainContent.style.display = 'block';
+            window.scrollTo(0, lastPageScrollPosition);
         }
-    }, 300); // Deve corrispondere alla durata di fadeOutExit
+    }, 300);
 }
 
 
@@ -3586,48 +4398,43 @@ function watchMovie(movieId) {
 }
 
 function showMovieDetails(movieId) {
-    // Prepara l'interfaccia (usa lo stesso contenitore delle serie)
+    lastPageScrollPosition = window.pageYOffset;
+
     var detailsPage = document.getElementById('series-details-page');
     var navbar = document.getElementById('navbar');
     var mainContent = document.querySelector('.main-content');
     
-    // Nascondi home, mostra dettagli
     if (navbar) navbar.style.display = 'none';
     if (mainContent) mainContent.style.display = 'none';
     detailsPage.style.display = 'block';
-    
-    // Loading state
     detailsPage.innerHTML = '<div style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; color:white;"><i class="fas fa-spinner fa-spin fa-3x"></i></div>';
 
-    // Gestione stato navigazione
     if (navigation) {
         navigation.pushState({
             type: 'page',
             id: 'movie-details',
             previousElement: navigation.focusableElements[navigation.currentIndex] || null,
-            onClose: function() {
-                closeSeriesPage(); // Possiamo riusare la stessa funzione di chiusura
-            }
+            onClose: function() { closeSeriesPage(); }
         });
     }
 
     var apiKey = '1e8c9083f94c62dd66fb2105cd7b613b';
     
-    // Carica Dettagli Film + Immagini + Raccomandazioni
+    // RIMOSSO 'videos', mantenuto credits, recommendations e keywords
     Promise.all([
-        fetch('https://api.themoviedb.org/3/movie/' + movieId + '?api_key=' + apiKey + '&language=it-IT&append_to_response=images,release_dates'),
-        fetch('https://api.themoviedb.org/3/movie/' + movieId + '/recommendations?api_key=' + apiKey + '&language=it-IT')
+        fetch('https://api.themoviedb.org/3/movie/' + movieId + '?api_key=' + apiKey + '&language=it-IT&append_to_response=images,release_dates,credits,recommendations,keywords&include_image_language=it,en,null')
     ])
     .then(function(responses) {
-        return Promise.all([responses[0].json(), responses[1].json()]);
+        return Promise.all([responses[0].json()]);
     })
     .then(function(data) {
         var movie = data[0];
-        var recommendations = data[1];
+        // Estrai raccomandazioni
+        var recommendations = movie.recommendations || { results: [] };
         renderMoviePage(movieId, movie, recommendations);
     })
     .catch(function(err) {
-        console.error("Errore caricamento film:", err);
+        console.error("Errore film:", err);
         closeSeriesPage();
     });
 }
@@ -3635,19 +4442,21 @@ function showMovieDetails(movieId) {
 function renderMoviePage(movieId, movie, recommendationsData) {
     var detailsPage = document.getElementById('series-details-page');
     
-    // Dati Hero
+    // Dati Grafici
     var backdrop = movie.backdrop_path ? 'https://image.tmdb.org/t/p/original' + movie.backdrop_path : '';
     
-    // Logo
+    // Logica Logo
     var logoUrl = '';
     if (movie.images && movie.images.logos && movie.images.logos.length > 0) {
-        var logo = movie.images.logos.find(function(l) { return l.iso_639_1 === 'it'; }) || movie.images.logos[0];
-        logoUrl = 'https://image.tmdb.org/t/p/w500' + logo.file_path;
+        var logo = movie.images.logos.find(function(l) { return l.iso_639_1 === 'it'; });
+        if (!logo) logo = movie.images.logos.find(function(l) { return l.iso_639_1 === 'en'; });
+        if (!logo) logo = movie.images.logos[0];
+        if (logo) logoUrl = 'https://image.tmdb.org/t/p/w500' + logo.file_path;
     }
 
     // Metadati
     var year = movie.release_date ? movie.release_date.substring(0, 4) : '';
-    var rating = movie.vote_average ? Math.round(movie.vote_average * 10) + '% Match' : '';
+    var rating = movie.vote_average ? Math.round(movie.vote_average * 10) + '% Match' : 'New';
     
     var runtime = '';
     if (movie.runtime) {
@@ -3656,80 +4465,100 @@ function renderMoviePage(movieId, movie, recommendationsData) {
         runtime = (h > 0 ? h + 'h ' : '') + m + 'm';
     }
 
+    // Cast & Generi
+    var castStr = 'N/D';
+    if (movie.credits && movie.credits.cast) {
+        castStr = movie.credits.cast.slice(0, 4).map(function(c) { return c.name; }).join(', ');
+    }
+    var genreStr = 'N/D';
+    if (movie.genres) {
+        genreStr = movie.genres.map(function(g) { return g.name; }).join(', ');
+    }
+
     var html = [];
 
-    // Sfondo Hero
-    html.push('<div class="hero-backdrop" style="background-image: url(\'' + backdrop + '\');"></div>');
-    html.push('<div class="hero-vignette"></div>');
+    // --- 1. SOLO BACKDROP (Niente Video) ---
+    html.push('<div id="hero-backdrop-img" class="hero-backdrop" style="background-image: url(\'' + backdrop + '\'); opacity: 1;"></div>');
+    html.push('<div class="hero-vignette-strong"></div>');
 
-    // Contenitore Principale (Nota la classe aggiuntiva 'movie-layout')
-    html.push('<div class="details-content movie-layout">');
-    
-    // --- INFO (ALTO) ---
-    html.push('<div class="details-info-top">');
-    
-    if (logoUrl) {
-        html.push('<img src="' + logoUrl + '" class="details-logo" alt="' + movie.title + '">');
-    } else {
-        html.push('<h1 class="details-title-text">' + movie.title + '</h1>');
-    }
-    
-    html.push('<div class="details-meta">');
-    html.push('<span>' + year + '</span>');
-    html.push('<span>' + runtime + '</span>');
-    html.push('<span style="border:1px solid #aaa; padding:0 4px; font-size:14px;">HD</span>');
-    html.push('</div>');
+    // --- 2. CONTENUTO ---
+    html.push('<div class="nfx-container" style="position:relative; z-index: 10;">');
 
-    html.push('<p class="details-overview">' + (movie.overview || 'Nessuna trama disponibile.') + '</p>');
-
-    html.push('<div class="action-buttons">');
-    // Tasto Riproduci
-    html.push('<button class="btn-hero btn-play focusable" id="btn-play-movie" onclick="initAndPlayMovie(' + movieId + ')"><i class="fas fa-play"></i> Riproduci</button>');
-    // Tasto Lista
-    html.push('</div>'); // end actions
-    
-    html.push('</div>'); // end details-info-top
-
-    // --- TITOLI SIMILI (BASSO - ORIZZONTALE) ---
-    var recs = recommendationsData.results || [];
-    if (recs.length > 0) {
-        html.push('<div class="similar-section-bottom">');
-        html.push('<div class="similar-section-title">Altri film simili</div>');
-        
-        // Contenitore scrollabile orizzontalmente
-        html.push('<div class="similar-row-scroll" id="similar-movies-row">');
-        
-        for (var i = 0; i < recs.length; i++) {
-            var rec = recs[i];
-            // Usiamo BACKDROP per layout orizzontale, fallback a poster
-            var imgPath = rec.backdrop_path || rec.poster_path;
+        // A. HERO BLOCK
+        html.push('<div class="nfx-hero-block">');
             
-            if (imgPath) {
-                var imgUrl = 'https://image.tmdb.org/t/p/w300' + imgPath;
-                var isTvRec = rec.media_type === 'tv';
-                var clickAction = isTvRec 
-                    ? 'showTVSeasons(' + rec.id + ', \'tv\')'
-                    : 'showMovieDetails(' + rec.id + ')';
-                
-                html.push('<div class="similar-card-horizontal focusable" tabindex="0" onclick="' + clickAction + '">');
-                html.push('<img src="' + imgUrl + '" loading="lazy">');
-                // Overlay col titolo (utile perché le thumb orizzontali spesso non hanno il titolo scritto)
-                html.push('<div class="similar-card-overlay">');
-                html.push('<div class="similar-card-title">' + (rec.title || rec.name) + '</div>');
-                html.push('</div>');
-                html.push('</div>');
+            if (logoUrl) {
+                html.push('<img src="' + logoUrl + '" class="nfx-logo" alt="' + movie.title + '">');
+            } else {
+                html.push('<h1 class="details-title-text" style="font-size:60px; margin-bottom:20px;">' + movie.title + '</h1>');
             }
-        }
-        
-        html.push('</div>'); // end similar-row-scroll
-        html.push('</div>'); // end similar-section-bottom
-    }
 
-    html.push('</div>'); // end details-content
+            // BOTTONI
+            html.push('<div class="nfx-buttons-row">');
+                html.push('<button class="nfx-btn-play focusable" id="btn-play-movie" onclick="initAndPlayMovie(' + movieId + ')"><i class="fas fa-play"></i> Riproduci</button>');
+            html.push('</div>');
+
+            // META DATA
+            html.push('<div class="nfx-meta-row">');
+                html.push('<span class="nfx-meta-match">' + rating + '</span>');
+                html.push('<span>' + year + '</span>');
+                html.push('<span>' + runtime + '</span>');
+                html.push('<span class="nfx-badge">HD</span>');
+            html.push('</div>');
+            
+        html.push('</div>');
+
+        // B. GRID (Descrizione vs Cast)
+        html.push('<div class="nfx-grid-layout">');
+            html.push('<div class="nfx-col-desc">');
+                html.push('<p class="nfx-overview-text">' + (movie.overview || 'Trama non disponibile.') + '</p>');
+            html.push('</div>');
+            html.push('<div class="nfx-col-tags">');
+                html.push('<div style="margin-bottom:10px;"><span class="nfx-tag-label">Cast:</span> <span class="nfx-tag-val">' + castStr + '</span></div>');
+                html.push('<div><span class="nfx-tag-label">Generi:</span> <span class="nfx-tag-val">' + genreStr + '</span></div>');
+            html.push('</div>');
+        html.push('</div>');
+
+        // C. TITOLI SIMILI (Sostituisce la sezione episodi)
+        var recs = recommendationsData.results || [];
+        if (recs.length > 0) {
+            html.push('<div class="nfx-episodes-section" style="margin-top:20px;">');
+                
+                html.push('<div class="nfx-episodes-header">');
+                    html.push('<div class="nfx-ep-title-main">Titoli Simili</div>');
+                html.push('</div>');
+
+                // Usiamo lo scroll orizzontale dei "simili"
+                html.push('<div class="similar-row-scroll" id="similar-movies-row" style="padding-left:0;">');
+                
+                for (var i = 0; i < recs.length; i++) {
+                    var rec = recs[i];
+                    var imgPath = rec.backdrop_path || rec.poster_path;
+                    
+                    if (imgPath) {
+                        var imgUrl = 'https://image.tmdb.org/t/p/w300' + imgPath;
+                        var isTvRec = rec.media_type === 'tv';
+                        var clickAction = isTvRec 
+                            ? 'showTVSeasons(' + rec.id + ', \'tv\')'
+                            : 'showMovieDetails(' + rec.id + ')';
+                        
+                        html.push('<div class="similar-card-horizontal focusable" tabindex="0" onclick="' + clickAction + '">');
+                        html.push('<img src="' + imgUrl + '" loading="lazy">');
+                        html.push('<div class="similar-card-overlay">');
+                        html.push('<div class="similar-card-title">' + (rec.title || rec.name) + '</div>');
+                        html.push('</div>');
+                        html.push('</div>');
+                    }
+                }
+                html.push('</div>'); // end scroll
+
+            html.push('</div>');
+        }
+
+    html.push('</div>'); // end container
 
     detailsPage.innerHTML = html.join('');
 
-    // FOCUS INIZIALE
     if (navigation) {
         navigation.refreshFocusableElements();
         var playBtn = document.getElementById('btn-play-movie');
@@ -3815,6 +4644,35 @@ function closePlayer() {
     }
 }
 
+// Avvia il timer per il trailer
+function startTrailerSequence(videoId) {
+    // Pulisci eventuali timer precedenti
+    if (trailerTimeout) clearTimeout(trailerTimeout);
+
+    // Aspetta 3.5 secondi prima di caricare il video
+    trailerTimeout = setTimeout(function() {
+        loadTrailerIframe(videoId);
+    }, 200);
+}
+
+// Crea l'iframe di YouTube
+function loadTrailerIframe(videoId) {
+
+}
+
+// Ferma il trailer (chiamata quando si esce)
+function stopTrailer() {
+    if (trailerTimeout) {
+        clearTimeout(trailerTimeout);
+        trailerTimeout = null;
+    }
+    
+    var container = document.getElementById('hero-video-container');
+    if (container) {
+        container.innerHTML = ''; // Rimuove iframe e ferma l'audio
+    }
+}
+
 // Listener per il tasto back/escape (ES5-compatibile)
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -3863,6 +4721,97 @@ document.addEventListener('DOMContentLoaded', function() {
     height: 100%;
     background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%);
     pointer-events: none;
+}
+
+/* --- OTTIMIZZAZIONE SPAZIO NETFLIX STYLE --- */
+
+/* 1. Hero Block: Ridotto drasticamente il padding superiore */
+.nfx-hero-block {
+    /* PRIMA ERA 30vh o 35vh. Lo portiamo a 80px per alzare tutto */
+    padding-top: 80px; 
+    margin-bottom: 10px; /* Ridotto margine sotto */
+    position: relative;
+    z-index: 20;
+    width: 55%; /* Leggermente più largo per il testo */
+}
+
+/* 2. Logo: Limitiamo l'altezza per non sprecare spazio verticale */
+.nfx-logo {
+    width: 100%; 
+    max-width: 400px; /* Ridotto leggermente (era 500) */
+    max-height: 150px; /* Limite altezza per loghi verticali */
+    object-fit: contain;
+    object-position: left bottom;
+    margin-bottom: 10px; /* Meno spazio sotto il logo */
+    filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.8));
+    display: block;
+}
+
+/* 3. Bottoni: Margini ridotti */
+.nfx-buttons-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px; /* Ridotto (era 20/30) */
+}
+
+/* 4. Meta Data (Anno, Match, ecc): Più compatti */
+.nfx-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 16px; /* Font leggermente più piccolo */
+    color: #a3a3a3;
+    font-weight: bold;
+    margin-bottom: 15px; /* Ridotto spazio sotto */
+}
+
+/* 5. Griglia Descrizione: Avvicinata all'hero */
+.nfx-grid-layout {
+    width: 100%;
+    margin-bottom: 20px; /* Molto meno spazio sotto la descrizione (era 40/60) */
+    position: relative; 
+    z-index: 20;
+    display: flex;
+    gap: 40px;
+}
+
+/* Testo trama più compatto */
+.nfx-overview-text {
+    font-size: 18px; /* Leggermente ridotto da 20px */
+    line-height: 1.3;
+    color: white;
+    text-shadow: 1px 1px 2px black;
+    
+    /* Limita a 4 righe per non occupare tutto lo schermo se la trama è lunga */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Selettore Stagioni: Margini ottimizzati */
+.nfx-season-selector-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 10px; /* Ridotto */
+    padding: 5px 15px 15px 15px; /* Padding ottimizzato */
+    margin-top: -10px;
+    margin-left: -15px;
+    width: calc(100% + 30px);
+    border-bottom: 1px solid #333;
+    overflow-x: auto;
+}
+
+/* Header Episodi */
+.nfx-episodes-header {
+    margin-bottom: 5px; /* Ridotto */
+}
+
+/* Titolo "Episodi" più piccolo */
+.nfx-ep-title-main {
+    font-size: 22px; /* Era 28px */
+    font-weight: bold;
+    color: white;
 }
 </style>
 
