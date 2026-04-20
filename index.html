@@ -43,8 +43,10 @@ sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],          
     </script>
 
     <script>
-    const socket = io('https://api.leleflix.store'); // Usa il tuo dominio corretto
-
+// Forza il client a usare ESCLUSIVAMENTE i WebSocket, saltando il polling
+const socket = io('https://api.leleflix.store', {
+    transports: ['websocket']
+});
     // Funzione per mostrare l'animazione
     function showCastAnimation(title) {
         // 1. Crea l'overlay se non esiste
