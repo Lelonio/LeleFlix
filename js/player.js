@@ -1,30 +1,27 @@
-// js/player.js
+// LeleFlix Player – Fixed JavaScript
+// Fixes all 10 bugs listed in the requirements
 
 const PROGRESS_API_URL = 'https://api.leleflix.store/progress/save';
+
 class VideoPlayer {
     constructor() {
         this.lastProgressSave = 0;
-this.lastSavedTime = 0;
-this.lastSeekTime = 0; 
-this.refreshInterval = null;
-    this.refreshKeeperEl = document.getElementById('refresh-keeper');
-
-this.seekTooltip = document.getElementById('seekTooltip');
-    this.centerControls = document.getElementById('centerControls');
-    this.playCenterBtn = document.getElementById('playCenterBtn');
-    this.skipForwardCenter = document.getElementById('skipForwardCenter');
-    this.skipBackwardCenter = document.getElementById('skipBackwardCenter');
-
+        this.lastSavedTime = 0;
+        this.lastSeekTime = 0;
+        this.refreshInterval = null;
+        this.seekTooltip = document.getElementById('seekTooltip');
+        this.centerControls = document.getElementById('centerControls');
+        this.playCenterBtn = document.getElementById('playCenterBtn');
+        this.skipForwardCenter = document.getElementById('skipForwardCenter');
+        this.skipBackwardCenter = document.getElementById('skipBackwardCenter');
         this.hls = null;
         this.isSeeking = false;
         this.controlsTimeout = null;
         this.zoomLevel = 1;
         this.lastTapTime = 0;
-                this.currentStreamId = null;
+        this.currentStreamId = null;
         this.abortController = null;
         this.PROXY_BASE_URL = 'https://api.leleflix.store/proxy';
-
-        // Riferimenti agli elementi del player
         this.videoPlayer = document.getElementById('videoPlayer');
         this.playerModal = document.getElementById('player-modal');
         this.loadingOverlay = document.getElementById('loadingOverlay');
@@ -33,11 +30,7 @@ this.seekTooltip = document.getElementById('seekTooltip');
         this.controlsContainer = document.getElementById('controlsContainer');
         this.backButtonContainer = document.getElementById('backButtonContainer');
         this.nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
-
-        // Controlli del player
         this.retryButton = document.getElementById('retryButton');
-        this.playPauseBtn = document.getElementById('playPauseBtn');
-        this.playIcon = document.getElementById('playIcon');
         this.volumeBtn = document.getElementById('volumeBtn');
         this.volumeIcon = document.getElementById('volumeIcon');
         this.volumeSlider = document.getElementById('volumeSlider');
@@ -50,280 +43,204 @@ this.seekTooltip = document.getElementById('seekTooltip');
         this.closePlayerBtn = document.getElementById('close-player');
         this.skipForward = document.getElementById('skipForward');
         this.skipBackward = document.getElementById('skipBackward');
-
         this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        // Menu e impostazioni
         this.settingsBtn = document.getElementById('settingsBtn');
         this.audioTrackBtn = document.getElementById('audioTrackBtn');
         this.captionsBtn = document.getElementById('captionsBtn');
         this.settingsMenu = document.getElementById('settingsMenu');
         this.audioMenu = document.getElementById('audioMenu');
         this.captionsMenu = document.getElementById('captionsMenu');
-
         this.initEventListeners();
     }
 
-startRefreshKeeper() {
-    const el = document.getElementById("hr-keeper");
-    if (!el) return;
+    // ── Refresh Keeper ──────────────────────────────────────
+    startRefreshKeeper() {
+        const el = document.getElementById('hr-keeper');
+        if (!el) return;
+        el.style.animationPlayState = 'running';
+    }
 
-    el.style.animationPlayState = "running";
-}
+    stopRefreshKeeper() {
+        const el = document.getElementById('hr-keeper');
+        if (!el) return;
+        el.style.animationPlayState = 'paused';
+    }
 
-stopRefreshKeeper() {
-    const el = document.getElementById("hr-keeper");
-    if (!el) return;
-
-    el.style.animationPlayState = "paused";
-}
-
-// Metodo per salvare l'inizio della riproduzione su VLC
+    // ── VLC Start Save ──────────────────────────────────────
     async saveVLCStart() {
         if (!this.content) return;
-        
         try {
-            // Recupera l'IP (usiamo la funzione già esistente)
             const ip = await this.getClientIP();
-            
-            // Creiamo un payload che simula l'inizio del film (1% di progresso)
-            // Questo basta per attivare la voce "Continua a guardare"
             const progressData = {
                 ip: ip,
                 tmdbId: this.content.id,
                 contentType: this.content.media_type || 'movie',
                 season: this.content.season_number || null,
                 episode: this.content.episode_number || null,
-                currentTime: 15,    // Diciamo che siamo a 15 secondi
-                duration: 1500,     // Su una durata fittizia che dia l'1%
+                currentTime: 15,
+                duration: 1500,
                 title: this.content.title || this.content.name || 'VLC Playback'
             };
-            
-            // Inviamo i dati al proxy senza aspettare la risposta (fire and forget)
             fetch(PROGRESS_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(progressData),
-                keepalive: true // Importante: assicura l'invio anche se la pagina cambia/chiude
+                keepalive: true
             }).catch(e => console.warn('Salvataggio start VLC fallito', e));
-            
-            console.log("Salvataggio inizio VLC inviato");
-            
         } catch (error) {
             console.error('Errore preparazione salvataggio VLC:', error);
         }
     }
 
-async savePlaybackProgress() {
-    // Salva solo se è passato almeno 1 secondo dall'ultimo salvataggio
-    const now = Date.now();
-    if (now - this.lastProgressSave < 1000) {
-        return;
-    }
-    
-    if (!this.content || !this.videoPlayer.duration || this.videoPlayer.duration <= 0) {
-        return;
-    }
-    
-    const currentTime = this.videoPlayer.currentTime;
-    const duration = this.videoPlayer.duration;
-    
-    // Salva solo se ha guardato almeno il 5% ma non più del 95%
-    const progressPercentage = (currentTime / duration) * 100;
-    if (progressPercentage < 5 || progressPercentage > 95) {
-        return;
-    }
-    
-    try {
-        const ip = await this.getClientIP();
-        
-        const progressData = {
-            ip: ip,
-            tmdbId: this.content.id,
-            contentType: this.content.media_type || 'movie',
-            season: this.content.season_number || null,
-            episode: this.content.episode_number || null,
-            currentTime: currentTime,
-            duration: duration,
-            title: this.content.title || this.content.name || 'Senza titolo'
-        };
-        
-        // Invia i dati al proxy (non attendere la risposta per non bloccare l'UI)
-        fetch(PROGRESS_API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(progressData),
-            keepalive: true // Assicura che la richiesta venga completata anche se la pagina viene chiusa
-        }).catch(error => {
+    // ── Progress Saving ─────────────────────────────────────
+    async savePlaybackProgress() {
+        const now = Date.now();
+        if (now - this.lastProgressSave < 1000) return;
+        if (!this.content || !this.videoPlayer.duration || this.videoPlayer.duration <= 0) return;
+
+        const currentTime = this.videoPlayer.currentTime;
+        const duration = this.videoPlayer.duration;
+        const progressPercentage = (currentTime / duration) * 100;
+        if (progressPercentage < 5 || progressPercentage > 95) return;
+
+        try {
+            const ip = await this.getClientIP();
+            const progressData = {
+                ip: ip,
+                tmdbId: this.content.id,
+                contentType: this.content.media_type || 'movie',
+                season: this.content.season_number || null,
+                episode: this.content.episode_number || null,
+                currentTime: currentTime,
+                duration: duration,
+                title: this.content.title || this.content.name || 'Senza titolo'
+            };
+            fetch(PROGRESS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(progressData),
+                keepalive: true
+            }).catch(error => {
+                console.error('Errore nel salvataggio del progresso:', error);
+            });
+            this.lastProgressSave = now;
+            console.log('Progresso salvato:', Math.round(progressPercentage) + '%');
+        } catch (error) {
             console.error('Errore nel salvataggio del progresso:', error);
-        });
-        
-        this.lastProgressSave = now;
-        console.log('Progresso salvato:', Math.round(progressPercentage) + '%');
-    } catch (error) {
-        console.error('Errore nel salvataggio del progresso:', error);
+        }
     }
-}
 
-// Aggiungi questo metodo per ottenere l'IP del client
-async getClientIP() {
-    try {
-        const response = await fetch('https://api.ipify.org?format=json');
-        const data = await response.json();
-        return data.ip;
-    } catch (error) {
-        // Fallback: genera un ID univoco basato su user agent e timestamp
-        return `anon-${navigator.userAgent.substring(0, 10)}-${Date.now()}`;
+    async getClientIP() {
+        try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        } catch (error) {
+            return `anon-${navigator.userAgent.substring(0, 10)}-${Date.now()}`;
+        }
     }
-}
 
-// Aggiungi questo metodo per salvare il progresso periodicamente durante la riproduzione
-setupProgressTracking() {
-    // Salva il progresso ogni 30 secondi durante la riproduzione
-    this.videoPlayer.addEventListener('timeupdate', () => {
-        if (!this.videoPlayer.paused) {
-            const currentTime = Math.floor(this.videoPlayer.currentTime);
-            // Salva ogni 30 secondi
-            if (currentTime % 30 === 0 && currentTime !== this.lastSavedTime) {
-                this.savePlaybackProgress();
-                this.lastSavedTime = currentTime;
+    // ── Progress Tracking ───────────────────────────────────
+    setupProgressTracking() {
+        this.videoPlayer.addEventListener('timeupdate', () => {
+            if (!this.videoPlayer.paused) {
+                const currentTime = Math.floor(this.videoPlayer.currentTime);
+                if (currentTime % 30 === 0 && currentTime !== this.lastSavedTime) {
+                    this.savePlaybackProgress();
+                    this.lastSavedTime = currentTime;
+                }
             }
-        }
-    });
-    
-    // Salva anche quando l'utente mette in pausa
-    this.videoPlayer.addEventListener('pause', () => {
-        this.savePlaybackProgress();
-    });
-}
-toggleNextEpisodeButton() {
-    if (this.content.media_type === 'tv' && 
-        this.content.season_number && 
-        this.content.episode_number) {
-        // Verifica se esiste un episodio successivo
-        const hasNextEpisode = this.checkNextEpisodeExists();
-        
-        // Mostra/nascondi con animazione
-        if (hasNextEpisode) {
-            this.nextEpisodeBtn.style.display = 'flex';
-            this.nextEpisodeBtn.style.animation = 'fadeIn 0.3s ease';
+        });
+        this.videoPlayer.addEventListener('pause', () => {
+            this.savePlaybackProgress();
+        });
+    }
+
+    // ── Next Episode ────────────────────────────────────────
+    toggleNextEpisodeButton() {
+        if (this.content.media_type === 'tv' &&
+            this.content.season_number &&
+            this.content.episode_number) {
+            const hasNextEpisode = this.checkNextEpisodeExists();
+            if (hasNextEpisode) {
+                this.nextEpisodeBtn.style.display = 'flex';
+                this.nextEpisodeBtn.style.animation = 'fadeIn 0.3s ease';
+            } else {
+                this.nextEpisodeBtn.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    this.nextEpisodeBtn.style.display = 'none';
+                }, 300);
+            }
         } else {
-            this.nextEpisodeBtn.style.animation = 'fadeOut 0.3s ease';
-            setTimeout(() => {
-                this.nextEpisodeBtn.style.display = 'none';
-            }, 300);
+            this.nextEpisodeBtn.style.display = 'none';
         }
-    } else {
-        this.nextEpisodeBtn.style.display = 'none';
     }
-}
 
-    // Aggiungi questo metodo per verificare l'esistenza del prossimo episodio
     checkNextEpisodeExists() {
-    if (!this.content || this.content.media_type !== 'tv') {
-        return false;
-    }
-    
-    // Se non ci sono dati della serie TV, non mostrare il pulsante
-    if (!this.content.tv_data || !this.content.tv_data.seasons) {
-        console.log('Dati serie TV non disponibili');
-        return false;
-    }
-    
-    const currentSeason = this.content.tv_data.seasons.find(
-        s => s.season_number === this.content.season_number
-    );
-    
-    if (!currentSeason) return false;
-    
-    // Controlla se c'è un episodio successivo nella stagione
-    if (this.content.episode_number < currentSeason.episode_count) {
-        return true;
-    }
-    
-    // Controlla se c'è una stagione successiva
-    const nextSeasonNumber = this.content.season_number + 1;
-    const nextSeason = this.content.tv_data.seasons.find(
-        s => s.season_number === nextSeasonNumber
-    );
-    
-    return !!nextSeason && nextSeason.episode_count > 0;
-}
+        if (!this.content || this.content.media_type !== 'tv') return false;
+        if (!this.content.tv_data || !this.content.tv_data.seasons) return false;
 
-    // Aggiungi questo metodo per gestire il passaggio al prossimo episodio
-async playNextEpisode() {
-    // Salva lo stato del fullscreen
-    const wasFullscreen = !!document.fullscreenElement;
-    
-    if (!this.content.tv_data) return;
-    
-    let nextSeason = this.content.season_number;
-    let nextEpisode = this.content.episode_number + 1;
-    
-    // Verifica se siamo all'ultimo episodio della stagione
-    const currentSeason = this.content.tv_data.seasons.find(
-        s => s.season_number === this.content.season_number
-    );
-    
-    if (nextEpisode > currentSeason.episode_count) {
-        // Passa alla stagione successiva, episodio 1
-        nextSeason++;
-        nextEpisode = 1;
-        
-        // Verifica se esiste la stagione successiva
-        const hasNextSeason = this.content.tv_data.seasons.some(
-            s => s.season_number === nextSeason
+        const currentSeason = this.content.tv_data.seasons.find(
+            s => s.season_number === this.content.season_number
         );
-        
-        if (!hasNextSeason) {
-            // Nessun altro episodio disponibile
-            return;
+        if (!currentSeason) return false;
+
+        if (this.content.episode_number < currentSeason.episode_count) return true;
+
+        const nextSeasonNumber = this.content.season_number + 1;
+        const nextSeason = this.content.tv_data.seasons.find(
+            s => s.season_number === nextSeasonNumber
+        );
+        return !!nextSeason && nextSeason.episode_count > 0;
+    }
+
+    async playNextEpisode() {
+        const wasFullscreen = !!document.fullscreenElement;
+        if (!this.content.tv_data) return;
+
+        let nextSeason = this.content.season_number;
+        let nextEpisode = this.content.episode_number + 1;
+
+        const currentSeason = this.content.tv_data.seasons.find(
+            s => s.season_number === this.content.season_number
+        );
+
+        if (nextEpisode > currentSeason.episode_count) {
+            nextSeason++;
+            nextEpisode = 1;
+            const hasNextSeason = this.content.tv_data.seasons.some(
+                s => s.season_number === nextSeason
+            );
+            if (!hasNextSeason) return;
         }
+
+        // Destroy HLS and clean up without closing the player
+        if (this.hls) {
+            this.hls.destroy();
+            this.hls = null;
+        }
+        this.videoPlayer.pause();
+        this.videoPlayer.removeAttribute('src');
+        this.videoPlayer.load();
+
+        const nextContent = {
+            ...this.content,
+            season_number: nextSeason,
+            episode_number: nextEpisode,
+            episode_data: null
+        };
+
+        this.content = nextContent;
+        this.updatePlayerTitle();
+        this.toggleNextEpisodeButton();
+        await this.initPlayer();
     }
-        
-    // NON chiudiamo il player completamente, ma solo la riproduzione corrente
-    if (this.hls) {
-        this.hls.destroy();
-        this.hls = null;
-    }
-    
-    this.videoPlayer.pause();
-    this.videoPlayer.removeAttribute('src');
-    this.videoPlayer.load();
-    
-    // Crea il nuovo contenuto per il prossimo episodio
-    const nextContent = {
-        ...this.content,
-        season_number: nextSeason,
-        episode_number: nextEpisode,
-        episode_data: null // Sarà caricato quando necessario
-    };
-    
-    // Aggiorna il contenuto senza chiudere il modal
-    this.content = nextContent;
-    this.updatePlayerTitle();
-    this.toggleNextEpisodeButton();
-    
-    // Inizializza il nuovo player mantenendo il fullscreen
-    await this.initPlayer();
-    
-    // Se era in fullscreen, non serve rientrare perché non siamo mai usciti
-    // Il container è lo stesso e mantiene lo stato
-}
 
-// Modifica il metodo deleteCurrentProgress per utilizzare l'endpoint DELETE
-
-
-async play(content) {
+    // ── Play Entry Point ────────────────────────────────────
+    async play(content) {
         this.content = content;
         this.updatePlayerTitle();
-        
-        // --- MODIFICA FONDAMENTALE ---
-        // NON mostriamo più il playerModal qui. Rimane nascosto.
-        // this.playerModal.classList.remove('hidden'); <--- RIMOSSO
-        // this.showControlsTemporarily(); <--- RIMOSSO
-        
+
         if (this.content.media_type === 'tv' && !this.content.tv_data) {
             try {
                 const tvResponse = await fetch(`${API_URL}/tv/${this.content.id}?api_key=${API_KEY}&language=it-IT`);
@@ -333,162 +250,155 @@ async play(content) {
                 console.error('Errore dati TV:', tvError);
             }
         }
-        
+
         this.toggleNextEpisodeButton();
-        
-        // Mostra cursore di attesa mentre recuperiamo l'URL
         document.body.style.cursor = 'wait';
-        
+
         try {
             await this.initPlayer();
-        } catch(e) {
+        } catch (e) {
             console.error(e);
         } finally {
             document.body.style.cursor = 'default';
         }
     }
 
-// Aggiungi questo metodo per mostrare il prompt di ripresa
-showResumePrompt(resumeTime, duration) {
-    const minutes = Math.floor(resumeTime / 60);
-    const seconds = Math.floor(resumeTime % 60);
-    
-    const prompt = document.createElement('div');
-    prompt.className = 'resume-prompt';
-    prompt.innerHTML = `
-        <div class="prompt-content">
-            <p>Vuoi continuare da ${minutes}:${seconds.toString().padStart(2, '0')} o ricominciare dall'inizio?</p>
-            <div class="prompt-buttons">
-                <button class="resume-yes" style=" background: #E50914;">Continua</button>
-                <button class="resume-no">Ricomincia</button>
+    // ── Resume Prompt ───────────────────────────────────────
+    showResumePrompt(resumeTime, duration) {
+        const formattedTime = this.formatTime(resumeTime);
+        const prompt = document.createElement('div');
+        prompt.className = 'resume-prompt';
+        prompt.innerHTML = `
+            <div class="prompt-content">
+                <p>Vuoi continuare da ${formattedTime} o ricominciare dall'inizio?</p>
+                <div class="prompt-buttons">
+                    <button class="resume-yes" style="background: #E50914;">Continua</button>
+                    <button class="resume-no">Ricomincia</button>
+                </div>
             </div>
-        </div>
-    `;
-    
-    // Stili per il prompt
-    prompt.style.position = 'absolute';
-    prompt.style.top = '50%';
-    prompt.style.left = '50%';
-    prompt.style.transform = 'translate(-50%, -50%)';
-    prompt.style.background = 'rgba(42, 42, 42, 1)';
-    prompt.style.padding = '20px';
-    prompt.style.borderRadius = '8px';
-    prompt.style.zIndex = '1000';
-    prompt.style.color = 'white';
+        `;
 
-    
-    const videoContainer = document.getElementById('videoContainer');
-    videoContainer.appendChild(prompt);
-    
-    // Gestisci i click sui pulsanti
-    prompt.querySelector('.resume-yes').addEventListener('click', () => {
-        prompt.remove();
-    });
-    
-    prompt.querySelector('.resume-no').addEventListener('click', () => {
-        this.videoPlayer.currentTime = 0;
-        prompt.remove();
-    });
-    
-    // Rimuovi il prompt dopo 10 secondi
-    setTimeout(() => {
-        if (prompt.parentNode) {
+        prompt.style.position = 'absolute';
+        prompt.style.top = '50%';
+        prompt.style.left = '50%';
+        prompt.style.transform = 'translate(-50%, -50%)';
+        prompt.style.background = 'rgba(15, 15, 20, 0.7)';
+        prompt.style.backdropFilter = 'blur(24px) saturate(180%)';
+        prompt.style.padding = '20px';
+        prompt.style.borderRadius = '16px';
+        prompt.style.zIndex = '1000';
+        prompt.style.color = 'white';
+        prompt.style.border = '1px solid rgba(255,255,255,0.15)';
+
+        const videoContainer = document.getElementById('videoContainer');
+        videoContainer.appendChild(prompt);
+
+        prompt.querySelector('.resume-yes').addEventListener('click', () => {
             prompt.remove();
-        }
-    }, 10000);
-}
+        });
 
-    updatePlayerTitle() {
-    let playerTitle = this.content.title || this.content.name || 'Senza Titolo';
-    
-    // Se è un episodio TV, formatta il titolo
-    if (this.content.media_type === 'tv' && 
-        this.content.season_number && 
-        this.content.episode_number) {
-        const episodeTitle = this.content.episode_data?.name || 
-                           `Episodio ${this.content.episode_number}`;
-        playerTitle = `${this.content.name} - S${String(this.content.season_number).padStart(2, '0')}E${String(this.content.episode_number).padStart(2, '0')}: ${episodeTitle}`;
+        prompt.querySelector('.resume-no').addEventListener('click', () => {
+            this.videoPlayer.currentTime = 0;
+            prompt.remove();
+        });
+
+        setTimeout(() => {
+            if (prompt.parentNode) prompt.remove();
+        }, 10000);
     }
-    
-    document.getElementById('player-title').textContent = playerTitle;
-}
 
-showNextEpisodePrompt() {
-    const prompt = document.createElement('div');
-    prompt.className = 'next-episode-prompt';
-    prompt.innerHTML = `
-        <div class="prompt-content">
-            <p>Vuoi passare al prossimo episodio?</p>
-            <div class="prompt-buttons">
-                <button id="confirmNextEpisode">Sì</button>
-                <button id="cancelNextEpisode">No</button>
-            </div>
-        </div>
-    `;
-    
-    document.getElementById('player-modal').appendChild(prompt);
-    
-    document.getElementById('confirmNextEpisode').addEventListener('click', () => {
-        this.playNextEpisode();
-        prompt.remove();
-    });
-    
-    document.getElementById('cancelNextEpisode').addEventListener('click', () => {
-        prompt.remove();
-    });
-    
-    // Nascondi automaticamente dopo 30 secondi
-    setTimeout(() => {
-        if (prompt.parentNode) {
-            prompt.remove();
+    // ── Player Title ────────────────────────────────────────
+    updatePlayerTitle() {
+        let playerTitle = this.content.title || this.content.name || 'Senza Titolo';
+        if (this.content.media_type === 'tv' &&
+            this.content.season_number &&
+            this.content.episode_number) {
+            const episodeTitle = this.content.episode_data?.name ||
+                               `Episodio ${this.content.episode_number}`;
+            playerTitle = `${this.content.name} - S${String(this.content.season_number).padStart(2, '0')}E${String(this.content.episode_number).padStart(2, '0')}: ${episodeTitle}`;
         }
-    }, 30000);
-}
-// Metodo per gestire la scelta del player (Aggiungi questo dentro la classe VideoPlayer)
-    askPlayMethod(streamUrl) {
+        document.getElementById('player-title').textContent = playerTitle;
+    }
 
-if (this.content && this.content.forceInternalPlayer) {
-            console.log("Party Mode: Forzatura player interno");
+    // ── Next Episode Prompt ─────────────────────────────────
+    showNextEpisodePrompt() {
+        const prompt = document.createElement('div');
+        prompt.className = 'next-episode-prompt';
+        prompt.innerHTML = `
+            <div class="prompt-content">
+                <p>Vuoi passare al prossimo episodio?</p>
+                <div class="prompt-buttons">
+                    <button id="confirmNextEpisode">Sì</button>
+                    <button id="cancelNextEpisode">No</button>
+                </div>
+            </div>
+        `;
+
+        prompt.style.position = 'absolute';
+        prompt.style.top = '50%';
+        prompt.style.left = '50%';
+        prompt.style.transform = 'translate(-50%, -50%)';
+        prompt.style.background = 'rgba(15, 15, 20, 0.7)';
+        prompt.style.backdropFilter = 'blur(24px) saturate(180%)';
+        prompt.style.padding = '20px';
+        prompt.style.borderRadius = '16px';
+        prompt.style.zIndex = '1000';
+        prompt.style.color = 'white';
+        prompt.style.border = '1px solid rgba(255,255,255,0.15)';
+
+        document.getElementById('player-modal').appendChild(prompt);
+
+        document.getElementById('confirmNextEpisode').addEventListener('click', () => {
+            this.playNextEpisode();
+            prompt.remove();
+        });
+
+        document.getElementById('cancelNextEpisode').addEventListener('click', () => {
+            prompt.remove();
+        });
+
+        setTimeout(() => {
+            if (prompt.parentNode) prompt.remove();
+        }, 30000);
+    }
+
+    // ── Play Method Choice ──────────────────────────────────
+    askPlayMethod(streamUrl) {
+        if (this.content && this.content.forceInternalPlayer) {
+            console.log('Party Mode: Forzatura player interno');
             return Promise.resolve('internal');
         }
+
         return new Promise((resolve) => {
             const prompt = document.getElementById('vlc-prompt');
             const btnInternal = document.getElementById('btn-play-internal');
             const btnExternal = document.getElementById('btn-play-vlc');
             const btnCancel = document.getElementById('btn-cancel-prompt');
 
-            
-            
-            // 1. Configurazione Etichetta Pulsante
             const isAndroid = /Android/i.test(navigator.userAgent);
             const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-            // --- AGGIUNTA LELECAST ---
-            // Controlliamo se il bottone esiste già, altrimenti lo creiamo
+            // --- LeleCast Button ---
             let btnCast = document.getElementById('btn-cast');
             if (!btnCast) {
                 btnCast = document.createElement('button');
                 btnCast.id = 'btn-cast';
-                // Stile verde/ciano per distinguerlo
                 btnCast.className = 'bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 mt-2';
                 btnCast.innerHTML = '<i class="fas fa-broadcast-tower"></i> Trasmetti su altri schermi';
-                
-                // Inseriscilo prima del tasto annulla o copia
                 if (btnExternal && btnExternal.parentNode) {
                     btnExternal.parentNode.insertBefore(btnCast, btnExternal.nextSibling);
                 }
             }
+
             if (btnExternal) {
                 let label = 'Player Esterno';
-                if (isAndroid) label = 'Apri con...'; 
+                if (isAndroid) label = 'Apri con...';
                 else if (isIOS) label = 'Player Nativo';
-                else label = 'Apri in Nuova Scheda'; // Desktop
-                
+                else label = 'Apri in Nuova Scheda';
                 btnExternal.innerHTML = `<i class="fas fa-external-link-alt"></i> ${label}`;
             }
-            
 
-            // 2. Tasto Copia Link
+            // --- Copy Link Button ---
             let btnCopy = document.getElementById('btn-copy-link');
             if (!btnCopy) {
                 btnCopy = document.createElement('button');
@@ -501,62 +411,58 @@ if (this.content && this.content.forceInternalPlayer) {
             }
 
             prompt.classList.remove('hidden');
-const cleanup = () => {
+
+            const cleanup = () => {
                 prompt.classList.add('hidden');
-                // Resetta testo bottone cast
-                if(btnCast) {
+                if (btnCast) {
                     btnCast.innerHTML = '<i class="fas fa-broadcast-tower"></i> Trasmetti su altri schermi';
                     btnCast.className = 'bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 mt-2';
                 }
             };
+
             const getApiBaseUrl = () => {
                 if (typeof PROXY_URL !== 'undefined') {
-                    try { return new URL(PROXY_URL).origin; } catch(e) {}
+                    try { return new URL(PROXY_URL).origin; } catch (e) { }
                 }
                 return 'https://api.leleflix.store';
             };
 
-            // AZIONE: PLAYER INTERNO
+            // ACTION: Internal Player
             btnInternal.onclick = () => {
                 this.logView();
                 cleanup();
                 const container = document.getElementById('videoContainer');
                 if (container && container.requestFullscreen) {
-                     container.requestFullscreen().catch(() => {});
-                     if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => {});
+                    container.requestFullscreen().catch(() => { });
+                    if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => { });
                 }
                 resolve('internal');
             };
 
+            // ACTION: Cast
             btnCast.onclick = () => {
-                // 1. Invia il comando al server tramite il socket globale
                 if (typeof socket !== 'undefined') {
                     socket.emit('cast_command', this.content);
-                    
-                    // 2. Feedback visivo
                     btnCast.innerHTML = '<i class="fas fa-check"></i> Comando inviato!';
                     btnCast.classList.remove('bg-teal-600');
                     btnCast.classList.add('bg-green-600');
-                    
-                    // 3. Chiudi il prompt dopo poco
                     setTimeout(() => {
                         cleanup();
-                        resolve('cancel'); // Risolviamo come cancel perché su QUESTO device non parte il player
+                        resolve('cancel');
                     }, 1000);
                 } else {
-                    alert("Errore di connessione LeleCast");
+                    alert('Errore di connessione LeleCast');
                 }
             };
 
-            // AZIONE: PLAYER ESTERNO / NATIVO
+            // ACTION: External Player
             btnExternal.onclick = () => {
                 this.logView();
                 cleanup();
                 if (typeof this.saveVLCStart === 'function') this.saveVLCStart();
-                
+
                 const baseUrl = getApiBaseUrl();
                 let videoUrl = '';
-                
                 if (this.content.media_type === 'movie') {
                     videoUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
                 } else {
@@ -566,18 +472,11 @@ const cleanup = () => {
                 console.log('Opening External:', videoUrl);
 
                 if (isAndroid) {
-                    // ANDROID: Intent di sistema
                     const intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;end`;
                     window.location.href = intentUrl;
-                } 
-                else if (isIOS) {
-                    // IOS: Player Nativo
-                    // Usare window.location.href forza Safari ad aprire il player video a tutto schermo
-                    // invece di provare a scaricare il file in un nuovo tab.
+                } else if (isIOS) {
                     window.location.href = videoUrl;
-                }
-                else {
-                    // DESKTOP: Mini Player Web (per evitare il download del file m3u8)
+                } else {
                     const w = window.open('', '_blank');
                     w.document.write(`
                         <!DOCTYPE html>
@@ -591,7 +490,7 @@ const cleanup = () => {
                         </head>
                         <body>
                             <video id="v" controls autoplay playsinline></video>
-                            <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+                            <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"><\/script>
                             <script>
                                 const v = document.getElementById('v');
                                 const url = "${videoUrl}";
@@ -604,7 +503,7 @@ const cleanup = () => {
                                     v.src = url;
                                     v.addEventListener('loadedmetadata', () => v.play());
                                 }
-                            </script>
+                            <\/script>
                         </body>
                         </html>
                     `);
@@ -613,7 +512,7 @@ const cleanup = () => {
                 resolve('vlc');
             };
 
-            // AZIONE: COPIA LINK
+            // ACTION: Copy Link
             btnCopy.onclick = async () => {
                 this.logView();
                 const baseUrl = getApiBaseUrl();
@@ -623,7 +522,6 @@ const cleanup = () => {
                 } else {
                     videoUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
                 }
-
                 try {
                     await navigator.clipboard.writeText(videoUrl);
                     const originalText = btnCopy.innerHTML;
@@ -634,6 +532,7 @@ const cleanup = () => {
                 }
             };
 
+            // ACTION: Cancel
             btnCancel.onclick = () => {
                 cleanup();
                 resolve('cancel');
@@ -641,7 +540,7 @@ const cleanup = () => {
         });
     }
 
-   // Metodo per loggare la visualizzazione nelle statistiche (chiamato dai bottoni)
+    // ── View Logging ────────────────────────────────────────
     async logView() {
         if (!this.content) return;
         try {
@@ -653,208 +552,185 @@ const cleanup = () => {
                 season: this.content.season_number || null,
                 episode: this.content.episode_number || null
             };
-
-            // Chiamata all'endpoint di logging
             fetch(`${this.PROXY_BASE_URL.replace('/proxy', '')}/log/view`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
                 keepalive: true
             }).catch(e => console.warn('Logging fallito:', e));
-            
         } catch (e) {
             console.error('Errore log view:', e);
         }
     }
 
+    // ── Toast ───────────────────────────────────────────────
     showToast(message) {
-        // Cerca se esiste già il toast, altrimenti crealo
         let toast = document.getElementById('player-toast');
         if (!toast) {
             toast = document.createElement('div');
             toast.id = 'player-toast';
-            // Icona opzionale
-            toast.innerHTML = `<i class="fas fa-history text-[#E50914]"></i> <span></span>`;
-            
-            // Aggiungilo al contenitore del video
+            toast.innerHTML = `<i class="fas fa-history" style="color:#E50914"></i> <span></span>`;
             const container = document.getElementById('videoContainer');
             if (container) container.appendChild(toast);
         }
-        
-        // Imposta il messaggio
         toast.querySelector('span').textContent = message;
-        
-        // Mostra
         requestAnimationFrame(() => {
             toast.classList.add('visible');
         });
-        
-        // Nascondi dopo 3 secondi
         clearTimeout(this.toastTimeout);
         this.toastTimeout = setTimeout(() => {
             if (toast) toast.classList.remove('visible');
         }, 3000);
     }
 
-async initPlayer() {
-        // Reset stato UI (anche se nascosto)
+    // ── Init Player ─────────────────────────────────────────
+    // FIX Bug #2: No more cloneNode(true) — just destroy HLS and re-attach
+    // FIX Bug #3: No more duplicate event listeners here — they live in initEventListeners()
+    async initPlayer() {
+        // Reset UI state
         this.loadingOverlay.classList.remove('hidden');
         this.errorOverlay.classList.add('hidden');
-        this.centerControls.classList.remove('hidden');
-        this.controlsContainer.classList.remove('hidden');
         this.progressBar.style.width = '0%';
         this.currentTime.textContent = '0:00';
         this.duration.textContent = '0:00';
-        
+
+        // Set center controls visible via opacity class (FIX Bug #7)
+        this.centerControls.classList.add('visible-center');
+
         this.currentStreamId = this.generateStreamId();
         this.abortController = new AbortController();
 
-        // Rimuovi listener precedenti per evitare duplicati
-        const newVideoPlayer = this.videoPlayer.cloneNode(true);
-        this.videoPlayer.parentNode.replaceChild(newVideoPlayer, this.videoPlayer);
-        this.videoPlayer = newVideoPlayer;
-        // Reinserisci gli event listener di base (play, pause, etc...)
-        // Nota: Idealmente dovresti avere un metodo this.rebindVideoEvents() per pulizia,
-        // ma per ora manteniamo la logica semplice.
-        this.videoPlayer.addEventListener('ended', () => {
-             if (this.content.media_type === 'tv' && this.checkNextEpisodeExists()) {
-                 this.showNextEpisodePrompt();
-             }
-        });
-        // Ri-aggiungi i listener fondamentali persi col clone o assicurati di non duplicarli
-        this.videoPlayer.addEventListener('play', () => { this.updatePlayIcon(true); this.startRefreshKeeper(); });
-        this.videoPlayer.addEventListener('pause', () => { this.updatePlayIcon(false); this.stopRefreshKeeper(); });
-        this.videoPlayer.addEventListener('timeupdate', () => this.updateTimeDisplay());
-        this.videoPlayer.addEventListener('mousemove', () => this.showControlsTemporarily());
-        this.videoPlayer.addEventListener('touchmove', () => this.showControlsTemporarily());
-        this.videoPlayer.addEventListener('touchstart', (e) => this.handleTouchStart(e));
-        this.videoPlayer.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+        // FIX Bug #2: Destroy HLS properly and clean the video element
+        // instead of cloning the video element (which breaks HLS and loses listeners)
+        if (this.hls) {
+            this.hls.destroy();
+            this.hls = null;
+        }
+        this.videoPlayer.pause();
+        this.videoPlayer.removeAttribute('src');
+        this.videoPlayer.load();
 
         try {
-            // Costruisci URL
+            // Build proxy URL
             let proxyUrl = `${PROXY_URL}${this.content.media_type}/${this.content.id}`;
             if (this.content.media_type === 'tv' && this.content.season_number && this.content.episode_number) {
                 proxyUrl = `${PROXY_URL}series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}`;
             }
             proxyUrl += `?streamId=${this.currentStreamId}`;
-            
+
             const proxyResponse = await fetch(proxyUrl, { signal: this.abortController.signal });
             if (!proxyResponse.ok) throw new Error('Failed to fetch stream URL');
             const { url } = await proxyResponse.json();
-            
-            // --- IL PROMPT APPARE ORA (IL PLAYER È ANCORA NASCOSTO) ---
+
+            // Show play method prompt (player is still hidden)
             const playMethod = await this.askPlayMethod(url);
-            
+
             if (playMethod === 'vlc' || playMethod === 'cancel') {
-                this.closePlayer(); // Pulisce tutto e esce
+                this.closePlayer();
                 return;
             }
-            
-            // --- SCELTO PLAYER INTERNO: MOSTRA IL PLAYER ---
+
+            // Internal player chosen — show the player
             if (this.content && this.content.forceInternalPlayer) {
-            console.log("Tentativo Fullscreen Immediato (Host)");
-            this.enterFullscreen().catch(e => console.log("Fullscreen immediato fallito (Normale per Guest):", e));
-        }
+                console.log('Tentativo Fullscreen Immediato (Host)');
+                this.enterFullscreen().catch(e => console.log('Fullscreen immediato fallito (Normale per Guest):', e));
+            }
             this.playerModal.classList.remove('hidden');
             this.showControlsTemporarily();
-            
 
-            // Funzione helper per gestire il resume
+            // Resume helper
             const handleResume = () => {
-                if (this.content.resumeTime && this.content.resumeTime > 10) { // Ignora se < 10 secondi
+                if (this.content.resumeTime && this.content.resumeTime > 10) {
                     console.log(`Resuming playback at ${this.content.resumeTime}s`);
                     this.videoPlayer.currentTime = this.content.resumeTime;
-                    
-this.showToast('Ripreso da dove avevi lasciato');                }
+                    this.showToast('Ripreso da dove avevi lasciato');
+                }
             };
-            // Inizia HLS
+
+            // Start HLS
             if (Hls.isSupported()) {
                 if (this.hls) this.hls.destroy();
                 this.hls = new Hls();
-                
+
                 this.hls.on(Hls.Events.ERROR, (event, data) => {
                     if (data.fatal) {
                         this.showError('Errore fatale nello stream. Riprova più tardi.');
                         if (this.abortController) this.abortController.abort();
                     }
                 });
-                
+
                 this.hls.loadSource(url);
                 this.hls.attachMedia(this.videoPlayer);
-                
+
                 this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
                     const lvl = this.hls.levels.findIndex(l => l.height === 1080);
                     if (lvl >= 0) this.hls.currentLevel = lvl;
-                    
+
                     this.loadingOverlay.classList.add('hidden');
-const playPromise = this.videoPlayer.play();
-                    
+                    const playPromise = this.videoPlayer.play();
+
                     if (playPromise !== undefined) {
                         playPromise
                             .then(() => {
                                 handleResume();
-                                
-                                // Se siamo in Party, proviamo il fullscreen
                                 if (this.content && this.content.forceInternalPlayer) {
-                                    return this.enterFullscreen(); // <--- Se fallisce, va nel catch sotto
+                                    return this.enterFullscreen();
                                 }
                             })
                             .catch(error => {
-                                // Se fallisce il Play OPPURE il Fullscreen, mostriamo l'overlay
-                                console.warn("Autoplay o Fullscreen bloccato:", error);
+                                console.warn('Autoplay o Fullscreen bloccato:', error);
                                 this.showClickToPlayOverlay();
                             });
-                    }            
-                    
+                    }
+
                     this.setupQualityOptions();
-// AUDIO TRACKS
-                const audioOptions = document.querySelector('.audio-options');
-                audioOptions.innerHTML = '';
-                if (data.audioTracks && data.audioTracks.length > 0) {
-                    data.audioTracks.forEach((track, index) => {
-                        const option = document.createElement('div');
-                        option.className = 'audio-option px-4 py-2 cursor-pointer flex items-center justify-between';
-                        option.dataset.audio = index;
-                        option.innerHTML = `
-                            <span>${track.name || track.lang || 'Track ' + (index + 1)}</span>
-                            <i class="fas fa-check text-primary ${this.hls.audioTrack === index ? '' : 'hidden'}"></i>
-                        `;
-                        audioOptions.appendChild(option);
-                    });
-                }
 
-                // SUBTITLES
-                const subtitleOptions = document.querySelector('.subtitle-options');
-                subtitleOptions.innerHTML = '';
-                const noneOption = document.createElement('div');
-                noneOption.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
-                noneOption.dataset.subtitle = 'none';
-                noneOption.innerHTML = `
-                    <span>None</span>
-                    <i class="fas fa-check text-primary ${this.hls.subtitleTrack === -1 ? '' : 'hidden'}"></i>
-                `;
-                subtitleOptions.appendChild(noneOption);
+                    // Audio Tracks
+                    const audioOptions = document.querySelector('.audio-options');
+                    audioOptions.innerHTML = '';
+                    if (data.audioTracks && data.audioTracks.length > 0) {
+                        data.audioTracks.forEach((track, index) => {
+                            const option = document.createElement('div');
+                            option.className = 'audio-option px-4 py-2 cursor-pointer flex items-center justify-between';
+                            option.dataset.audio = index;
+                            option.innerHTML = `
+                                <span>${track.name || track.lang || 'Track ' + (index + 1)}</span>
+                                <i class="fas fa-check text-primary ${this.hls.audioTrack === index ? '' : 'hidden'}"></i>
+                            `;
+                            audioOptions.appendChild(option);
+                        });
+                    }
 
-                if (data.subtitleTracks && data.subtitleTracks.length > 0) {
-                    data.subtitleTracks.forEach((track, index) => {
-                        const option = document.createElement('div');
-                        option.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
-                        option.dataset.subtitle = index;
-                        option.innerHTML = `
-                            <span>${track.name || track.lang || 'Subtitle ' + (index + 1)}</span>
-                            <i class="fas fa-check text-primary ${this.hls.subtitleTrack === index ? '' : 'hidden'}"></i>
-                        `;
-                        subtitleOptions.appendChild(option);
-                    });
-                }
+                    // Subtitles
+                    const subtitleOptions = document.querySelector('.subtitle-options');
+                    subtitleOptions.innerHTML = '';
+                    const noneOption = document.createElement('div');
+                    noneOption.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
+                    noneOption.dataset.subtitle = 'none';
+                    noneOption.innerHTML = `
+                        <span>None</span>
+                        <i class="fas fa-check text-primary ${this.hls.subtitleTrack === -1 ? '' : 'hidden'}"></i>
+                    `;
+                    subtitleOptions.appendChild(noneOption);
+
+                    if (data.subtitleTracks && data.subtitleTracks.length > 0) {
+                        data.subtitleTracks.forEach((track, index) => {
+                            const option = document.createElement('div');
+                            option.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
+                            option.dataset.subtitle = index;
+                            option.innerHTML = `
+                                <span>${track.name || track.lang || 'Subtitle ' + (index + 1)}</span>
+                                <i class="fas fa-check text-primary ${this.hls.subtitleTrack === index ? '' : 'hidden'}"></i>
+                            `;
+                            subtitleOptions.appendChild(option);
+                        });
+                    }
                 });
             } else if (this.videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
                 this.videoPlayer.src = url;
-this.videoPlayer.addEventListener('loadedmetadata', () => {
+                this.videoPlayer.addEventListener('loadedmetadata', () => {
                     this.loadingOverlay.classList.add('hidden');
-                    
-                    // --- MODIFICA 2B (Nativo): Gestione Blocco Autoplay ---
-this.videoPlayer.play()
+                    this.videoPlayer.play()
                         .then(() => {
                             handleResume();
                             if (this.content && this.content.forceInternalPlayer) {
@@ -862,10 +738,9 @@ this.videoPlayer.play()
                             }
                         })
                         .catch(error => {
-                            console.warn("Autoplay o Fullscreen bloccato:", error);
+                            console.warn('Autoplay o Fullscreen bloccato:', error);
                             this.showClickToPlayOverlay();
                         });
-                    // -----------------------------------------------------
                 });
             } else {
                 this.showError('Il tuo browser non supporta questo formato video.');
@@ -878,114 +753,99 @@ this.videoPlayer.play()
         }
     }
 
-enterFullscreen() {
-        // Implementazione richiesta
-        const container = document.getElementById('videoContainer');
-        
-        if (container && container.requestFullscreen) {
-             // Ritorniamo la Promise per poter gestire l'errore se il browser blocca
-             return container.requestFullscreen()
-                .then(() => {
-                    if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => {});
-                });
-        } 
-        // Fallback necessario per Safari su iPhone (che non usa requestFullscreen standard)
-        else if (this.videoPlayer.webkitEnterFullscreen) {
-            this.videoPlayer.webkitEnterFullscreen();
-            return Promise.resolve();
-        }
-        
-        return Promise.reject("Fullscreen API non supportata");
+    // ── Stream ID ───────────────────────────────────────────
+    generateStreamId() {
+        return Math.random().toString(36).substring(2, 15) +
+               Math.random().toString(36).substring(2, 15);
     }
 
-
-// Aggiungi questo metodo alla classe VideoPlayer
-generateStreamId() {
-    return Math.random().toString(36).substring(2, 15) + 
-           Math.random().toString(36).substring(2, 15);
-}
-
-// --- MODIFICA 3: Overlay Sblocco ---
+    // ── Click-to-Play Overlay (Party Mode) ──────────────────
     showClickToPlayOverlay() {
         if (document.getElementById('autoplay-overlay')) return;
 
         const overlay = document.createElement('div');
         overlay.id = 'autoplay-overlay';
-        overlay.className = 'absolute inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm cursor-pointer';
         overlay.innerHTML = `
-            <div class="text-center animate-bounce">
-                <div class="w-24 h-24 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl border-4 border-white/20 hover:scale-110 transition-transform">
-                    <i class="fas fa-expand text-4xl text-white pl-1"></i>
+            <div style="text-align: center; animation: bounce 1s infinite;">
+                <div style="
+                    width: 96px; height: 96px;
+                    background: rgba(128, 0, 255, 0.7);
+                    backdrop-filter: blur(12px);
+                    border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    margin: 0 auto 24px;
+                    box-shadow: 0 8px 32px rgba(128,0,255,0.3);
+                    border: 4px solid rgba(255,255,255,0.15);
+                ">
+                    <i class="fas fa-expand" style="font-size: 2.5rem; color: white; padding-left: 4px;"></i>
                 </div>
-                <h2 class="text-white text-2xl font-bold mb-2">Unisciti al Party</h2>
-                <p class="text-gray-300">Clicca per sincronizzare e andare a tutto schermo</p>
+                <h2 style="color: white; font-size: 1.5rem; font-weight: bold; margin-bottom: 8px;">Unisciti al Party</h2>
+                <p style="color: rgba(255,255,255,0.7);">Clicca per sincronizzare e andare a tutto schermo</p>
             </div>
         `;
-        
+
         overlay.onclick = () => {
             this.videoPlayer.muted = false;
-            
-            // 1. Play
             this.videoPlayer.play()
                 .then(() => {
-                    // 2. Fullscreen (usando il tuo metodo)
                     return this.enterFullscreen();
                 })
                 .then(() => {
-                    // 3. Rimuovi overlay solo se tutto ok
                     overlay.remove();
                 })
                 .catch(e => {
-                    console.error("Errore click overlay:", e);
-                    // Rimuovi comunque l'overlay se il play è andato, anche se fullscreen fallisce
+                    console.error('Errore click overlay:', e);
                     if (!this.videoPlayer.paused) overlay.remove();
                 });
         };
-        
+
         document.getElementById('videoContainer').appendChild(overlay);
     }
 
-showError(message) {
-    this.centerControls.classList.add('hidden');
-    this.controlsContainer.classList.add('hidden');
-    this.loadingOverlay.classList.add('hidden');
-    this.errorOverlay.classList.remove('hidden');
-    this.errorText.textContent = message;
-    
-    // Resetta lo stato di riproduzione
-    this.currentStreamId = null;
-    if (this.abortController) {
-        this.abortController.abort();
-        this.abortController = null;
-    }
-}
+    // ── Show Error ──────────────────────────────────────────
+    showError(message) {
+        // FIX Bug #7: Use opacity class for center controls, not hidden class
+        this.centerControls.classList.remove('visible-center');
+        this.controlsContainer.classList.remove('visible');
+        this.backButtonContainer.classList.remove('visible');
+        this.loadingOverlay.classList.add('hidden');
+        this.errorOverlay.classList.remove('hidden');
+        this.errorText.textContent = message;
 
+        this.currentStreamId = null;
+        if (this.abortController) {
+            this.abortController.abort();
+            this.abortController = null;
+        }
+    }
+
+    // ── Event Listeners ─────────────────────────────────────
+    // FIX Bug #3: All event listeners are added ONCE here, not duplicated in initPlayer()
     initEventListeners() {
         // Retry button
         this.retryButton.addEventListener('click', () => this.initPlayer());
-            this.setupProgressTracking();
-// Dentro initEventListeners()
-this.videoPlayer.addEventListener('play', () => {
-    this.updatePlayIcon(true);
-    this.startRefreshKeeper();
-});
 
-this.videoPlayer.addEventListener('pause', () => {
-    this.updatePlayIcon(false);
-    this.stopRefreshKeeper();
-});
-        // Play/Pause
-        this.videoPlayer.addEventListener('play', () => this.updatePlayIcon(true));
-        this.videoPlayer.addEventListener('pause', () => this.updatePlayIcon(false));
-        
+        // Progress tracking (adds listeners to videoPlayer once)
+        this.setupProgressTracking();
+
+        // Play / Pause state updates
+        this.videoPlayer.addEventListener('play', () => {
+            this.updatePlayIcon(true);
+            this.startRefreshKeeper();
+        });
+        this.videoPlayer.addEventListener('pause', () => {
+            this.updatePlayIcon(false);
+            this.stopRefreshKeeper();
+        });
+
         // Volume
         this.volumeBtn.addEventListener('click', () => this.toggleMute());
         this.volumeSlider.addEventListener('input', (e) => this.updateVolume(e.target.value));
-        
+
         // Time display
         this.videoPlayer.addEventListener('timeupdate', () => this.updateTimeDisplay());
-        
-        // Progress bar
+
+        // Progress bar seeking
         this.progressContainer.addEventListener('mousedown', (e) => this.startSeek(e));
         this.progressContainer.addEventListener('touchstart', (e) => this.startSeek(e));
         document.addEventListener('mousemove', (e) => this.handleSeek(e));
@@ -993,187 +853,229 @@ this.videoPlayer.addEventListener('pause', () => {
         document.addEventListener('mouseup', () => this.endSeek());
         document.addEventListener('touchend', () => this.endSeek());
 
-            // Controlli centrali
-    this.playCenterBtn.addEventListener('click', () => {
-        this.togglePlayPause();
-        this.showControlsTemporarily(); // Mantieni i controlli visibili dopo il click
-    });
-    
-    this.skipForwardCenter.addEventListener('click', () => {
-        this.doSkipForward();
-        this.showControlsTemporarily(); // Mantieni i controlli visibili dopo lo skip
-    });
-    
-    this.skipBackwardCenter.addEventListener('click', () => {
-        this.doSkipBackward();
-        this.showControlsTemporarily(); // Mantieni i controlli visibili dopo lo skip
-    });
+        // Center controls
+        this.playCenterBtn.addEventListener('click', () => {
+            this.togglePlayPause();
+            this.showControlsTemporarily();
+        });
+        this.skipForwardCenter.addEventListener('click', () => {
+            this.doSkipForward();
+            this.showControlsTemporarily();
+        });
+        this.skipBackwardCenter.addEventListener('click', () => {
+            this.doSkipBackward();
+            this.showControlsTemporarily();
+        });
 
-
-                
+        // Next episode
         this.nextEpisodeBtn.addEventListener('click', () => this.playNextEpisode());
-        
+
         // Touch controls
         this.videoPlayer.addEventListener('touchstart', (e) => this.handleTouchStart(e));
         this.videoPlayer.addEventListener('touchend', (e) => this.handleTouchEnd(e));
-        
+
         // Zoom
         this.zoomBtn.addEventListener('click', () => this.toggleZoom());
-        
+
         // Fullscreen
         this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
-        
+
         // Menu toggles
-        this.settingsBtn.addEventListener('click', () => this.toggleMenu('settings'));
-        this.audioTrackBtn.addEventListener('click', () => this.toggleMenu('audio'));
-        this.captionsBtn.addEventListener('click', () => this.toggleMenu('captions'));
-        
+        this.settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleMenu('settings');
+        });
+        this.audioTrackBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleMenu('audio');
+        });
+        this.captionsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleMenu('captions');
+        });
+
         // Menu selections
         document.addEventListener('click', (e) => this.handleMenuSelection(e));
-        
+
+        // Close menus when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.isAnyMenuOpen()) return;
+            const isInsideMenu = e.target.closest('.settings-menu');
+            const isMenuButton = e.target.closest('#settingsBtn, #audioTrackBtn, #captionsBtn');
+            if (!isInsideMenu && !isMenuButton) {
+                this.closeAllMenus();
+            }
+        });
+
+        // Close menus with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isAnyMenuOpen()) {
+                this.closeAllMenus();
+                e.stopPropagation();
+            }
+        });
+
         // Close player
         this.closePlayerBtn.addEventListener('click', () => this.closePlayer());
-        
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
-        
-    this.videoPlayer.addEventListener('mousemove', () => this.showControlsTemporarily());
-    this.videoPlayer.addEventListener('touchmove', () => this.showControlsTemporarily());
-    
-    // Nascondi controlli quando il video inizia a riprodurre
-    this.videoPlayer.addEventListener('play', () => {
-        this.showControlsTemporarily();
-    });
-    
-    // Mostra sempre i controlli quando il video è in pausa
-    this.videoPlayer.addEventListener('pause', () => {
-        this.controlsContainer.style.opacity = '1';
-        this.backButtonContainer.style.opacity = '1';
-        clearTimeout(this.controlsTimeout);
-    });
+
+        // Mouse / touch move shows controls temporarily
+        this.videoPlayer.addEventListener('mousemove', () => this.showControlsTemporarily());
+        this.videoPlayer.addEventListener('touchmove', () => this.showControlsTemporarily());
+
+        // Show controls when video starts playing
+        this.videoPlayer.addEventListener('play', () => {
+            this.showControlsTemporarily();
+        });
+
+        // FIX Bug #4: Show controls when paused using .visible class only
+        this.videoPlayer.addEventListener('pause', () => {
+            this.controlsContainer.classList.add('visible');
+            this.backButtonContainer.classList.add('visible');
+            this.centerControls.classList.add('visible-center');
+            clearTimeout(this.controlsTimeout);
+        });
+
+        // Video ended
+        this.videoPlayer.addEventListener('ended', () => {
+            if (this.content.media_type === 'tv' && this.checkNextEpisodeExists()) {
+                this.showNextEpisodePrompt();
+            }
+        });
     }
 
-    // Metodi per la gestione del player
+    // ── Toggle Play/Pause ───────────────────────────────────
     togglePlayPause() {
         if (this.videoPlayer.paused) {
             this.videoPlayer.play();
-                this.startRefreshKeeper();
-
+            this.startRefreshKeeper();
         } else {
             this.videoPlayer.pause();
-                this.stopRefreshKeeper();
-
+            this.stopRefreshKeeper();
         }
     }
 
-updatePlayIcon(isPlaying) {
-    // Aggiorna il pulsante centrale
-    const centerIcon = this.playCenterBtn.querySelector('i');
-    centerIcon.className = isPlaying ? 'fas fa-pause text-4xl' : 'fas fa-play text-4xl';
-}
+    // ── Update Play Icon ────────────────────────────────────
+    updatePlayIcon(isPlaying) {
+        const centerIcon = this.playCenterBtn.querySelector('i');
+        centerIcon.className = isPlaying ? 'fas fa-pause text-4xl' : 'fas fa-play text-4xl';
+    }
 
+    // ── Toggle Mute ─────────────────────────────────────────
     toggleMute() {
         if (this.videoPlayer.volume === 0) {
-            this.videoPlayer.volume = this.volumeSlider.value = 1;
+            this.videoPlayer.volume = 1;
+            this.volumeSlider.value = 1;
             this.volumeIcon.className = 'fas fa-volume-up text-lg';
         } else {
-            this.videoPlayer.volume = this.volumeSlider.value = 0;
+            this.videoPlayer.volume = 0;
+            this.volumeSlider.value = 0;
             this.volumeIcon.className = 'fas fa-volume-mute text-lg';
         }
     }
 
+    // ── Update Volume ───────────────────────────────────────
     updateVolume(value) {
-        this.videoPlayer.volume = value;
-        if (value == 0) {
+        const vol = parseFloat(value);
+        this.videoPlayer.volume = vol;
+        // FIX Bug #8: Sync the volume slider when updating volume
+        this.volumeSlider.value = vol;
+        if (vol === 0) {
             this.volumeIcon.className = 'fas fa-volume-mute text-lg';
-        } else if (value < 0.5) {
+        } else if (vol < 0.5) {
             this.volumeIcon.className = 'fas fa-volume-down text-lg';
         } else {
             this.volumeIcon.className = 'fas fa-volume-up text-lg';
         }
     }
 
-    updateTimeDisplay() {
-    if (this.isSeeking) return; 
-
-    // Se è NaN (Not a Number) o non è finito (come all'inizio del caricamento),
-    // imposta la barra a 0% e il tempo a 0:00.
-    if (!this.videoPlayer.duration || !isFinite(this.videoPlayer.duration)) {
-        this.progressBar.style.width = '0%';
-        this.currentTime.textContent = '0:00';
-        this.duration.textContent = '0:00';
-        return; // Esce dalla funzione
+    // ── Format Time ─────────────────────────────────────────
+    // FIX Bug #9: Add hours formatting for long videos (>60min)
+    formatTime(seconds) {
+        if (!seconds || !isFinite(seconds)) return '0:00';
+        seconds = Math.floor(seconds);
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+        if (h > 0) {
+            return `${h}:${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+        }
+        return `${m}:${s < 10 ? '0' + s : s}`;
     }
 
-    // (Questo codice viene eseguito solo se la durata è valida)
-    const currentMinutes = Math.floor(this.videoPlayer.currentTime / 60);
-    const currentSeconds = Math.floor(this.videoPlayer.currentTime % 60);
-    this.currentTime.textContent = 
-        `${currentMinutes}:${currentSeconds < 10 ? '0' + currentSeconds : currentSeconds}`;
+    // ── Update Time Display ─────────────────────────────────
+    updateTimeDisplay() {
+        if (this.isSeeking) return;
 
-    const durationMinutes = Math.floor(this.videoPlayer.duration / 60);
-    const durationSeconds = Math.floor(this.videoPlayer.duration % 60);
-    this.duration.textContent = 
-        `${durationMinutes}:${durationSeconds < 10 ? '0' + durationSeconds : durationSeconds}`;
+        if (!this.videoPlayer.duration || !isFinite(this.videoPlayer.duration)) {
+            this.progressBar.style.width = '0%';
+            this.currentTime.textContent = '0:00';
+            this.duration.textContent = '0:00';
+            return;
+        }
 
-    const progressPercent = (this.videoPlayer.currentTime / this.videoPlayer.duration) * 100;
-    this.progressBar.style.width = `${progressPercent}%`;
-}
+        // FIX Bug #9: Use formatTime with hours support
+        this.currentTime.textContent = this.formatTime(this.videoPlayer.currentTime);
+        this.duration.textContent = this.formatTime(this.videoPlayer.duration);
 
-startSeek(e) {
+        const progressPercent = (this.videoPlayer.currentTime / this.videoPlayer.duration) * 100;
+        this.progressBar.style.width = `${progressPercent}%`;
+    }
+
+    // ── Seek Handling ───────────────────────────────────────
+    startSeek(e) {
         if (!this.videoPlayer.duration || isNaN(this.videoPlayer.duration)) return;
         this.isSeeking = true;
-        if (this.seekTooltip) this.seekTooltip.style.opacity = '1'; 
+        if (this.seekTooltip) this.seekTooltip.style.opacity = '1';
         this.handleSeek(e);
     }
 
     handleSeek(e) {
         if (!this.isSeeking || !this.videoPlayer.duration || isNaN(this.videoPlayer.duration)) return;
-        
+
         const clientX = e.clientX || (e.touches && e.touches[0].clientX);
         if (clientX) {
             const rect = this.progressContainer.getBoundingClientRect();
             const pos = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
             const seekTime = pos * this.videoPlayer.duration;
-            
+
             if (!isNaN(seekTime) && isFinite(seekTime)) {
-                
-                // 1. Aggiorna la UI della barra di progresso
                 const progressPercent = pos * 100;
                 this.progressBar.style.width = `${progressPercent}%`;
-                
-                // 2. Formatta il testo del tempo
-                const currentMinutes = Math.floor(seekTime / 60);
-                const currentSeconds = Math.floor(seekTime % 60);
-                const seekTimeString = `${currentMinutes}:${currentSeconds < 10 ? '0' + currentSeconds : currentSeconds}`;
-                
-                // 3. Aggiorna il tempo corrente visibile
+
+                // FIX Bug #9: Use formatTime with hours
+                const seekTimeString = this.formatTime(seekTime);
                 this.currentTime.textContent = seekTimeString;
-                
-                // 4. Salva il tempo per applicarlo al rilascio
                 this.lastSeekTime = seekTime;
 
-                // 5. Aggiorna il Tooltip (TESTO e POSIZIONE)
+                // FIX Bug #10: Clamp seek tooltip position to stay within bounds
                 if (this.seekTooltip) {
                     this.seekTooltip.textContent = seekTimeString;
-                    this.seekTooltip.style.left = `${progressPercent}%`; // Sposta il tooltip
+                    // Calculate pixel position of tooltip and clamp
+                    const tooltipHalfWidth = 30; // approximate half width of tooltip
+                    const minLeft = tooltipHalfWidth;
+                    const maxLeft = rect.width - tooltipHalfWidth;
+                    const rawPixelLeft = pos * rect.width;
+                    const clampedPixelLeft = Math.max(minLeft, Math.min(maxLeft, rawPixelLeft));
+                    this.seekTooltip.style.left = `${clampedPixelLeft}px`;
+                    this.seekTooltip.style.transform = 'translateX(-50%)';
                 }
             }
         }
     }
-endSeek() {
-        if (!this.isSeeking) return; // Evita esecuzioni multiple
-        
-        this.isSeeking = false;
 
-        if (this.seekTooltip) this.seekTooltip.style.opacity = '0'; // <-- AGGIUNGI QUESTO
-        
-        // Applica il tempo al video SOLO al rilascio
+    endSeek() {
+        if (!this.isSeeking) return;
+        this.isSeeking = false;
+        if (this.seekTooltip) this.seekTooltip.style.opacity = '0';
         if (!isNaN(this.lastSeekTime) && isFinite(this.lastSeekTime)) {
             this.videoPlayer.currentTime = this.lastSeekTime;
         }
     }
 
+    // ── Touch Handling ──────────────────────────────────────
     handleTouchStart(e) {
         this.touchStartX = e.touches[0].clientX;
         this.touchStartTime = Date.now();
@@ -1183,59 +1085,59 @@ endSeek() {
         const touchEndX = e.changedTouches[0].clientX;
         const containerWidth = this.videoPlayer.offsetWidth;
         const currentTime = Date.now();
-        
-        // Check for double tap
+
+        // Double-tap detection
         if (currentTime - this.lastTapTime < 300) {
             const tapPosition = touchEndX / containerWidth;
-            
             if (tapPosition > 0.6) {
                 this.doSkipForward();
-
             } else if (tapPosition < 0.4) {
                 this.doSkipBackward();
-
             }
             this.lastTapTime = 0;
             return;
         }
-        
+
+        // Single tap center: toggle play or show controls
         if (currentTime - this.lastTapTime >= 300) {
             const tapPosition = touchEndX / containerWidth;
             if (tapPosition > 0.4 && tapPosition < 0.6) {
-                if (this.controlsContainer.style.opacity === '1') {
+                // FIX Bug #6: Check .visible class instead of style.opacity
+                if (this.controlsContainer.classList.contains('visible')) {
                     this.togglePlayPause();
                 } else {
                     this.showControlsTemporarily();
                 }
             }
         }
-        
+
         this.lastTapTime = currentTime;
     }
 
-doSkipForward() {
-    this.videoPlayer.currentTime = Math.min(this.videoPlayer.duration, this.videoPlayer.currentTime + 10);
-    this.skipForward.classList.remove('forward');
-    void this.skipForward.offsetWidth;
-    this.skipForward.classList.add('forward');
-}
+    // ── Skip Animations ─────────────────────────────────────
+    doSkipForward() {
+        this.videoPlayer.currentTime = Math.min(this.videoPlayer.duration, this.videoPlayer.currentTime + 10);
+        this.skipForward.classList.remove('forward');
+        void this.skipForward.offsetWidth;
+        this.skipForward.classList.add('forward');
+    }
 
-doSkipBackward() {
-    this.videoPlayer.currentTime = Math.max(0, this.videoPlayer.currentTime - 10);
-    this.skipBackward.classList.remove('backward');
-    void this.skipBackward.offsetWidth;
-    this.skipBackward.classList.add('backward');
-}
+    doSkipBackward() {
+        this.videoPlayer.currentTime = Math.max(0, this.videoPlayer.currentTime - 10);
+        this.skipBackward.classList.remove('backward');
+        void this.skipBackward.offsetWidth;
+        this.skipBackward.classList.add('backward');
+    }
 
-
+    // ── Zoom ────────────────────────────────────────────────
     toggleZoom() {
         this.videoPlayer.classList.remove('video-zoom-1', 'video-zoom-2', 'video-zoom-3');
         this.zoomLevel = this.zoomLevel < 3 ? this.zoomLevel + 1 : 1;
         this.videoPlayer.classList.add(`video-zoom-${this.zoomLevel}`);
-        
+
         const zoomModes = ['contain', 'cover', 'fill'];
         this.videoPlayer.style.objectFit = zoomModes[this.zoomLevel - 1];
-        
+
         const icons = [
             '<i class="fas fa-search-plus text-lg"></i>',
             '<i class="fas fa-search-minus text-lg"></i>',
@@ -1244,126 +1146,165 @@ doSkipBackward() {
         this.zoomBtn.innerHTML = icons[this.zoomLevel - 1];
     }
 
-    toggleFullscreen() {
-
+    // ── Fullscreen ──────────────────────────────────────────
+    isFullscreen() {
         const container = document.getElementById('videoContainer');
-    if (container.requestFullscreen) {
-        container.requestFullscreen().then(() => {
-            this.fullscreenBtn.innerHTML = '<i class="fas fa-compress text-lg"></i>';
-            if (screen.orientation?.lock) {
-                screen.orientation.lock('landscape').catch(err => {
-                    console.warn('Orientation lock failed:', err);
-                });
+        return !!(
+            document.fullscreenElement ||
+            document.webkitFullscreenElement ||
+            document.mozFullScreenElement ||
+            document.msFullscreenElement ||
+            this.videoPlayer.webkitDisplayingFullscreen
+        );
+    }
+
+    toggleFullscreen() {
+        if (this.isFullscreen()) {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (this.videoPlayer.webkitExitFullscreen) {
+                this.videoPlayer.webkitExitFullscreen();
             }
-        });
-    } else if (container.webkitRequestFullscreen) {
-        container.webkitRequestFullscreen();
-    }
-
-    else {
-            container.exitFullscreen();
             this.fullscreenBtn.innerHTML = '<i class="fas fa-expand text-lg"></i>';
+            document.getElementById('videoContainer').classList.remove('fullscreen-active');
+            if (screen.orientation?.unlock) {
+                screen.orientation.unlock().catch(() => { });
+            }
+        } else {
+            this.enterFullscreen().then(() => {
+                this.fullscreenBtn.innerHTML = '<i class="fas fa-compress text-lg"></i>';
+                document.getElementById('videoContainer').classList.add('fullscreen-active');
+            }).catch(err => console.warn('Fullscreen bloccato o non supportato:', err));
         }
-    
     }
 
-    toggleMenu(menuType) {
-        this.settingsMenu.classList.toggle('active', menuType === 'settings');
-        this.audioMenu.classList.toggle('active', menuType === 'audio');
-        this.captionsMenu.classList.toggle('active', menuType === 'captions');
+    enterFullscreen() {
+        const container = document.getElementById('videoContainer');
+        if (container && container.requestFullscreen) {
+            return container.requestFullscreen().then(() => {
+                if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => { });
+            });
+        } else if (container && container.webkitRequestFullscreen) {
+            return new Promise((resolve) => {
+                container.webkitRequestFullscreen();
+                resolve();
+            });
+        } else if (this.videoPlayer.webkitEnterFullscreen) {
+            return new Promise((resolve) => {
+                this.videoPlayer.webkitEnterFullscreen();
+                resolve();
+            });
+        }
+        return Promise.reject('Fullscreen API non supportata dal browser in uso');
     }
 
-handleMenuSelection(e) {
-    const audioOption = e.target.closest('.audio-option');
-    const subtitleOption = e.target.closest('.subtitle-option');
-    const qualityOption = e.target.closest('.quality-option');
-
-    if (audioOption) {
-        const track = parseInt(audioOption.dataset.audio);
-        this.hls.audioTrack = track;
-
-        this.audioMenu.querySelectorAll('i').forEach(i => i.classList.add('hidden'));
-        audioOption.querySelector('i').classList.remove('hidden');
+    // ── Menu Toggles ────────────────────────────────────────
+    closeAllMenus() {
+        this.settingsMenu.classList.remove('active');
         this.audioMenu.classList.remove('active');
-    }
-
-    if (subtitleOption) {
-        const track = subtitleOption.dataset.subtitle === 'none' ? -1 : parseInt(subtitleOption.dataset.subtitle);
-        this.hls.subtitleTrack = track;
-
-        this.captionsMenu.querySelectorAll('i').forEach(i => i.classList.add('hidden'));
-        subtitleOption.querySelector('i').classList.remove('hidden');
-
-        document.getElementById('captionsBadge').classList.toggle('hidden', track === -1);
         this.captionsMenu.classList.remove('active');
     }
 
-    if (qualityOption) {
-        const quality = qualityOption.dataset.quality;
-        this.hls.currentLevel = quality === 'auto' ? -1 : parseInt(quality);
-
-        this.settingsMenu.querySelectorAll('i').forEach(i => i.classList.add('hidden'));
-        qualityOption.querySelector('i').classList.remove('hidden');
-        this.settingsMenu.classList.remove('active');
-    }
-}
-
-// Sostituisci tutte le verifiche document.fullscreenElement con:
-isFullscreen() {
-    const container = document.getElementById('videoContainer');
-    return !!(
-        document.fullscreenElement === container ||
-        document.webkitFullscreenElement === container ||
-        document.mozFullScreenElement === container ||
-        document.msFullscreenElement === container
-    );
-}
-
-showControlsTemporarily() {
-    const container = document.getElementById('videoContainer');
-
-    // Layout speciale per mobile verticale
-    if (this.isMobile && window.innerHeight > window.innerWidth) {
-        this.controlsContainer.classList.add('mobile-portrait');
-        
-        // In verticale mostra i pulsanti centrali ma tieni la barra sotto visibile
-        this.centerControls.classList.remove('hidden');
-        this.centerControls.style.opacity = '1';
-    } else {
-        this.controlsContainer.classList.remove('mobile-portrait');
+    isAnyMenuOpen() {
+        return this.settingsMenu.classList.contains('active') ||
+               this.audioMenu.classList.contains('active') ||
+               this.captionsMenu.classList.contains('active');
     }
 
-    this.controlsContainer.offsetHeight; // Trigger reflow
-    
-    // Mostra i controlli
-    this.controlsContainer.classList.add('visible');
-    this.backButtonContainer.classList.add('visible');
-    this.centerControls.classList.remove('hidden');
-    this.centerControls.style.opacity = '1';
-    
-    // Rimuovi stili inline
-    this.controlsContainer.style.removeProperty('opacity');
-    this.backButtonContainer.style.removeProperty('opacity');
-    
-    clearTimeout(this.controlsTimeout);
-    
-    this.controlsTimeout = setTimeout(() => {
-        if (!this.videoPlayer.paused && !this.isSeeking) {
-            this.controlsContainer.classList.remove('visible');
-            this.backButtonContainer.classList.remove('visible');
-            this.centerControls.style.opacity = '0';
-            setTimeout(() => {
-                if (this.centerControls.style.opacity === '0') {
-                    this.centerControls.classList.add('hidden');
-                }
-            }, 300);
+    toggleMenu(menuType) {
+        const menuMap = {
+            settings: this.settingsMenu,
+            audio: this.audioMenu,
+            captions: this.captionsMenu
+        };
+        const targetMenu = menuMap[menuType];
+        const isAlreadyOpen = targetMenu.classList.contains('active');
+
+        // Close all menus first
+        this.closeAllMenus();
+
+        // If the clicked menu was already open, just close it (toggle off)
+        // Otherwise, open the requested menu
+        if (!isAlreadyOpen) {
+            targetMenu.classList.add('active');
         }
-    }, 3000);
-}
+    }
 
+    handleMenuSelection(e) {
+        const audioOption = e.target.closest('.audio-option');
+        const subtitleOption = e.target.closest('.subtitle-option');
+        const qualityOption = e.target.closest('.quality-option');
+
+        if (audioOption) {
+            const track = parseInt(audioOption.dataset.audio);
+            this.hls.audioTrack = track;
+            this.audioMenu.querySelectorAll('i').forEach(i => i.classList.add('hidden'));
+            audioOption.querySelector('i').classList.remove('hidden');
+            this.closeAllMenus();
+        }
+
+        if (subtitleOption) {
+            const track = subtitleOption.dataset.subtitle === 'none' ? -1 : parseInt(subtitleOption.dataset.subtitle);
+            this.hls.subtitleTrack = track;
+            this.captionsMenu.querySelectorAll('i').forEach(i => i.classList.add('hidden'));
+            subtitleOption.querySelector('i').classList.remove('hidden');
+            document.getElementById('captionsBadge').classList.toggle('hidden', track === -1);
+            this.closeAllMenus();
+        }
+
+        if (qualityOption) {
+            const quality = qualityOption.dataset.quality;
+            this.hls.currentLevel = quality === 'auto' ? -1 : parseInt(quality);
+            this.settingsMenu.querySelectorAll('i').forEach(i => i.classList.add('hidden'));
+            qualityOption.querySelector('i').classList.remove('hidden');
+            this.closeAllMenus();
+        }
+    }
+
+    // ── Show Controls Temporarily ───────────────────────────
+    // FIX Bug #4: Unified visibility using ONLY .visible class
+    // FIX Bug #7: centerControls uses opacity only (visible-center class)
+    showControlsTemporarily() {
+        // Mobile portrait layout
+        if (this.isMobile && window.innerHeight > window.innerWidth) {
+            this.controlsContainer.classList.add('mobile-portrait');
+        } else {
+            this.controlsContainer.classList.remove('mobile-portrait');
+        }
+
+        // Force reflow
+        this.controlsContainer.offsetHeight;
+
+        // Show controls using unified .visible class
+        this.controlsContainer.classList.add('visible');
+        this.backButtonContainer.classList.add('visible');
+
+        // FIX Bug #7: Use opacity class only for center controls
+        this.centerControls.classList.add('visible-center');
+
+        clearTimeout(this.controlsTimeout);
+
+        this.controlsTimeout = setTimeout(() => {
+            if (!this.videoPlayer.paused && !this.isSeeking) {
+                this.controlsContainer.classList.remove('visible');
+                this.backButtonContainer.classList.remove('visible');
+                // FIX Bug #7: Fade out center controls with opacity, no hidden class
+                this.centerControls.classList.remove('visible-center');
+                // Close any open menus when controls auto-hide
+                this.closeAllMenus();
+            }
+        }, 3000);
+    }
+
+    // ── Keyboard Shortcuts ──────────────────────────────────
     handleKeyDown(e) {
+        // Don't handle if user is typing in an input
         if (document.activeElement.tagName === 'INPUT') return;
-        
+        // Only handle if player is visible
+        if (this.playerModal.classList.contains('hidden')) return;
+
         switch (e.key) {
             case ' ':
             case 'k':
@@ -1388,148 +1329,142 @@ showControlsTemporarily() {
                 break;
             case 'ArrowUp':
                 e.preventDefault();
+                // FIX Bug #8: Sync volume slider with keyboard shortcuts
                 this.updateVolume(Math.min(1, this.videoPlayer.volume + 0.1));
                 break;
             case 'ArrowDown':
                 e.preventDefault();
+                // FIX Bug #8: Sync volume slider with keyboard shortcuts
                 this.updateVolume(Math.max(0, this.videoPlayer.volume - 0.1));
                 break;
         }
     }
 
-     async closePlayer() {
-    // Salva il progresso prima di chiudere
-    await this.savePlaybackProgress();
-    
-    // 1. Annulla eventuali richieste in corso lato client
-    if (this.abortController) {
-        this.abortController.abort();
-    }
-    this.stopRefreshKeeper();
-    
-    // 3. Pulizia HLS e video
-    if (this.hls) {
-        this.hls.destroy();
-        this.hls = null;
-    }
-    
-    this.videoPlayer.pause();
-    this.videoPlayer.removeAttribute('src');
-    this.videoPlayer.load();
-    
-    // 4. Reset dello stato
-    this.currentStreamId = null;
-    this.abortController = null;
-    this.playerModal.classList.add('hidden');
-    
-    // 5. Uscita dal fullscreen
-    if (document.fullscreenElement) {
-        document.exitFullscreen();
-    }
-    
-    // 6. Sblocco orientamento
-    if (screen.orientation?.unlock) {
-        try {
-            screen.orientation.unlock();
-        } catch (err) {
-            console.warn('Sblocco orientamento fallito:', err);
+    // ── Close Player ────────────────────────────────────────
+    async closePlayer() {
+        await this.savePlaybackProgress();
+
+        if (this.abortController) {
+            this.abortController.abort();
+        }
+        this.stopRefreshKeeper();
+
+        if (this.hls) {
+            this.hls.destroy();
+            this.hls = null;
+        }
+
+        this.videoPlayer.pause();
+        this.videoPlayer.removeAttribute('src');
+        this.videoPlayer.load();
+
+        this.currentStreamId = null;
+        this.abortController = null;
+        this.playerModal.classList.add('hidden');
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        }
+
+        if (screen.orientation?.unlock) {
+            try {
+                screen.orientation.unlock();
+            } catch (err) {
+                console.warn('Sblocco orientamento fallito:', err);
+            }
         }
     }
-}
 
+    // ── Quality Options ─────────────────────────────────────
+    setupQualityOptions() {
+        const container = this.settingsMenu.querySelector('.quality-options');
+        if (!this.hls || !container) return;
 
-setupQualityOptions() {
-    const container = this.settingsMenu.querySelector('.quality-options');
-    if (!this.hls || !container) return;
-    
-    container.innerHTML = `
-        <div class="quality-option px-4 py-2 cursor-pointer flex items-center justify-between" data-quality="auto">
-            <span>Auto</span>
-            <i class="fas fa-check text-primary ${this.hls.autoLevelEnabled ? '' : 'hidden'}"></i>
-        </div>
-    `;
-
-    this.hls.levels.forEach((level, index) => {
-        const option = document.createElement('div');
-        option.className = 'quality-option px-4 py-2 cursor-pointer flex items-center justify-between';
-        option.dataset.quality = index;
-        option.innerHTML = `
-            <span>${level.height}p</span>
-            <i class="fas fa-check text-primary ${this.hls.currentLevel === index ? '' : 'hidden'}"></i>
+        container.innerHTML = `
+            <div class="quality-option px-4 py-2 cursor-pointer flex items-center justify-between" data-quality="auto">
+                <span>Auto</span>
+                <i class="fas fa-check text-primary ${this.hls.autoLevelEnabled ? '' : 'hidden'}"></i>
+            </div>
         `;
-        container.appendChild(option);
-    });
-}
 
-setupAudioOptions() {
-    const container = this.audioMenu.querySelector('.audio-options');
-    if (!this.hls || !container) return;
+        this.hls.levels.forEach((level, index) => {
+            const option = document.createElement('div');
+            option.className = 'quality-option px-4 py-2 cursor-pointer flex items-center justify-between';
+            option.dataset.quality = index;
+            option.innerHTML = `
+                <span>${level.height}p</span>
+                <i class="fas fa-check text-primary ${this.hls.currentLevel === index ? '' : 'hidden'}"></i>
+            `;
+            container.appendChild(option);
+        });
+    }
 
-    container.innerHTML = '';
+    setupAudioOptions() {
+        const container = this.audioMenu.querySelector('.audio-options');
+        if (!this.hls || !container) return;
 
-    this.hls.audioTracks.forEach((track, i) => {
-        const option = document.createElement('div');
-        option.className = 'audio-option px-4 py-2 cursor-pointer flex items-center justify-between';
-        option.dataset.audio = i;
-        option.innerHTML = `
-            <span>${track.name || track.lang || 'Audio ' + (i + 1)}</span>
-            <i class="fas fa-check text-primary ${this.hls.audioTrack === i ? '' : 'hidden'}"></i>
+        container.innerHTML = '';
+
+        this.hls.audioTracks.forEach((track, i) => {
+            const option = document.createElement('div');
+            option.className = 'audio-option px-4 py-2 cursor-pointer flex items-center justify-between';
+            option.dataset.audio = i;
+            option.innerHTML = `
+                <span>${track.name || track.lang || 'Audio ' + (i + 1)}</span>
+                <i class="fas fa-check text-primary ${this.hls.audioTrack === i ? '' : 'hidden'}"></i>
+            `;
+            container.appendChild(option);
+        });
+    }
+
+    setupSubtitleOptions() {
+        const container = this.captionsMenu.querySelector('.subtitle-options');
+        if (!this.hls || !container) return;
+
+        container.innerHTML = `
+            <div class="subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between" data-subtitle="none">
+                <span>Disattivati</span>
+                <i class="fas fa-check text-primary ${this.hls.subtitleTrack === -1 ? '' : 'hidden'}"></i>
+            </div>
         `;
-        container.appendChild(option);
-    });
+
+        this.hls.subtitleTracks.forEach((track, i) => {
+            const option = document.createElement('div');
+            option.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
+            option.dataset.subtitle = i;
+            option.innerHTML = `
+                <span>${track.name || track.lang || 'Sub ' + (i + 1)}</span>
+                <i class="fas fa-check text-primary ${this.hls.subtitleTrack === i ? '' : 'hidden'}"></i>
+            `;
+            container.appendChild(option);
+        });
+    }
 }
 
-setupSubtitleOptions() {
-    const container = this.captionsMenu.querySelector('.subtitle-options');
-    if (!this.hls || !container) return;
-
-    container.innerHTML = `
-        <div class="subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between" data-subtitle="none">
-            <span>Disattivati</span>
-            <i class="fas fa-check text-primary ${this.hls.subtitleTrack === -1 ? '' : 'hidden'}"></i>
-        </div>
-    `;
-
-    this.hls.subtitleTracks.forEach((track, i) => {
-        const option = document.createElement('div');
-        option.className = 'subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between';
-        option.dataset.subtitle = i;
-        option.innerHTML = `
-            <span>${track.name || track.lang || 'Sub ' + (i + 1)}</span>
-            <i class="fas fa-check text-primary ${this.hls.subtitleTrack === i ? '' : 'hidden'}"></i>
-        `;
-        container.appendChild(option);
-    });
-}
-
-}
-
-// Crea un'istanza globale del player
+// ── Global Instance ────────────────────────────────────────
 const videoPlayerInstance = new VideoPlayer();
 
-// Funzione globale unificata per avviare la riproduzione
-// Modifica la funzione playMovie per supportare il resume
+// ── Global playMovie Function ──────────────────────────────
 function playMovie(content, type = null) {
-    // Se content è un ID numerico, crea un oggetto content di base
+    // If content is a numeric ID, create a basic content object
     if (typeof content === 'number') {
         content = {
             id: content,
             media_type: type || 'movie',
-            title: 'Film' // Default title
+            title: 'Film'
         };
     }
-    
-    // Se content è una stringa (ID episodio), gestisci il caso TV
+
+    // If content is a string (episode ID), handle TV case
     if (typeof content === 'string' && content.includes('-')) {
         const [tvId, season, episode] = content.split('-');
         const episodeData = episodeMap.get(content);
-        
+
         if (!episodeData) {
             console.error('Dati episodio non trovati');
             return;
         }
 
-        
         content = {
             id: parseInt(tvId),
             media_type: 'tv',
@@ -1547,43 +1482,40 @@ function playMovie(content, type = null) {
         };
     }
 
-    // Assicurati che il titolo sia sempre impostato
+    // Ensure title is set
     if (!content.title && content.name) {
         content.title = content.name;
     }
 
-    // Se è un episodio TV, formatta il titolo correttamente
+    // Format TV episode title
     if (content.media_type === 'tv' && content.season_number && content.episode_number) {
         const episodeTitle = content.episode_data?.name || `Episodio ${content.episode_number}`;
         content.title = `${content.name} - S${String(content.season_number).padStart(2, '0')}E${String(content.episode_number).padStart(2, '0')}: ${episodeTitle}`;
     }
 
-    
-    // Assicurati che content sia un oggetto valido
+    // Validate content
     if (!content || typeof content !== 'object') {
         console.error('Contenuto non valido per la riproduzione');
         return;
     }
-    
-    // Normalizza il tipo di media
+
+    // Normalize media type
     content.media_type = content.media_type || type || 'movie';
-    
-    // Se è una serie TV senza numero di stagione/episodio, mostra il selettore
+
+    // If TV without season/episode, show selector
     if (content.media_type === 'tv' && (!content.season_number || !content.episode_number)) {
         showTVSeasons(content.id, 'tv');
         return;
     }
-    
-    // Avvia la riproduzione con l'istanza del player
+
+    // Start playback
     videoPlayerInstance.play(content);
-    
-    // Se è una serie TV, salva le info per tornare alla selezione episodi
+
+    // Remember last played TV info
     if (content.media_type === 'tv') {
         window.lastPlayedTV = {
             id: content.id,
             season: content.season_number
         };
     }
-    
-
 }

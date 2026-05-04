@@ -1,0 +1,1095 @@
+/* ============================================================
+   LeleFlix Player – Liquid Glass Effect Stylesheet
+   All player-related CSS only. The rest of the site uses its own CSS.
+   ============================================================ */
+
+/* ── Player Modal ─────────────────────────────────────────── */
+#player-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    overflow: hidden;
+    background: black;
+}
+
+/* ── Video Container ──────────────────────────────────────── */
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+}
+
+#videoPlayer {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    will-change: transform;
+    width: 100%;
+    height: 100%;
+}
+
+/* Video zoom states */
+.video-zoom-1 {
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+}
+.video-zoom-2 {
+    object-fit: cover;
+    width: 100%;
+    height: 100%;
+}
+.video-zoom-3 {
+    object-fit: fill;
+    width: 100%;
+    height: 100%;
+}
+
+/* ── Back Button Container (Top Bar) ──────────────────────── */
+#backButtonContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 15px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    transition: opacity 0.3s ease;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, transparent 100%);
+}
+
+/* FIX Bug #5: No more opacity:1 !important — visibility driven by .visible class */
+#close-player {
+    color: white;
+    background: rgba(15, 15, 20, 0.55);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#close-player:hover {
+    background: rgba(30, 30, 40, 0.7);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    transform: scale(1.05);
+}
+
+#player-title {
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
+}
+
+/* ── Unified Visibility System (FIX Bug #4) ───────────────── */
+/* ONLY the .visible CSS class controls visibility for these elements */
+#controlsContainer,
+#backButtonContainer {
+    transition: opacity 0.3s ease;
+}
+
+#controlsContainer:not(.visible),
+#backButtonContainer:not(.visible) {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+#controlsContainer.visible,
+#backButtonContainer.visible {
+    opacity: 1 !important;
+    pointer-events: all !important;
+}
+
+/* ── Center Controls ──────────────────────────────────────── */
+/* FIX Bug #7: Use ONLY opacity with CSS transition, no hidden class toggling */
+.center-controls {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    gap: 60px;
+    z-index: 50;
+    transition: opacity 0.3s ease;
+    pointer-events: auto;
+    opacity: 0; /* Hidden by default */
+}
+
+.center-controls.visible-center {
+    opacity: 1;
+}
+
+.center-control-btn {
+    background: rgba(15, 15, 20, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Light refraction sweep animation on center buttons */
+.center-control-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.08) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transition: none;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.center-control-btn:hover::before {
+    animation: glassSweep 1.2s ease-out forwards;
+}
+
+@keyframes glassSweep {
+    0% { left: -100%; }
+    100% { left: 200%; }
+}
+
+/* Inner glow layer */
+.center-control-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.08) 0%,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(255, 255, 255, 0.04) 100%
+    );
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.center-control-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.15),
+        0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.center-control-btn:active {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.center-control-btn i {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    position: relative;
+    z-index: 2;
+}
+
+/* Play button slightly larger */
+.center-control-btn.play-btn {
+    width: 90px;
+    height: 90px;
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.center-control-btn.play-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        0 0 30px rgba(255, 255, 255, 0.06);
+}
+
+.center-control-btn.play-btn i {
+    font-size: 2.5rem;
+    margin-left: 4px;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+}
+
+.center-control-btn.play-btn .fa-pause {
+    margin-left: 0;
+}
+
+/* Skip buttons */
+.center-control-btn.skip-forward i {
+    margin-left: 3px;
+}
+
+.center-control-btn.skip-backward i {
+    margin-right: 3px;
+}
+
+/* Glass fade-in animation */
+@keyframes glassFadeIn {
+    from {
+        opacity: 0.01;
+        transform: translate(-50%, -50%) scale(0.9);
+        filter: blur(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+        filter: blur(0);
+    }
+}
+
+.center-controls.visible-center {
+    animation: glassFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── Controls Bar (Bottom) ────────────────────────────────── */
+.controls-container {
+    position: absolute;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 800px;
+
+    /* Premium frosted glass look */
+    background: rgba(15, 15, 20, 0.55);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+
+    padding: 0.75rem 1rem 0.5rem;
+    transition: opacity 0.3s ease;
+    opacity: 0;
+    touch-action: manipulation;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Animated light refraction sweep on controls bar */
+.controls-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.04) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    pointer-events: none;
+    z-index: 0;
+}
+
+.controls-container.visible::before {
+    animation: controlsSweep 6s ease-in-out infinite;
+}
+
+@keyframes controlsSweep {
+    0% { left: -100%; }
+    40% { left: 200%; }
+    100% { left: 200%; }
+}
+
+/* ── Progress Bar ─────────────────────────────────────────── */
+.progress-container {
+    height: 4px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 0;
+    position: relative;
+    transition: height 0.15s ease;
+}
+
+.progress-container:hover {
+    height: 8px;
+}
+
+/* Expand touch area */
+.progress-container::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    bottom: -10px;
+    left: 0;
+    right: 0;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #E50914 0%, #FF3A2D 100%);
+    border-radius: 4px;
+    position: relative;
+    transition: width 0.1s linear;
+}
+
+/* Liquid glass thumb on hover */
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    right: -7px;
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow:
+        0 0 8px rgba(229, 9, 20, 0.5),
+        0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Show thumb when controls are visible or on hover */
+#controlsContainer.visible .progress-bar::after,
+.progress-container:hover .progress-bar::after {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+}
+
+/* Buffer indicator (optional, shown via JS) */
+.progress-buffer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    pointer-events: none;
+}
+
+/* ── Seek Tooltip ─────────────────────────────────────────── */
+.seek-tooltip {
+    position: absolute;
+    bottom: 1rem;
+    left: 0;
+    transform: translateX(-50%);
+
+    /* Liquid glass tooltip */
+    background: rgba(15, 15, 20, 0.7);
+    backdrop-filter: blur(10px) saturate(180%);
+    -webkit-backdrop-filter: blur(10px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    z-index: 10;
+
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* ── Volume Controls ──────────────────────────────────────── */
+.volume-slider {
+    width: 0;
+    transition: width 0.2s ease;
+    overflow: hidden;
+}
+
+.volume-container:hover .volume-slider {
+    width: 80px;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Settings / Captions / Audio Menus ────────────────────── */
+.settings-menu {
+    position: absolute;
+    bottom: 60px;
+    right: 10px;
+
+    /* Liquid glass style */
+    background: rgba(15, 15, 20, 0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+
+    border-radius: 12px;
+    padding: 8px 0;
+    min-width: 180px;
+    transform: translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    overflow: hidden;
+    z-index: 100;
+}
+
+.settings-menu.active {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: all;
+}
+
+.quality-option,
+.audio-option,
+.subtitle-option {
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: rgba(255, 255, 255, 0.85);
+    transition: background 0.15s ease;
+    font-size: 0.875rem;
+}
+
+.quality-option:hover,
+.audio-option:hover,
+.subtitle-option:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.quality-option i,
+.audio-option i,
+.subtitle-option i {
+    color: #E50914;
+    font-size: 0.75rem;
+}
+
+/* Scrollable lists inside menus */
+.subtitle-options,
+.audio-options,
+.quality-options {
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+/* ── Loading Overlay ──────────────────────────────────────── */
+#loadingOverlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+}
+
+.loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top-color: #E50914;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    position: relative;
+}
+
+/* Liquid glass ring on spinner */
+.loading-spinner::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border: 2px solid rgba(255, 255, 255, 0.05);
+    border-top-color: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    animation: spin 2s linear infinite reverse;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ── Error Overlay ────────────────────────────────────────── */
+#errorOverlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 40;
+}
+
+.error-message {
+    /* Glass panel for error */
+    background: rgba(15, 15, 20, 0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    max-width: 400px;
+}
+
+.error-message .text-red-500,
+.error-message [class*="text-red"] {
+    color: #E50914 !important;
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+#retryButton {
+    background: #E50914;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 500;
+}
+
+#retryButton:hover {
+    background: #ff1a25;
+}
+
+/* ── Skip Animations ──────────────────────────────────────── */
+.skip-animation {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 20;
+}
+
+.skip-forward {
+    right: 0;
+    background: linear-gradient(to left, rgba(229, 9, 20, 0.5), transparent);
+}
+
+.skip-backward {
+    left: 0;
+    background: linear-gradient(to right, rgba(229, 9, 20, 0.5), transparent);
+}
+
+@keyframes skipFade {
+    0% { opacity: 0; transform: translateX(0); }
+    20% { opacity: 1; transform: translateX(0); }
+    80% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(20px); }
+}
+
+.skip-animation.forward {
+    animation: skipFade 1s ease-out forwards;
+}
+
+.skip-animation.backward {
+    animation: skipFade 1s ease-out forwards;
+}
+
+/* ── Toast Notification ───────────────────────────────────── */
+#player-toast {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    background: rgba(15, 15, 20, 0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border-radius: 24px;
+    color: white;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+#player-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ── Resume / Next Episode Prompts ────────────────────────── */
+.resume-prompt,
+.next-episode-prompt {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(15, 15, 20, 0.7);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    border-radius: 16px;
+    padding: 24px;
+    z-index: 1000;
+    color: white;
+}
+
+.prompt-content {
+    text-align: center;
+}
+
+.prompt-content p {
+    margin-bottom: 16px;
+    font-size: 1rem;
+}
+
+.prompt-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.prompt-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.prompt-buttons button:hover {
+    transform: translateY(-1px);
+}
+
+.prompt-buttons .resume-yes,
+.prompt-buttons #confirmNextEpisode {
+    background: #E50914;
+    color: white;
+}
+
+.prompt-buttons .resume-no,
+.prompt-buttons #cancelNextEpisode {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.prompt-buttons .resume-no:hover,
+.prompt-buttons #cancelNextEpisode:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Next Episode Button ──────────────────────────────────── */
+.next-episode-btn {
+    display: none;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    color: white;
+    padding: 6px 12px 6px 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.next-episode-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.next-episode-text {
+    margin-right: 6px;
+}
+
+.next-episode-btn i {
+    font-size: 16px;
+}
+
+/* ── Autoplay Overlay (Party Mode) ────────────────────────── */
+#autoplay-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    cursor: pointer;
+}
+
+/* ── Keyboard Shortcut Hints ──────────────────────────────── */
+.shortcut-hint {
+    position: absolute;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 15, 20, 0.65);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: white;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    z-index: 55;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.shortcut-hint.visible {
+    opacity: 1;
+}
+
+/* ── Captions Badge ───────────────────────────────────────── */
+#captionsBadge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: #E50914;
+    color: white;
+    font-size: 0.6rem;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+/* ── Mobile Responsive Design ─────────────────────────────── */
+@media (max-width: 768px) {
+    .center-controls {
+        gap: 30px;
+    }
+
+    .center-control-btn {
+        width: 56px;
+        height: 56px;
+        backdrop-filter: blur(15px) saturate(180%);
+        -webkit-backdrop-filter: blur(15px) saturate(180%);
+    }
+
+    .center-control-btn i {
+        font-size: 1.4rem;
+    }
+
+    .center-control-btn.play-btn {
+        width: 72px;
+        height: 72px;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    .center-control-btn.play-btn i {
+        font-size: 2rem;
+    }
+
+    .controls-container {
+        bottom: 1rem;
+        width: 95%;
+        border-radius: 12px;
+        padding: 0.5rem 0.75rem 0.4rem;
+    }
+
+    .progress-container {
+        height: 6px;
+        margin-bottom: 4px;
+    }
+
+    .progress-container:hover {
+        height: 10px;
+    }
+
+    /* Touch-friendly sizes */
+    button {
+        min-width: 44px;
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    /* Larger progress bar touch area */
+    .progress-container::before {
+        top: -15px;
+        bottom: -15px;
+    }
+
+    /* Prevent double-tap zoom on video */
+    video {
+        touch-action: pan-x pan-y;
+    }
+
+    /* Larger TV controls */
+    #settingsBtn i,
+    #audioTrackBtn i,
+    #captionsBtn i {
+        font-size: 1.4rem;
+    }
+}
+
+/* ── Mobile Portrait Specific ─────────────────────────────── */
+@media (max-width: 768px) and (orientation: portrait) {
+    #controlsContainer {
+        transform: none !important;
+        left: 0 !important;
+        width: 100% !important;
+        bottom: 0 !important;
+        border-radius: 0 !important;
+        max-width: 100% !important;
+        padding-bottom: 0.75rem;
+    }
+
+    video#videoPlayer {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+    }
+
+    #progressContainer {
+        width: 100%;
+        margin-bottom: 4px;
+        order: 1;
+        height: 6px;
+    }
+
+    #progressContainer::before {
+        top: -15px;
+        bottom: -15px;
+    }
+
+    /* Fullscreen button floating on portrait mobile */
+    #fullscreenBtn {
+        position: absolute !important;
+        bottom: 90px !important;
+        right: 16px !important;
+        width: 48px !important;
+        height: 48px !important;
+        background: rgba(15, 15, 20, 0.55) !important;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        margin: 0 !important;
+        z-index: 60;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    #fullscreenBtn i {
+        font-size: 1.2rem !important;
+        padding: 0 !important;
+    }
+
+    /* Hide volume on mobile portrait */
+    #volumeSlider,
+    .volume-container,
+    #volumeBtn,
+    #zoomBtn {
+        display: none !important;
+    }
+
+    #controlsContainer > div.flex.items-center.justify-between {
+        width: 100%;
+        order: 2;
+        padding: 0;
+        justify-content: space-between;
+    }
+
+    .text-sm.text-gray-300 {
+        font-size: 12px !important;
+        font-weight: 500;
+        margin-left: 0;
+    }
+
+    .flex.items-center.space-x-4 {
+        gap: 16px !important;
+        margin-left: auto;
+    }
+
+    .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+        margin: 0 !important;
+    }
+
+    .settings-menu {
+        right: 4px;
+        bottom: 55px;
+        min-width: 160px;
+    }
+}
+
+/* ── Desktop hover behavior ───────────────────────────────── */
+@media (hover: hover) {
+    .video-container:hover .controls-container:not(.visible) {
+        opacity: 0;
+    }
+}
+
+/* ── TV / Large screens ───────────────────────────────────── */
+@media (min-width: 1024px) and (hover: none) and (pointer: coarse) {
+    button {
+        font-size: 1.2rem;
+        padding: 15px;
+    }
+
+    .progress-container {
+        height: 10px;
+    }
+
+    .center-control-btn {
+        width: 80px;
+        height: 80px;
+    }
+
+    .center-control-btn.play-btn {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+/* ── Backdrop filter fallback ─────────────────────────────── */
+@supports not (backdrop-filter: blur(20px)) {
+    .controls-container,
+    .settings-menu,
+    .center-control-btn,
+    #close-player,
+    #player-toast,
+    .resume-prompt,
+    .next-episode-prompt,
+    .error-message {
+        background: rgba(30, 30, 35, 0.92);
+    }
+}
+
+/* ── Fullscreen adjustments ───────────────────────────────── */
+:fullscreen .controls-container,
+:-webkit-full-screen .controls-container {
+    max-width: 1000px;
+}
+
+:fullscreen .center-controls,
+:-webkit-full-screen .center-controls {
+    gap: 80px;
+}
+
+:fullscreen .center-control-btn.play-btn,
+:-webkit-full-screen .center-control-btn.play-btn {
+    width: 100px;
+    height: 100px;
+}
+
+:fullscreen .center-control-btn,
+:-webkit-full-screen .center-control-btn {
+    width: 80px;
+    height: 80px;
+}
+
+/* ── Animations ───────────────────────────────────────────── */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(10px); }
+}
+
+/* ── HR Keeper (Refresh keeper) ───────────────────────────── */
+#hr-keeper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateZ(0);
+    animation: hr-keeper-anim 0.8s infinite linear;
+}
+
+@keyframes hr-keeper-anim {
+    0% { transform: translateZ(0) translateX(0.1px); }
+    50% { transform: translateZ(0) translateX(0.3px); }
+    100% { transform: translateZ(0) translateX(0.1px); }
+}

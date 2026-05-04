@@ -6,7 +6,8 @@
 
   <title>LeleFlix</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">    
+  <link rel="icon" href="icon.svg" type="image/svg+xml">   
+  <link rel="stylesheet" href="css/player-style.css"> 
   <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -43,10 +44,8 @@ sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],          
     </script>
 
     <script>
-// Forza il client a usare ESCLUSIVAMENTE i WebSocket, saltando il polling
-const socket = io('https://api.leleflix.store', {
-    transports: ['websocket']
-});
+    const socket = io('https://api.leleflix.store'); // Usa il tuo dominio corretto
+
     // Funzione per mostrare l'animazione
     function showCastAnimation(title) {
         // 1. Crea l'overlay se non esiste
@@ -391,12 +390,7 @@ main .max-w-7xl {
 </style>
     <style>
 
-        #videoPlayer {
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    perspective: 1000px;
-    will-change: transform;
-}
+
 /* Aggiungi questi stili alla sezione CSS del tuo file */
 #backButtonContainer {
     opacity: 1 !important; /* Forza la visibilità */
@@ -738,15 +732,12 @@ main .max-w-7xl {
         }
         
         /* Hero section modificata */
-        #hero-section {
-            position: relative;
-            height: 100vh;
-            overflow: hidden;
-
+#hero-section {
+    position: relative;
+    overflow: hidden;
     /* Aggiungi questa linea per il parallax */
     background-attachment: fixed; /* <-- MODIFICATO */
-
-        }
+}
 
         #hero-backdrop {
     transition: opacity 0.5s ease-in-out;
@@ -1716,8 +1707,8 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 
     <div id="home-view" class="transition-opacity duration-500 ease-in-out">
         
-<section id="hero-section" class="relative h-screen overflow-hidden">
-    <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 z-0"></div>
+<section id="hero-section" class="relative h-[80vh] md:h-[95vh] lg:h-screen overflow-hidden">
+        <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 z-0"></div>
     
 
     <div class="hero-gradient absolute inset-0 z-10"></div>
@@ -1751,8 +1742,8 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
             </div>
         </section>
 
-<main class="w-full pt-20 pb-20 overflow-x-hidden">
-<div class="w-full px-4 sm:px-6 lg:px-8 py-8">        
+<main class="w-full pb-20 overflow-x-hidden relative z-20 -mt-16 md:-mt-24">
+<div class="w-full px-4 sm:px-6 lg:px-8 pb-8 pt-0">     
         <section id="continue-watching" class="mb-12 hidden relative">
             <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Continua a guardare</h2>
             <div class="carousel-container relative">
@@ -2045,13 +2036,17 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 /* --- CSS AGGIORNATO PER NAVBAR (FIX OVERFLOW) --- */
 
 /* 1. La Navbar diventa solo un contenitore strutturale */
+/* 1. La Navbar diventa solo un contenitore strutturale PULITO */
 .glass-nav {
     position: relative;
     width: 100%;
     height: 100%;
-    background: transparent; /* Sfondo spostato */
+    background: transparent !important; 
+    backdrop-filter: none !important; /* RIMUOVE IL VECCHIO BLUR CHE SBAVA */
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important; /* RIMUOVE LA VECCHIA OMBRA */
     transform-style: preserve-3d;
-    overflow: visible; /* FONDAMENTALE: Permette al menu di uscire */
+    overflow: visible !important; /* Permette alla barra di ricerca di uscire */
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
@@ -2421,71 +2416,270 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     transform: translateX(-50%) translateY(0);
 }
     </style>
-    <!-- Player Modal -->
-    <div id="player-modal" class="fixed inset-0 z-50 overflow-hidden hidden bg-black">
-    <div class="flex items-center justify-center min-h-screen p-4">
+    <!-- ============================================================
+     LeleFlix Player Modal – HTML Snippet
+     This replaces the <div id="player-modal" ...>...</div> section
+     in index.html. Also includes the VLC prompt modal.
+     ============================================================ -->
+
+<div id="player-modal" class="fixed inset-0 z-[1000] overflow-hidden hidden bg-black">
+    <div class="flex items-center justify-center min-h-screen p-0 md:p-4">
         <div class="w-full max-w-5xl rounded-lg overflow-hidden shadow-2xl">
             <div class="video-container aspect-video group" id="videoContainer">
-                <!-- Aggiungi questo dentro #videoContainer -->
-<div id="centerControls" class="center-controls hidden">
-    <button id="skipBackwardCenter" class="center-control-btn skip-backward" title="Indietro 10s">
-        <i class="fas fa-backward"></i>
-    </button>
-    
-    <button id="playCenterBtn" class="center-control-btn play-btn" title="Riproduci/Pausa">
-        <i class="fas fa-play"></i>
-    </button>
-    
-    <button id="skipForwardCenter" class="center-control-btn skip-forward" title="Avanti 10s">
-        <i class="fas fa-forward"></i>
-    </button>
-</div>
-                <!-- Back button and title -->
-                <div class="absolute top-0 left-0 z-10 p-4 flex items-center space-x-3 opacity-0 transition-opacity" id="backButtonContainer">
-                    <button id="close-player" class="transition">
+
+                <!-- Center Controls (play, skip forward/back) -->
+                <div id="centerControls" class="center-controls" aria-label="Playback controls">
+                    <button id="skipBackwardCenter" class="center-control-btn skip-backward"
+                            title="Indietro 10s" aria-label="Skip backward 10 seconds">
+                        <i class="fas fa-backward"></i>
+                    </button>
+
+                    <button id="playCenterBtn" class="center-control-btn play-btn"
+                            title="Riproduci/Pausa" aria-label="Play or Pause">
+                        <i class="fas fa-play"></i>
+                    </button>
+
+                    <button id="skipForwardCenter" class="center-control-btn skip-forward"
+                            title="Avanti 10s" aria-label="Skip forward 10 seconds">
+                        <i class="fas fa-forward"></i>
+                    </button>
+                </div>
+
+                <!-- Back button and title (Top Bar) -->
+                <div id="backButtonContainer">
+                    <button id="close-player" title="Chiudi player" aria-label="Close player">
                         <i class="fas fa-arrow-left text-xl"></i>
                     </button>
                     <h2 class="text-lg font-medium" id="player-title">Titolo Film</h2>
-                    
                 </div>
-                
-                <video id="videoPlayer" class="w-full h-full"></video>
-                
-                <!-- Loading overlay -->
-                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden" id="loadingOverlay">
-                    <div class="loading-spinner text-4xl">
-                        <i class="fas fa-circle-notch"></i>
-                    </div>
+
+                <!-- Video Element -->
+                <video id="videoPlayer" class="w-full h-full" playsinline></video>
+
+                <!-- Loading Overlay -->
+                <div class="hidden" id="loadingOverlay" aria-label="Loading video">
+                    <div class="loading-spinner"></div>
                 </div>
-                
-                <!-- Skip animations -->
-                <div class="skip-animation skip-forward" id="skipForward">
+
+                <!-- Skip Animations -->
+                <div class="skip-animation skip-forward" id="skipForward" aria-hidden="true">
                     +10s
                 </div>
-                <div class="skip-animation skip-backward" id="skipBackward">
+                <div class="skip-animation skip-backward" id="skipBackward" aria-hidden="true">
                     -10s
                 </div>
 
-                <!-- Error overlay -->
-                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden" id="errorOverlay">
-                    <div class="error-message p-6 rounded-lg text-center max-w-md">
-                        <div class="text-red-500 text-4xl mb-3">
+                <!-- Error Overlay -->
+                <div class="hidden" id="errorOverlay" role="alert" aria-live="assertive">
+                    <div class="error-message">
+                        <div style="color: #E50914; font-size: 2.5rem; margin-bottom: 0.75rem;">
                             <i class="fas fa-exclamation-triangle"></i>
                         </div>
-                        <h3 class="text-xl font-bold mb-2">Playback Error</h3>
-                        <p class="text-gray-300 mb-4" id="errorText">Failed to load video stream. Please try again later.</p>
-                        <button class="bg-primary hover:bg-red-700 px-4 py-2 rounded" id="retryButton">
-                            <i class="fas fa-redo mr-2"></i> Retry
+                        <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 0.5rem;">Playback Error</h3>
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;" id="errorText">Failed to load video stream. Please try again later.</p>
+                        <button id="retryButton" aria-label="Retry loading video">
+                            <i class="fas fa-redo" style="margin-right: 6px;"></i> Retry
                         </button>
                     </div>
                 </div>
+
+                <!-- Controls Bar (Bottom) -->
+                <div class="controls-container" id="controlsContainer">
+                    <!-- Progress bar -->
+                    <div class="progress-container" id="progressContainer" role="slider"
+                         aria-label="Video progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <div class="seek-tooltip" id="seekTooltip">0:00</div>
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+
+                    <!-- Bottom controls row -->
+                    <div class="flex items-center justify-between" style="position: relative; z-index: 1;">
+                        <!-- Left controls -->
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center">
+                                <button class="text-white hover:text-primary transition"
+                                        id="volumeBtn" title="Volume" aria-label="Toggle mute">
+                                    <i class="fas fa-volume-up text-lg" id="volumeIcon"></i>
+                                </button>
+                                <div class="volume-container flex items-center">
+                                    <input type="range" min="0" max="1" step="0.01" value="1"
+                                           class="volume-slider accent-primary h-1" id="volumeSlider"
+                                           aria-label="Volume">
+                                </div>
+                            </div>
+
+                            <div class="text-sm text-gray-300">
+                                <span id="currentTime">0:00</span> /
+                                <span id="duration">0:00</span>
+                            </div>
+                        </div>
+
+                        <!-- Right controls -->
+                        <div class="flex items-center space-x-4">
+                            <!-- Next Episode Button -->
+                            <button id="nextEpisodeBtn" class="next-episode-btn"
+                                    title="Prossimo Episodio" aria-label="Next episode">
+                                <span class="next-episode-text">Prossimo episodio</span>
+                                <i class="fas fa-step-forward"></i>
+                            </button>
+
+                            <!-- Captions -->
+                            <div class="relative">
+                                <button class="text-white hover:text-primary transition relative"
+                                        id="captionsBtn" title="Sottotitoli" aria-label="Subtitles">
+                                    <i class="fas fa-closed-captioning text-lg"></i>
+                                    <span class="absolute -top-1 -right-1 bg-primary text-xs rounded-full w-4 h-4 flex items-center justify-center hidden"
+                                          id="captionsBadge">ON</span>
+                                </button>
+                                <div class="settings-menu" id="captionsMenu" role="menu" aria-label="Subtitle options">
+                                    <div class="px-4 py-2 border-b border-gray-700">
+                                        <span class="text-gray-400 text-sm">Sottotitoli</span>
+                                    </div>
+                                    <div class="subtitle-options">
+                                        <div class="subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between"
+                                             data-subtitle="none" role="menuitem">
+                                            <span>Disattivati</span>
+                                            <i class="fas fa-check text-primary"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Audio Tracks -->
+                            <div class="relative">
+                                <button class="text-white hover:text-primary transition"
+                                        id="audioTrackBtn" title="Lingua Audio" aria-label="Audio tracks">
+                                    <i class="fas fa-language text-lg"></i>
+                                </button>
+                                <div class="settings-menu" id="audioMenu" role="menu" aria-label="Audio track options">
+                                    <div class="px-4 py-2 border-b border-gray-700">
+                                        <span class="text-gray-400 text-sm">Lingua Audio</span>
+                                    </div>
+                                    <div class="audio-options">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Settings / Quality -->
+                            <div class="relative">
+                                <button class="text-white hover:text-primary transition"
+                                        id="settingsBtn" title="Qualità" aria-label="Quality settings">
+                                    <i class="fas fa-cog text-lg"></i>
+                                </button>
+                                <div class="settings-menu" id="settingsMenu" role="menu" aria-label="Quality options">
+                                    <div class="px-4 py-2 border-b border-gray-700">
+                                        <span class="text-gray-400 text-sm">Qualità</span>
+                                    </div>
+                                    <div class="quality-options">
+                                        <div class="quality-option px-4 py-2 cursor-pointer flex items-center justify-between"
+                                             data-quality="auto" role="menuitem">
+                                            <span>Auto</span>
+                                            <i class="fas fa-check text-primary hidden"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Zoom -->
+                            <button class="text-white hover:text-primary transition"
+                                    id="zoomBtn" title="Zoom" aria-label="Toggle zoom">
+                                <i class="fas fa-search-plus text-lg"></i>
+                            </button>
+
+                            <!-- Fullscreen -->
+                            <button class="text-white hover:text-primary transition"
+                                    id="fullscreenBtn" title="Schermo intero" aria-label="Toggle fullscreen">
+                                <i class="fas fa-expand text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- VLC / External Player Prompt -->
+<div id="vlc-prompt" class="fixed inset-0 hidden flex items-center justify-center bg-black/90 backdrop-blur-sm"
+     style="z-index: 9999 !important;" role="dialog" aria-label="Playback options">
+    <div style="
+        background: rgba(15, 15, 20, 0.7);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        position: relative;
+    ">
+        <div style="margin-bottom: 16px; color: #E50914; font-size: 2.5rem;">
+            <i class="fas fa-play-circle"></i>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 8px; color: white;">Opzioni di Riproduzione</h3>
+        <p style="color: rgba(255,255,255,0.6); margin-bottom: 24px; font-size: 0.875rem;">Dove preferisci guardare questo video?</p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <button id="btn-play-internal"
+                    style="background: #E50914; color: white; padding: 12px 16px; border-radius: 10px; font-weight: 500; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s;"
+                    onmouseover="this.style.background='#ff1a25'" onmouseout="this.style.background='#E50914'">
+                <i class="fas fa-desktop"></i> Player Integrato
+            </button>
+
+            <button id="btn-play-vlc"
+                    style="background: rgba(255, 136, 0, 0.85); color: white; padding: 12px 16px; border-radius: 10px; font-weight: 500; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s;"
+                    onmouseover="this.style.background='rgba(200,110,0,0.9)'" onmouseout="this.style.background='rgba(255,136,0,0.85)'">
+                <i class="fas fa-cone"></i> Apri in VLC
+            </button>
+
+            <button id="btn-cancel-prompt"
+                    style="background: none; border: none; color: rgba(255,255,255,0.5); cursor: pointer; padding: 8px; margin-top: 8px; font-size: 0.85rem;"
+                    onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">
+                Annulla
+            </button>
+        </div>
+    </div>
+</div>
+
 <style>
-/* Stile per il pulsante prossimo episodio */
+/* Inline styles for player-toast (created dynamically by JS) */
+#player-toast {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    background: rgba(15, 15, 20, 0.65);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border-radius: 24px;
+    color: white;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+#player-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Next episode button inline (backup in case external CSS not loaded) */
 .next-episode-btn {
     display: none;
     align-items: center;
     background: rgba(255, 255, 255, 0.1);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 20px;
     color: white;
     padding: 6px 12px 6px 8px;
@@ -2496,7 +2690,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 }
 
 .next-episode-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.18);
 }
 
 .next-episode-text {
@@ -2507,29 +2701,14 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     font-size: 16px;
 }
 
-/* Animazioni */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateX(10px); }
-    to { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes fadeOut {
-    from { opacity: 1; transform: translateX(0); }
-    to { opacity: 0; transform: translateX(10px); }
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
+/* Prompt styles (backup) */
 .prompt-content {
     text-align: center;
 }
 
 .prompt-content p {
-    margin-bottom: 15px;
-    font-size: 16px;
+    margin-bottom: 16px;
+    font-size: 1rem;
 }
 
 .prompt-buttons {
@@ -2539,121 +2718,62 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 }
 
 .prompt-buttons button {
-    padding: 8px 15px;
+    padding: 10px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    font-weight: 500;
 }
-
 
 .prompt-buttons button:hover {
-    background: #e50914;
+    transform: translateY(-1px);
+}
+
+.prompt-buttons .resume-yes,
+.prompt-buttons #confirmNextEpisode {
+    background: #E50914;
     color: white;
 }
-</style>                
-                <!-- Controls -->
-                <div class="controls-container" id="controlsContainer">
-                    <!-- Progress bar -->
-                    <div class="progress-container" id="progressContainer">
-                        <div class="seek-tooltip" id="seekTooltip">00:00</div>
-                        <div class="progress-bar" id="progressBar"></div>
-                    </div>
-                    
-                    <!-- Bottom controls -->
-                    <div class="flex items-center justify-between">
-                        <!-- Left controls -->
-                        <div class="flex items-center space-x-4">
 
-                            
-                            <div class="flex items-center">
-                                <button class="text-white hover:text-primary transition mr-2" id="volumeBtn">
-                                    <i class="fas fa-volume-up text-lg" id="volumeIcon"></i>
-                                </button>
-                                <div class="volume-container flex items-center">
-                                    <input type="range" min="0" max="1" step="0.01" value="1" 
-                                           class="volume-slider accent-primary h-1" id="volumeSlider">
-                                </div>
-                            </div>
-                            
-                            <div class="text-sm text-gray-300">
-                                <span id="currentTime">00:00</span> / 
-                                <span id="duration">00:00</span>
-                            </div>
-                        </div>
-                        
-                        <!-- Right controls -->
-                        <div class="flex items-center space-x-4">
-                            <!-- Aggiungi questo accanto agli altri controlli del player -->
-                            <button id="nextEpisodeBtn" class="next-episode-btn" title="Prossimo Episodio">
-                                <span class="next-episode-text">Prossimo episodio</span>
-                                <i class="fas fa-step-forward"></i>
-                            </button>
+.prompt-buttons .resume-no,
+.prompt-buttons #cancelNextEpisode {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
 
-                                
-                            <div class="relative">
-                                <button class="text-white hover:text-primary transition relative" id="captionsBtn">
-                                    <i class="fas fa-closed-captioning text-lg"></i>
-                                    <span class="absolute -top-1 -right-1 bg-primary text-xs rounded-full w-4 h-4 flex items-center justify-center hidden" id="captionsBadge">ON</span>
-                                </button>
-                                <div class="settings-menu" id="captionsMenu">
-                                    <div class="px-4 py-2 border-b border-gray-700">
-                                        <span class="text-gray-400 text-sm">Sottotitoli</span>
-                                    </div>
-                                    <div class="subtitle-options">
-                                        <div class="subtitle-option px-4 py-2 cursor-pointer flex items-center justify-between" data-subtitle="none">
-                                            <span>Disattivati</span>
-                                            <i class="fas fa-check text-primary"></i>
-                                        </div>
-                                        <!-- Subtitle tracks will be added dynamically -->
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="relative">
-                                <button class="text-white hover:text-primary transition" id="audioTrackBtn">
-                                    <i class="fas fa-language text-lg"></i>
-                                </button>
-                                <div class="settings-menu" id="audioMenu">
-                                    <div class="px-4 py-2 border-b border-gray-700">
-                                        <span class="text-gray-400 text-sm">Lingua Audio</span>
-                                    </div>
-                                    <div class="audio-options">
-                                        <!-- Audio tracks will be added dynamically -->
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="relative">
-                                <button class="text-white hover:text-primary transition" id="settingsBtn">
-                                    <i class="fas fa-cog text-lg"></i>
-                                </button>
-                                <div class="settings-menu" id="settingsMenu">
-                                    <div class="px-4 py-2 border-b border-gray-700">
-                                        <span class="text-gray-400 text-sm">Qualità</span>
-                                    </div>
-                                    <div class="quality-options">
-                                        <div class="quality-option px-4 py-2 cursor-pointer flex items-center justify-between" data-quality="auto">
-                                            <span>Auto</span>
-                                            <i class="fas fa-check text-primary hidden"></i>
-                                        </div>
-                                        <!-- Quality options will be added dynamically -->
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="text-white hover:text-primary transition" id="zoomBtn">
-                                <i class="fas fa-search-plus text-lg"></i>
-                            </button>
-                            <button class="text-white hover:text-primary transition" id="fullscreenBtn">
-                                <i class="fas fa-expand text-lg"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+.prompt-buttons .resume-no:hover,
+.prompt-buttons #cancelNextEpisode:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Autoplay overlay styles */
+#autoplay-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    cursor: pointer;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(10px); }
+}
+</style>
+
 <style>
     /* Stile base del modale stagioni - uguale a quello film */
 .season-episode-selector {
@@ -2981,16 +3101,30 @@ const posterCache = new Map();
 // Funzione helper per caricare LOGO e LOCANDINA PULITA (Textless)
 // Funzione helper aggiornata per gestire orientamento Verticale (Poster) e Orizzontale (Backdrop)
 // Funzione helper avanzata: Gestisce Logo, Poster (Mobile) e Backdrop (Desktop)
+// Funzione helper aggiornata: Gestisce il caricamento "No Flash"
+// 1. Aggiungi questa variabile globale vicino a posterCache
+const imageAssetCache = new Map();
+
+// 2. Sostituisci la funzione fetchCardAssets con questa versione ottimizzata
 async function fetchCardAssets(id, type, logoImg, posterImg, backdropSource) {
-    // Se non abbiamo elementi da aggiornare, usciamo
     if (!logoImg && !posterImg && !backdropSource) return;
     
+    const cacheKey = `${type}-${id}-assets`;
+    
     try {
-        // Richiedi immagini in Italiano, Inglese e "Null" (Textless)
-        const res = await fetch(`${API_URL}/${type}/${id}/images?api_key=${API_KEY}&include_image_language=it,en,null`);
-        const data = await res.json();
+        let data;
         
-        // --- 1. GESTIONE LOGO ---
+        // Controlla se abbiamo già fatto questa chiamata API
+        if (imageAssetCache.has(cacheKey)) {
+            data = imageAssetCache.get(cacheKey);
+        } else {
+            const res = await fetch(`${API_URL}/${type}/${id}/images?api_key=${API_KEY}&include_image_language=it,en,null`);
+            data = await res.json();
+            // Salva in cache per i cloni nei caroselli successivi
+            imageAssetCache.set(cacheKey, data);
+        }
+        
+        // --- 1. LOGO ---
         if (logoImg) {
             const logo = data.logos?.find(l => l.iso_639_1 === 'it') || 
                          data.logos?.find(l => l.iso_639_1 === 'en') || 
@@ -3004,35 +3138,44 @@ async function fetchCardAssets(id, type, logoImg, posterImg, backdropSource) {
             }
         }
 
-        // --- 2. GESTIONE POSTER (Per Mobile) ---
-        if (posterImg && data.posters) {
-            // Cerchiamo il miglior poster senza testo
-            const bestPoster = data.posters
-                .filter(p => p.iso_639_1 === null)
-                .sort((a, b) => b.vote_average - a.vote_average)[0] || data.posters[0];
-             
-            if (bestPoster) {
-                // Aggiorniamo l'immagine mobile
-                posterImg.src = `${POSTER_PATH}${bestPoster.file_path}`;
+        // --- 2. POSTER (Mobile) ---
+        if (posterImg) {
+            let finalSrc = posterImg.dataset.srcDefault; 
+            if (data.posters) {
+                const textlessPoster = data.posters
+                    .filter(p => p.iso_639_1 === null)
+                    .sort((a, b) => b.vote_average - a.vote_average)[0];
+                if (textlessPoster) finalSrc = `${POSTER_PATH}${textlessPoster.file_path}`;
             }
+            posterImg.src = finalSrc;
+            posterImg.onload = () => posterImg.classList.remove('opacity-0');
         }
 
-        // --- 3. GESTIONE BACKDROP (Per Desktop) ---
-        if (backdropSource && data.backdrops) {
-            // Cerchiamo il miglior sfondo senza testo
-            const bestBackdrop = data.backdrops
-                .filter(p => p.iso_639_1 === null)
-                .sort((a, b) => b.vote_average - a.vote_average)[0] || data.backdrops[0];
-             
-            if (bestBackdrop) {
-                // Aggiorniamo il source desktop (nota: si usa srcset per <source>)
-                backdropSource.srcset = `https://image.tmdb.org/t/p/w780${bestBackdrop.file_path}`;
+        // --- 3. BACKDROP (Desktop) ---
+        if (backdropSource) {
+            let finalSrc = backdropSource.dataset.srcDefault;
+            if (data.backdrops) {
+                const textlessBackdrop = data.backdrops
+                    .filter(p => p.iso_639_1 === null)
+                    .sort((a, b) => b.vote_average - a.vote_average)[0];
+                if (textlessBackdrop) finalSrc = `https://image.tmdb.org/t/p/w780${textlessBackdrop.file_path}`;
+            }
+            backdropSource.srcset = finalSrc;
+            
+            const parentPicture = backdropSource.parentElement;
+            if(parentPicture) {
+                const imgTag = parentPicture.querySelector('img');
+                if(imgTag) imgTag.srcset = imgTag.srcset; 
             }
         }
-
     } catch (e) {
-        // Fallback silenzioso
-        if(logoImg) logoImg.style.display = 'none';
+        console.warn('Fallback immagini per ID:', id);
+        if (posterImg) {
+            posterImg.src = posterImg.dataset.srcDefault;
+            posterImg.onload = () => posterImg.classList.remove('opacity-0');
+        }
+        if (backdropSource) backdropSource.srcset = backdropSource.dataset.srcDefault;
+        if (logoImg) logoImg.style.display = 'none';
     }
 }
 
@@ -4850,7 +4993,7 @@ async function getMovieDetails(id, type = 'movie') {
 function createMovieCard(item, type = "movie", orientation = "vertical") {
     const card = document.createElement("div");
     
-    // --- SETUP CLASSI RESPONSIVE (Invariato) ---
+    // SETUP CLASSI RESPONSIVE (Invariato)
     card.className = "movie-card cursor-pointer relative flex-shrink-0 w-[40%] md:w-[35%] lg:w-[22%] transform hover:scale-105 transition-transform duration-300";
     
     card.dataset.id = item.id;
@@ -4858,30 +5001,25 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
     if (type === "tv") card.classList.add("tv-card");
     
     // --- URL IMMAGINI ---
-    const posterSrc = item.poster_path ? `${POSTER_PATH}${item.poster_path}` : '';
-    const backdropSrc = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : posterSrc;
+    const defaultPoster = item.poster_path ? `${POSTER_PATH}${item.poster_path}` : '';
+    const defaultBackdrop = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : defaultPoster;
 
-    // --- LOGICA PUNTEGGI (Invariata) ---
+    // --- LOGICA ROTTEN TOMATOES (Invariata) ---
     const voteAvg = item.vote_average || 0;
     const criticScore = Math.round(voteAvg * 10); 
     const isFresh = criticScore >= 60;
-    
     const variance = (item.id % 15) - 5; 
     let audienceScore = Math.min(100, Math.max(0, criticScore + variance));
     const isPopcornFresh = audienceScore >= 60;
 
-    // --- PERCORSI AI FILE SVG LOCALI ---
-    // Assicurati che i nomi dei file e la cartella corrispondano ai tuoi
     const pathTomato = './icons/tomato.svg';
     const pathSplat = './icons/splat.svg';
     const pathPopcornFull = './icons/popcorn-full.svg';
     const pathPopcornSpilled = './icons/popcorn-spilled.svg';
 
-    // Selezioniamo l'icona giusta
     const criticIcon = isFresh ? pathTomato : pathSplat;
     const audienceIcon = isPopcornFresh ? pathPopcornFull : pathPopcornSpilled;
 
-    // --- HTML DEL BADGE (Aggiornato con <img>) ---
     const rtBadge = `
         <div class="absolute top-2 right-2 z-20 flex flex-col gap-1 items-end">
             <div class="flex items-center gap-1.5 px-1.5 py-0.5 bg-black/80 backdrop-blur-md border border-white/10 rounded shadow-sm">
@@ -4900,10 +5038,15 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
             <div class="relative overflow-hidden rounded-lg group h-64 md:h-auto md:aspect-video w-full shadow-lg">
                 
                 <picture class="w-full h-full">
-                    <source media="(min-width: 768px)" srcset="${backdropSrc}" class="card-backdrop-source">
-                    <img src="${posterSrc}" 
+                    <source media="(min-width: 768px)" 
+                            srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
+                            data-src-default="${defaultBackdrop}" 
+                            class="card-backdrop-source">
+                    
+                    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" 
+                         data-src-default="${defaultPoster}"
                          alt="${item.title || item.name}" 
-                         class="card-poster w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                         class="card-poster w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 opacity-0 transition-opacity duration-500" 
                          loading="lazy">
                 </picture>
                 
@@ -4915,7 +5058,6 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
                 </div>
 
                 ${rtBadge}
-
             </div>
             
             <h3 class="mt-2 text-sm font-semibold truncate px-1 text-gray-200 group-hover:text-white transition-colors">${item.title || item.name}</h3>
@@ -4927,14 +5069,12 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
         </div>
     `;
     
-const logoImg = card.querySelector('.card-logo');
+    // --- GESTIONE OBSERVER ---
+    const logoImg = card.querySelector('.card-logo');
     const posterImg = card.querySelector('.card-poster');
     const backdropSource = card.querySelector('.card-backdrop-source');
     
-    // INVECE DI CHIAMARE SUBITO fetchCardAssets:
-    // fetchCardAssets(item.id, type, logoImg, posterImg, backdropSource); <--- RIMUOVI
-    
-    // 1. Salviamo i dati necessari direttamente sull'oggetto DOM della card
+    // Salviamo i dati sulla card per l'observer
     card.assetData = {
         id: item.id,
         type: type,
@@ -4943,10 +5083,14 @@ const logoImg = card.querySelector('.card-logo');
         backdropSource: backdropSource
     };
     
-    // 2. Diciamo all'observer di vigilare su questa card
-    assetObserver.observe(card);
+    // Registriamo la card all'observer (che chiamerà fetchCardAssets quando visibile)
+    if (typeof assetObserver !== 'undefined') {
+        assetObserver.observe(card);
+    } else {
+        // Fallback se l'observer non è ancora inizializzato (raro)
+        fetchCardAssets(item.id, type, logoImg, posterImg, backdropSource);
+    }
     
-    // Gestore click (invariato)
     card.addEventListener("click", () => openDetailView(item.id, type));
     
     return card;
@@ -5076,7 +5220,22 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
     navigator.serviceWorker.register('./service-worker.js').then(registration => {
       console.log('✅ Service Worker registrato:', registration);
 
+      // Controlla se c'è un aggiornamento ogni volta che apri la pagina
+      registration.update();
 
+      registration.onupdatefound = () => {
+        const installingWorker = registration.installing;
+        installingWorker.onstatechange = () => {
+          if (installingWorker.state === 'installed') {
+            if (navigator.serviceWorker.controller) {
+              // Nuovo aggiornamento disponibile!
+              console.log('🔄 Nuovo contenuto disponibile. Ricarico...');
+              // Opzionale: Forza il reload o mostra un toast all'utente
+               window.location.reload(); 
+            }
+          }
+        };
+      };
     }).catch(err => console.error('❌ Service Worker errore:', err));
   }
 </script>

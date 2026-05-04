@@ -5,6 +5,132 @@
         /* Season/Episode Selector Styles */
 
         /* Controlli centrali con effetto glass - senza tinte rosse */
+/* --- OTTIMIZZAZIONE MOBILE PORTRAIT (VERTICALE) --- */
+@media (max-width: 768px) and (orientation: portrait) {
+
+    /* 1. Container principale: Layout a colonna */
+    #controlsContainer {
+        display: flex !important;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 0 15px 25px 15px !important; /* Spazio laterale e inferiore */
+        gap: 15px;
+        height: auto;
+        min-height: 120px; /* Assicura spazio per la sfumatura */
+        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        border-radius: 0;
+        border: none;
+    }
+
+    /* 2. Barra di progresso: In alto e larga tutto lo schermo */
+    #progressContainer {
+        width: 100%;
+        margin-bottom: 5px;
+        order: 1; 
+        height: 6px; 
+    }
+    
+    /* Aumenta area di tocco della barra */
+    #progressContainer::before {
+        content: '';
+        position: absolute;
+        top: -15px; bottom: -15px; left: 0; right: 0;
+    }
+
+    /* 3. Pulsante FULLSCREEN FLOTTANTE (La modifica richiesta) */
+    #fullscreenBtn {
+        position: absolute !important;
+        bottom: 100px !important; /* Posizionato sopra la barra dei controlli */
+        right: 20px !important;
+        
+        /* Stile pulsante circolare */
+        width: 48px !important;
+        height: 48px !important;
+        background: rgba(0, 0, 0, 0.6) !important;
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 50% !important;
+        
+        /* Centratura icona */
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        margin: 0 !important;
+        z-index: 60;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    #fullscreenBtn i {
+        font-size: 1.2rem !important;
+        padding: 0 !important;
+    }
+
+    /* 4. Riga controlli secondari (Tempo, Audio, CC, Settings) */
+    #controlsContainer > div.flex.items-center.justify-between {
+        width: 100%;
+        order: 2;
+        padding: 0;
+        justify-content: space-between; /* Tempo a sx, Icone a dx */
+    }
+
+    /* 5. Nascondi elementi superflui su mobile */
+    #volumeSlider, 
+    .volume-container,
+    #volumeBtn,
+    #zoomBtn {
+        display: none !important;
+    }
+
+    /* 6. Ottimizzazione Tempo */
+    .text-sm.text-gray-300 {
+        font-size: 12px !important;
+        font-weight: 500;
+        margin-left: 0;
+    }
+
+    /* 7. Spaziatura icone rimanenti (Settings, Audio, CC) */
+    .flex.items-center.space-x-4 {
+        gap: 20px !important;
+        margin-left: auto;
+    }
+    
+    /* Reset margini Tailwind per space-x-4 */
+    .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+        margin: 0 !important;
+    }
+
+    /* Icone più grandi per il tocco */
+    #settingsBtn i, #audioTrackBtn i, #captionsBtn i {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Play button in basso a sinistra (opzionale, se vuoi nasconderlo usa display:none) */
+    #playPauseBtn {
+        margin-right: 15px;
+    }
+}
+
+        #hr-keeper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateZ(0);
+    animation: hr-keeper-anim 0.8s infinite linear;
+}
+
+@keyframes hr-keeper-anim {
+    0% { transform: translateZ(0) translateX(0.1px); }
+    50% { transform: translateZ(0) translateX(0.3px); }
+    100% { transform: translateZ(0) translateX(0.1px); }
+}
+
 .center-controls {
     position: absolute;
     top: 50%;
@@ -930,9 +1056,6 @@ h2[trending] {
 
 /* --- OTTIMIZZAZIONE HERO MOBILE --- */
 @media (max-width: 640px) {
-  #hero-section {
-    height: 90vh; /* Leggermente più bassa per far vedere che c'è contenuto sotto */
-  }
 
   /* Riduci la dimensione del titolo */
   #hero-title {
