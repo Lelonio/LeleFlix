@@ -10,6 +10,11 @@
     z-index: 1000;
     overflow: hidden;
     background: black;
+    /* PWA safe-area: prevent status bar overlap on iOS/Android */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
 }
 
 /* ── Video Container ──────────────────────────────────────── */
@@ -54,6 +59,9 @@
     left: 0;
     right: 0;
     padding: 15px;
+    /* PWA safe-area: avoid notch/island overlap */
+    padding-top: calc(15px + env(safe-area-inset-top, 0px));
+    padding-left: calc(15px + env(safe-area-inset-left, 0px));
     z-index: 10;
     display: flex;
     align-items: center;
@@ -282,7 +290,7 @@
 /* ── Controls Bar (Bottom) ────────────────────────────────── */
 .controls-container {
     position: absolute;
-    bottom: 1.5rem;
+    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     width: 90%;

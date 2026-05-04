@@ -9,6 +9,7 @@ class VideoPlayer {
         this.lastSavedTime = 0;
         this.lastSeekTime = 0;
         this.refreshInterval = null;
+        this.originalThemeColor = null;
         this.seekTooltip = document.getElementById('seekTooltip');
         this.centerControls = document.getElementById('centerControls');
         this.playCenterBtn = document.getElementById('playCenterBtn');
@@ -51,6 +52,26 @@ class VideoPlayer {
         this.audioMenu = document.getElementById('audioMenu');
         this.captionsMenu = document.getElementById('captionsMenu');
         this.initEventListeners();
+    }
+
+    // ── Theme Color (PWA Status Bar) ────────────────────────
+    setThemeColor(color) {
+        let meta = document.querySelector('meta[name="theme-color"]');
+        if (!meta) {
+            meta = document.createElement('meta');
+            meta.name = 'theme-color';
+            document.head.appendChild(meta);
+        }
+        if (this.originalThemeColor === null) {
+            this.originalThemeColor = meta.content || '#E50914';
+        }
+        meta.content = color;
+    }
+
+    restoreThemeColor() {
+        if (this.originalThemeColor !== null) {
+            this.setThemeColor(this.originalThemeColor);
+        }
     }
 
     // ── Refresh Keeper ──────────────────────────────────────
@@ -636,6 +657,8 @@ class VideoPlayer {
                 this.enterFullscreen().catch(e => console.log('Fullscreen immediato fallito (Normale per Guest):', e));
             }
             this.playerModal.classList.remove('hidden');
+            // Set PWA status bar to black when player opens
+            this.setThemeColor('#000000');
             this.showControlsTemporarily();
 
             // Resume helper
@@ -1202,9 +1225,15 @@ class VideoPlayer {
 
     // ── Menu Toggles ────────────────────────────────────────
     closeAllMenus() {
+        const wasOpen = this.isAnyMenuOpen();
         this.settingsMenu.classList.remove('active');
         this.audioMenu.classList.remove('active');
         this.captionsMenu.classList.remove('active');
+        // When menus close, show center controls again and restart auto-hide timer
+        if (wasOpen) {
+            this.centerControls.classList.add('visible-center');
+            this.showControlsTemporarily();
+        }
     }
 
     isAnyMenuOpen() {
@@ -1223,12 +1252,21 @@ class VideoPlayer {
         const isAlreadyOpen = targetMenu.classList.contains('active');
 
         // Close all menus first
-        this.closeAllMenus();
+        this.settingsMenu.classList.remove('active');
+        this.audioMenu.classList.remove('active');
+        this.captionsMenu.classList.remove('active');
 
         // If the clicked menu was already open, just close it (toggle off)
-        // Otherwise, open the requested menu
         if (!isAlreadyOpen) {
             targetMenu.classList.add('active');
+            // Hide center controls so they don't cover the menu
+            this.centerControls.classList.remove('visible-center');
+            // Cancel auto-hide while menu is open so user has time to select
+            clearTimeout(this.controlsTimeout);
+        } else {
+            // Menu closed — show center controls again and restart auto-hide
+            this.centerControls.classList.add('visible-center');
+            this.showControlsTemporarily();
         }
     }
 
@@ -1286,14 +1324,15 @@ class VideoPlayer {
 
         clearTimeout(this.controlsTimeout);
 
+        // Don't start auto-hide timer if a menu is open — user needs time to select
+        if (this.isAnyMenuOpen()) return;
+
         this.controlsTimeout = setTimeout(() => {
             if (!this.videoPlayer.paused && !this.isSeeking) {
                 this.controlsContainer.classList.remove('visible');
                 this.backButtonContainer.classList.remove('visible');
                 // FIX Bug #7: Fade out center controls with opacity, no hidden class
                 this.centerControls.classList.remove('visible-center');
-                // Close any open menus when controls auto-hide
-                this.closeAllMenus();
             }
         }, 3000);
     }
@@ -1361,6 +1400,8 @@ class VideoPlayer {
         this.currentStreamId = null;
         this.abortController = null;
         this.playerModal.classList.add('hidden');
+        // Restore PWA status bar color when player closes
+        this.restoreThemeColor();
 
         if (document.fullscreenElement) {
             document.exitFullscreen();
