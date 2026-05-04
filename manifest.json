@@ -4,7 +4,7 @@
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#000000",
-  "theme_color": "#e50914",
+  "theme_color": "#000000",
   "description": "Guarda film e serie TV in streaming.",
   "icons": [
     {

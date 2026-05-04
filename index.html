@@ -2422,10 +2422,16 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
      in index.html. Also includes the VLC prompt modal.
      ============================================================ -->
 
-<div id="player-modal" class="fixed inset-0 z-[1000] overflow-hidden hidden bg-black">
-    <div class="flex items-center justify-center min-h-screen p-0 md:p-4">
-        <div class="w-full max-w-5xl rounded-lg overflow-hidden shadow-2xl">
-            <div class="video-container aspect-video group" id="videoContainer">
+<!-- ============================================================
+     LeleFlix Player Modal – HTML Snippet
+     This replaces the <div id="player-modal" ...>...</div> section
+     in index.html. Also includes the VLC prompt modal.
+     ============================================================ -->
+
+<div id="player-modal" class="fixed inset-0 z-[1000] overflow-hidden hidden" style="background:#000 !important;">
+    <div class="flex items-center justify-center w-full h-full">
+        <div class="w-full h-full overflow-hidden">
+            <div class="video-container w-full h-full" id="videoContainer">
 
                 <!-- Center Controls (play, skip forward/back) -->
                 <div id="centerControls" class="center-controls" aria-label="Playback controls">
@@ -2773,6 +2779,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     to { opacity: 0; transform: translateX(10px); }
 }
 </style>
+
 
 <style>
     /* Stile base del modale stagioni - uguale a quello film */

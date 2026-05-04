@@ -9,7 +9,6 @@ class VideoPlayer {
         this.lastSavedTime = 0;
         this.lastSeekTime = 0;
         this.refreshInterval = null;
-        this.originalThemeColor = null;
         this.seekTooltip = document.getElementById('seekTooltip');
         this.centerControls = document.getElementById('centerControls');
         this.playCenterBtn = document.getElementById('playCenterBtn');
@@ -56,22 +55,33 @@ class VideoPlayer {
 
     // ── Theme Color (PWA Status Bar) ────────────────────────
     setThemeColor(color) {
+        // Update or create meta[name="theme-color"]
         let meta = document.querySelector('meta[name="theme-color"]');
         if (!meta) {
             meta = document.createElement('meta');
             meta.name = 'theme-color';
+            meta.content = color;
             document.head.appendChild(meta);
+        } else {
+            meta.setAttribute('content', color);
         }
-        if (this.originalThemeColor === null) {
-            this.originalThemeColor = meta.content || '#E50914';
+        // Also update apple-mobile-web-app-status-bar-style for iOS
+        let appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+        if (!appleMeta) {
+            appleMeta = document.createElement('meta');
+            appleMeta.name = 'apple-mobile-web-app-status-bar-style';
+            document.head.appendChild(appleMeta);
         }
-        meta.content = color;
+        if (color === '#000000' || color === '#000') {
+            appleMeta.setAttribute('content', 'black-translucent');
+        } else {
+            appleMeta.setAttribute('content', 'default');
+        }
     }
 
     restoreThemeColor() {
-        if (this.originalThemeColor !== null) {
-            this.setThemeColor(this.originalThemeColor);
-        }
+        // Restore the app's red theme color when player closes
+        this.setThemeColor('#E50914');
     }
 
     // ── Refresh Keeper ──────────────────────────────────────
@@ -1484,6 +1494,10 @@ class VideoPlayer {
 
 // ── Global Instance ────────────────────────────────────────
 const videoPlayerInstance = new VideoPlayer();
+
+// Set initial PWA theme color to red (app default)
+// manifest.json theme_color is #000000 (black) as fallback for the player
+videoPlayerInstance.setThemeColor('#E50914');
 
 // ── Global playMovie Function ──────────────────────────────
 function playMovie(content, type = null) {
