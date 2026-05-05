@@ -43,7 +43,7 @@ sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],          
     </script>
 
     <script>
-    const socket = io('http://localhost:3000'); // Usa il tuo dominio corretto
+    const socket = io('https://api.leleflix.store'); // Usa il tuo dominio corretto
 
     // Funzione per mostrare l'animazione
     function showCastAnimation(title) {
@@ -2116,7 +2116,7 @@ async function removeWatchProgress(key, cardElement) {
     if (confirmed) {
         try {
             // 2. Chiama l'endpoint DELETE del tuo backend
-            const response = await fetch(`http://localhost:3000/progress/${key}`, {
+            const response = await fetch(`https://api.leleflix.store/progress/${key}`, {
                 method: 'DELETE'
             });
 
@@ -3140,7 +3140,7 @@ async function displayContinueWatching() {
 async function getContinueWatching() {
     try {
         const ip = await getClientIP();
-        const response = await fetch(`http://localhost:3000/progress/${ip}`);
+        const response = await fetch(`https://api.leleflix.store/progress/${ip}`);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -3198,7 +3198,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const API_URL = 'https://api.themoviedb.org/3';
         const IMG_PATH = 'https://image.tmdb.org/t/p/w1280';
         const POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
-        const PROXY_URL = 'http://localhost:3000/proxy/';
+        const PROXY_URL = 'https://api.leleflix.store/proxy/';
 
         // DOM Elements
         const trendingMoviesEl = document.getElementById('trending-movies');
@@ -4047,7 +4047,7 @@ fetchCardAssets(item.id, item.media_type, t10Logo, t10Poster);
 // Carica tutti i contenuti disponibili
 async function loadAvailableContent() {
   try {
-    const response = await fetch('http://localhost:3000/home/available');
+    const response = await fetch('https://api.leleflix.store/home/available');
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data = await response.json();
