@@ -79,6 +79,24 @@ class VideoPlayer {
         }
     }
 
+    // ── Player Full-Screen Background (PWA gap fix) ─────────
+    setPlayerBackground(active) {
+        if (active) {
+            // Save original body background and set to pure black
+            // This eliminates the 1px dark-gray line at the top in PWA mode
+            // caused by body bg-dark (#141414) showing through the status bar gap
+            this._originalBodyBg = document.body.style.backgroundColor;
+            document.body.style.backgroundColor = '#000000';
+        } else {
+            // Restore original body background
+            if (this._originalBodyBg !== undefined) {
+                document.body.style.backgroundColor = this._originalBodyBg;
+            } else {
+                document.body.style.backgroundColor = '';
+            }
+        }
+    }
+
     restoreThemeColor() {
         // Restore the app's red theme color when player closes
         this.setThemeColor('#E50914');
@@ -669,6 +687,9 @@ class VideoPlayer {
             this.playerModal.classList.remove('hidden');
             // Set PWA status bar to black when player opens
             this.setThemeColor('#000000');
+            // Also set body background to pure black to eliminate the
+            // 1px dark-gray line at the top (body bg-dark = #141414)
+            this.setPlayerBackground(true);
             this.showControlsTemporarily();
 
             // Resume helper
@@ -1410,8 +1431,9 @@ class VideoPlayer {
         this.currentStreamId = null;
         this.abortController = null;
         this.playerModal.classList.add('hidden');
-        // Restore PWA status bar color when player closes
+        // Restore PWA status bar color and body background when player closes
         this.restoreThemeColor();
+        this.setPlayerBackground(false);
 
         if (document.fullscreenElement) {
             document.exitFullscreen();
