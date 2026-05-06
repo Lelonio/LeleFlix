@@ -3395,8 +3395,9 @@ async function populateDetailView(content) {
 
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2" title="Tomatometer">
+
                     <img src="${criticIcon}" class="w-6 h-6 object-contain">
-                    <span class="text-white font-bold">${cScore}%</span>${liveBadge}
+                    <span class="text-white font-bold">${cScore}%</span>
                 </div>
                 <div class="flex items-center gap-2" title="Audience Score">
                     <img src="${audienceIcon}" class="w-6 h-6 object-contain">
@@ -3455,42 +3456,75 @@ async function populateDetailView(content) {
 
     const scoreContainer = document.createElement('div');
     scoreContainer.id = 'dynamic-rt-scores';
-    scoreContainer.className = 'flex flex-wrap items-center gap-x-6 gap-y-3 mb-6 mt-4 p-4 rounded-xl border border-white/10';
+    scoreContainer.className = 'flex flex-wrap items-center gap-x-6 gap-y-3 mb-6 mt-4 p-4 rounded-xl';
+    scoreContainer.style.background = 'rgba(20, 20, 20, 0.35)';
+    scoreContainer.style.backdropFilter = 'blur(12px) saturate(180%)';
+    scoreContainer.style.webkitBackdropFilter = 'blur(12px) saturate(180%)';
+    scoreContainer.style.border = '1px solid rgba(255, 255, 255, 0.12)';
+    scoreContainer.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.4)';
 
     // Inserisci il contenitore nel DOM PRIMA di renderizzare
     const metadataRow = document.getElementById('detail-year').parentElement;
     metadataRow.insertAdjacentElement('afterend', scoreContainer);
 
-    // Mostra subito lo spinner di caricamento al posto del fallback
+    // Mostra subito lo spinner di caricamento (sarà rimpiazzato se c'è cache)
     renderDetailLoading();
 
-    // Prova a caricare i punteggi reali da Rotten Tomatoes (via proxy scraper)
-    // Force refresh on detail page to get latest scores (may have been cached as not_found before)
-    const rtContainerId = 'dynamic-rt-scores'; // ID fisso per verificare che il contenitore sia ancora in DOM
-    fetchRTScores(rtTitle, isTV ? 'tv' : 'movie', rtYear, true).then(rtData => {
-        console.log('[RT] Detail callback - rtData:', JSON.stringify(rtData));
-        // Verifica che il contenitore esista ancora nel DOM (l'utente potrebbe aver chiuso la pagina)
+    // 1) Prima prova a leggere dalla cache (senza force) - risposta istantanea
+    const rtContainerId = 'dynamic-rt-scores';
+    const rtMediaType = isTV ? 'tv' : 'movie';
+
+    fetchRTScores(rtTitle, rtMediaType, rtYear, false).then(cachedData => {
         const currentContainer = document.getElementById(rtContainerId);
-        if (!currentContainer) {
-            console.warn('[RT] Container not found in DOM, skipping update');
-            return;
-        }
-        if (rtData && (rtData.criticsScore !== null || rtData.audienceScore !== null)) {
-            const criticScore = rtData.criticsScore !== null ? rtData.criticsScore : Math.round(tmdbScore * 10);
-            const audienceScore = rtData.audienceScore !== null ? rtData.audienceScore : Math.round(tmdbScore * 10);
-            // Usa TMDB come fallback per IMDb e Metascore se non abbiamo dati reali
+        if (!currentContainer) return;
+
+        if (cachedData && cachedData.criticsScore !== null) {
+            // Cache hit: mostra subito i punteggi
+            const criticScore = cachedData.criticsScore;
+            const audienceScore = cachedData.audienceScore !== null ? cachedData.audienceScore : Math.round(tmdbScore * 10);
             const imdbScore = tmdbScore.toFixed(1);
             const metaScore = Math.round(tmdbScore * 10);
-            console.log('[RT] Updating scores to:', criticScore + '%', '/', audienceScore + '%');
+            console.log('[RT] Detail cache hit:', criticScore + '%', '/', audienceScore + '%');
             renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, true);
         } else {
-            // RT non disponibile - mostra punteggio TMDB come riserva
-            renderDetailTMDBFallback();
+            // 2) Cache miss: forza scraping e mostra spinner nel frattempo
+            console.log('[RT] Detail cache miss, forcing scrape...');
+            fetchRTScores(rtTitle, rtMediaType, rtYear, true).then(rtData => {
+                const container2 = document.getElementById(rtContainerId);
+                if (!container2) return;
+                if (rtData && rtData.criticsScore !== null) {
+                    const criticScore = rtData.criticsScore;
+                    const audienceScore = rtData.audienceScore !== null ? rtData.audienceScore : Math.round(tmdbScore * 10);
+                    const imdbScore = tmdbScore.toFixed(1);
+                    const metaScore = Math.round(tmdbScore * 10);
+                    console.log('[RT] Detail scrape result:', criticScore + '%', '/', audienceScore + '%');
+                    renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, true);
+                } else {
+                    renderDetailTMDBFallback();
+                }
+            }).catch(() => {
+                const container2 = document.getElementById(rtContainerId);
+                if (container2) renderDetailTMDBFallback();
+            });
         }
-    }).catch(err => {
-        console.warn('[RT] Detail fetch failed:', err);
-        // Fetch fallito - mostra punteggio TMDB come riserva
-        renderDetailTMDBFallback();
+    }).catch(() => {
+        // Anche la cache fetch fallita: prova force scrape
+        fetchRTScores(rtTitle, rtMediaType, rtYear, true).then(rtData => {
+            const container2 = document.getElementById(rtContainerId);
+            if (!container2) return;
+            if (rtData && rtData.criticsScore !== null) {
+                const criticScore = rtData.criticsScore;
+                const audienceScore = rtData.audienceScore !== null ? rtData.audienceScore : Math.round(tmdbScore * 10);
+                const imdbScore = tmdbScore.toFixed(1);
+                const metaScore = Math.round(tmdbScore * 10);
+                renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, true);
+            } else {
+                renderDetailTMDBFallback();
+            }
+        }).catch(() => {
+            const container2 = document.getElementById(rtContainerId);
+            if (container2) renderDetailTMDBFallback();
+        });
     });
 
     try {
@@ -4401,10 +4435,11 @@ async function displayHeroMovie(content) {
             </div>
         `;
 
-        // Prova a caricare i punteggi reali da RT
+        // Prova a caricare i punteggi - prima dalla cache, poi force scrape se necessario
         const heroTitle = content.original_title || content.original_name || content.title || content.name || '';
         const heroYear = (content.release_date || content.first_air_date || '').split('-')[0];
-        fetchRTScores(heroTitle, content.media_type, heroYear, true).then(rtData => {
+
+        function renderHeroRTScores(rtData) {
             if (rtData && rtData.criticsScore !== null) {
                 const isRtFresh = rtData.criticsScore >= 60;
                 const rtIcon = isRtFresh ? './icons/tomato.svg' : './icons/splat.svg';
@@ -4422,28 +4457,36 @@ async function displayHeroMovie(content) {
                     ` : ''}
                 `;
             } else {
-                // RT non disponibile - mostra punteggio TMDB come riserva
-                const tmdbHeroScore = Math.round(content.vote_average * 10);
-                heroScoresContainer.innerHTML = `
-                    <div class="flex items-center gap-1.5">
-                        <img src="${tmdbHeroScore >= 60 ? './icons/tomato.svg' : './icons/splat.svg'}" class="w-4 h-4 object-contain opacity-60" alt="TMDB">
-                        <span class="text-gray-300 text-xs font-bold">${tmdbHeroScore}%</span>
-                        <span class="text-[8px] text-gray-500 font-medium">TMDB</span>
-                    </div>
-                `;
+                renderHeroTMDBFallback();
+            }
+        }
+
+        function renderHeroTMDBFallback() {
+            const tmdbHeroScore = Math.round(content.vote_average * 10);
+            heroScoresContainer.innerHTML = `
+                <div class="flex items-center gap-1.5">
+                    <img src="${tmdbHeroScore >= 60 ? './icons/tomato.svg' : './icons/splat.svg'}" class="w-4 h-4 object-contain opacity-60" alt="TMDB">
+                    <span class="text-gray-300 text-xs font-bold">${tmdbHeroScore}%</span>
+                    <span class="text-[8px] text-gray-500 font-medium">TMDB</span>
+                </div>
+            `;
+        }
+
+        // 1) Cache first (senza force) - istantaneo se disponibile
+        fetchRTScores(heroTitle, content.media_type, heroYear, false).then(cachedData => {
+            if (cachedData && cachedData.criticsScore !== null) {
+                renderHeroRTScores(cachedData);
+            } else {
+                // 2) Cache miss: forza scraping
+                fetchRTScores(heroTitle, content.media_type, heroYear, true).then(rtData => {
+                    renderHeroRTScores(rtData);
+                }).catch(() => renderHeroTMDBFallback());
             }
         }).catch(() => {
-            // Fetch fallito - mostra punteggio TMDB come riserva
-            const tmdbHeroScore = Math.round(content.vote_average * 10);
-            if (heroScoresContainer) {
-                heroScoresContainer.innerHTML = `
-                    <div class="flex items-center gap-1.5">
-                        <img src="${tmdbHeroScore >= 60 ? './icons/tomato.svg' : './icons/splat.svg'}" class="w-4 h-4 object-contain opacity-60" alt="TMDB">
-                        <span class="text-gray-300 text-xs font-bold">${tmdbHeroScore}%</span>
-                        <span class="text-[8px] text-gray-500 font-medium">TMDB</span>
-                    </div>
-                `;
-            }
+            // Cache fetch fallita: prova force
+            fetchRTScores(heroTitle, content.media_type, heroYear, true).then(rtData => {
+                renderHeroRTScores(rtData);
+            }).catch(() => renderHeroTMDBFallback());
         });
     }
 
