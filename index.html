@@ -3359,24 +3359,10 @@ async function populateDetailView(content) {
         : `${content.runtime || 'N/A'} min`;
     document.getElementById('detail-overview').textContent = content.overview;
 
-    // --- PUNTEGGI MULTI-PIATTAFORMA (TMDB fallback + RT reali) ---
+    // --- PUNTEGGI MULTI-PIATTAFORMA (Spinner + RT reali) ---
     const tmdbScore = content.vote_average || 0;
-    const baseId = content.id;
     const rtTitle = content.original_title || content.original_name || content.title || content.name || '';
     const rtYear = (content.release_date || content.first_air_date || '').split('-')[0];
-
-    // Fallback simulato basato su TMDB
-    const fallbackCritic = Math.round(tmdbScore * 10);
-    const fallbackAudience = Math.min(100, Math.max(0, fallbackCritic + ((baseId % 11) - 5) + 2));
-    const fallbackImdb = Math.min(9.9, tmdbScore + ((baseId % 10) / 10) - 0.5).toFixed(1);
-    const fallbackMeta = Math.max(0, fallbackCritic - ((baseId % 15) + 5));
-
-    // Valori iniziali dal fallback (saranno aggiornati se RT risponde)
-    let criticScore = fallbackCritic;
-    let audienceScore = fallbackAudience;
-    let imdbScore = fallbackImdb;
-    let metaScore = fallbackMeta;
-    let isRtLive = false;
 
     // Icone
     const pathTomato = './icons/tomato.svg';
@@ -3433,6 +3419,36 @@ async function populateDetailView(content) {
         `;
     }
 
+    function renderDetailLoading() {
+        const container = document.getElementById('dynamic-rt-scores') || scoreContainer;
+        if (!container) return;
+        container.innerHTML = `
+            <div class="flex items-center gap-3 w-full justify-center py-2">
+                <div class="score-spinner score-spinner-lg"></div>
+                <span class="text-gray-400 text-sm font-medium">Caricamento punteggi...</span>
+            </div>
+        `;
+    }
+
+    function renderDetailTMDBFallback() {
+        const tmdbPct = Math.round(tmdbScore * 10);
+        const container = document.getElementById('dynamic-rt-scores') || scoreContainer;
+        if (!container) return;
+        container.innerHTML = `
+            <div class="flex items-center gap-3 pr-6 border-r border-white/10">
+                <div class="flex flex-col items-center">
+                    <span class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">${tmdbPct}</span>
+                    <span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">TMDB</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 opacity-70">
+                <img src="${tmdbPct >= 60 ? pathTomato : pathSplat}" class="w-6 h-6 object-contain">
+                <span class="text-gray-300 font-bold">${tmdbPct}%</span>
+                <span class="text-[9px] text-gray-500 font-medium">TMDB</span>
+            </div>
+        `;
+    }
+
     // Rimuovi vecchio contenitore
     const oldScores = document.getElementById('dynamic-rt-scores');
     if (oldScores) oldScores.remove();
@@ -3445,8 +3461,8 @@ async function populateDetailView(content) {
     const metadataRow = document.getElementById('detail-year').parentElement;
     metadataRow.insertAdjacentElement('afterend', scoreContainer);
 
-    // Mostra subito i punteggi fallback
-    renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, false);
+    // Mostra subito lo spinner di caricamento al posto del fallback
+    renderDetailLoading();
 
     // Prova a caricare i punteggi reali da Rotten Tomatoes (via proxy scraper)
     // Force refresh on detail page to get latest scores (may have been cached as not_found before)
@@ -3460,14 +3476,21 @@ async function populateDetailView(content) {
             return;
         }
         if (rtData && (rtData.criticsScore !== null || rtData.audienceScore !== null)) {
-            if (rtData.criticsScore !== null) criticScore = rtData.criticsScore;
-            if (rtData.audienceScore !== null) audienceScore = rtData.audienceScore;
-            isRtLive = true;
+            const criticScore = rtData.criticsScore !== null ? rtData.criticsScore : Math.round(tmdbScore * 10);
+            const audienceScore = rtData.audienceScore !== null ? rtData.audienceScore : Math.round(tmdbScore * 10);
+            // Usa TMDB come fallback per IMDb e Metascore se non abbiamo dati reali
+            const imdbScore = tmdbScore.toFixed(1);
+            const metaScore = Math.round(tmdbScore * 10);
             console.log('[RT] Updating scores to:', criticScore + '%', '/', audienceScore + '%');
             renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, true);
+        } else {
+            // RT non disponibile - mostra punteggio TMDB come riserva
+            renderDetailTMDBFallback();
         }
     }).catch(err => {
         console.warn('[RT] Detail fetch failed:', err);
+        // Fetch fallito - mostra punteggio TMDB come riserva
+        renderDetailTMDBFallback();
     });
 
     try {
@@ -4367,17 +4390,14 @@ async function displayHeroMovie(content) {
         heroRuntimeEl.textContent = `${content.episode_run_time?.[0] || 'N/A'} min/ep`;
     }
 
-    // 2b. Punteggio nell'hero (TMDB fallback + RT reali)
+    // 2b. Punteggio nell'hero (spinner + RT reali)
     const heroScoresContainer = document.getElementById('hero-rt-scores');
     if (heroScoresContainer) {
-        // Mostra subito il punteggio TMDB come fallback
-        const tmdbHeroScore = Math.round(content.vote_average * 10);
-        const isFresh = tmdbHeroScore >= 60;
-        const tomatoIcon = isFresh ? './icons/tomato.svg' : './icons/splat.svg';
+        // Mostra subito uno spinner di caricamento al posto del fallback
         heroScoresContainer.innerHTML = `
             <div class="flex items-center gap-1.5">
-                <img src="${tomatoIcon}" class="w-4 h-4 object-contain" alt="RT">
-                <span class="text-white text-xs font-bold">${tmdbHeroScore}%</span>
+                <div class="score-spinner score-spinner-lg"></div>
+                <span class="text-gray-400 text-xs font-medium">Caricamento...</span>
             </div>
         `;
 
@@ -4401,8 +4421,30 @@ async function displayHeroMovie(content) {
                     </div>
                     ` : ''}
                 `;
+            } else {
+                // RT non disponibile - mostra punteggio TMDB come riserva
+                const tmdbHeroScore = Math.round(content.vote_average * 10);
+                heroScoresContainer.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        <img src="${tmdbHeroScore >= 60 ? './icons/tomato.svg' : './icons/splat.svg'}" class="w-4 h-4 object-contain opacity-60" alt="TMDB">
+                        <span class="text-gray-300 text-xs font-bold">${tmdbHeroScore}%</span>
+                        <span class="text-[8px] text-gray-500 font-medium">TMDB</span>
+                    </div>
+                `;
             }
-        }).catch(() => {});
+        }).catch(() => {
+            // Fetch fallito - mostra punteggio TMDB come riserva
+            const tmdbHeroScore = Math.round(content.vote_average * 10);
+            if (heroScoresContainer) {
+                heroScoresContainer.innerHTML = `
+                    <div class="flex items-center gap-1.5">
+                        <img src="${tmdbHeroScore >= 60 ? './icons/tomato.svg' : './icons/splat.svg'}" class="w-4 h-4 object-contain opacity-60" alt="TMDB">
+                        <span class="text-gray-300 text-xs font-bold">${tmdbHeroScore}%</span>
+                        <span class="text-[8px] text-gray-500 font-medium">TMDB</span>
+                    </div>
+                `;
+            }
+        });
     }
 
     // --- 3. LOGICA "SOLO LOGO" (Niente testo in attesa) ---
@@ -4605,21 +4647,14 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
             <div class="rt-live-dot absolute -top-0.5 -left-0.5 w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Rotten Tomatoes Live Score"></div>
         </div>`;
     } else {
-        // Placeholder badge (hidden, will be filled by /rt-cached poll)
+        // Placeholder badge con spinner di caricamento (visibile, sarà aggiornato dal /rt-cached poll)
         rtBadge = `
-        <div class="rt-badge absolute top-2 right-2 z-20 flex flex-col gap-1 items-end opacity-0" data-card-id="${item.id}">
+        <div class="rt-badge absolute top-2 right-2 z-20 flex flex-col gap-1 items-end" data-card-id="${item.id}">
             <div class="liquid-glass" style="border-radius:4px;">
                 <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
                 <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;padding:2px 6px;">
-                    <img src="${pathTomato}" class="rt-critic-icon w-4 h-4 object-contain" alt="Critic">
-                    <span class="rt-critic-score text-white text-[11px] font-bold leading-none">--%</span>
-                </div>
-            </div>
-            <div class="liquid-glass" style="border-radius:4px;">
-                <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
-                <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;padding:2px 6px;">
-                    <img src="${pathPopcornFull}" class="rt-audience-icon w-4 h-4 object-contain" alt="Audience">
-                    <span class="rt-audience-score text-gray-200 text-[11px] font-bold leading-none">--%</span>
+                    <div class="score-spinner"></div>
+                    <span class="rt-critic-score text-white text-[11px] font-bold leading-none"></span>
                 </div>
             </div>
         </div>`;
@@ -4713,10 +4748,15 @@ function pollRTScores() {
             results.forEach(result => {
                 if (result.criticsScore === null && result.audienceScore === null) {
                     // If status is 'blocked', keep polling (don't mark as loaded)
-                    // If status is 'not_found', mark as loaded so we stop polling
+                    // If status is 'not_found', mark as loaded and hide spinner
                     if (result.status === 'not_found') {
                         const card = document.querySelector(`.movie-card[data-tmdb-id="${result.tmdbId}"]`);
-                        if (card) card.dataset.rtLoaded = 'true';
+                        if (card) {
+                            card.dataset.rtLoaded = 'true';
+                            // Nascondi il badge spinner (nessun punteggio disponibile)
+                            const badge = card.querySelector('.rt-badge');
+                            if (badge) badge.style.display = 'none';
+                        }
                     }
                     return;
                 }
@@ -4730,25 +4770,31 @@ function pollRTScores() {
                 const cScore = result.criticsScore;
                 const aScore = result.audienceScore;
 
-                // Update critics
+                // Ricostruisci il contenuto del badge con i punteggi reali
+                let badgeHTML = '';
                 if (cScore !== null) {
-                    const cEl = badge.querySelector('.rt-critic-score');
-                    const cIcon = badge.querySelector('.rt-critic-icon');
-                    if (cEl) cEl.textContent = cScore + '%';
-                    if (cIcon) cIcon.src = cScore >= 60 ? './icons/tomato.svg' : './icons/splat.svg';
+                    const cIcon = cScore >= 60 ? './icons/tomato.svg' : './icons/splat.svg';
+                    badgeHTML += `
+                    <div class="liquid-glass" style="border-radius:4px;">
+                        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
+                        <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;padding:2px 6px;">
+                            <img src="${cIcon}" class="w-4 h-4 object-contain" alt="Critic">
+                            <span class="text-white text-[11px] font-bold leading-none">${cScore}%</span>
+                        </div>
+                    </div>`;
                 }
-
-                // Update audience
                 if (aScore !== null) {
-                    const aEl = badge.querySelector('.rt-audience-score');
-                    const aIcon = badge.querySelector('.rt-audience-icon');
-                    if (aEl) aEl.textContent = aScore + '%';
-                    if (aIcon) aIcon.src = aScore >= 60 ? './icons/popcorn-full.svg' : './icons/popcorn-spilled.svg';
+                    const aIcon = aScore >= 60 ? './icons/popcorn-full.svg' : './icons/popcorn-spilled.svg';
+                    badgeHTML += `
+                    <div class="liquid-glass" style="border-radius:4px;">
+                        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
+                        <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;padding:2px 6px;">
+                            <img src="${aIcon}" class="w-4 h-4 object-contain" alt="Audience">
+                            <span class="text-gray-200 text-[11px] font-bold leading-none">${aScore}%</span>
+                        </div>
+                    </div>`;
                 }
-
-                // Show badge
-                badge.classList.remove('opacity-0');
-                badge.classList.add('opacity-100');
+                badge.innerHTML = badgeHTML;
 
                 // Add LIVE dot
                 if (!badge.querySelector('.rt-live-dot')) {
