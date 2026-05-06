@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');        
         /* Add these styles to your existing style section */
 
@@ -8,24 +7,21 @@
 /* --- OTTIMIZZAZIONE MOBILE PORTRAIT (VERTICALE) --- */
 @media (max-width: 768px) and (orientation: portrait) {
 
-    /* 1. Container principale: Layout a colonna */
+/* 1. Riporta la barra dei controlli in asse (annulla il translate desktop) */
     #controlsContainer {
-        display: flex !important;
-        flex-direction: column;
-        justify-content: flex-end;
-        padding: 0 15px 25px 15px !important; /* Spazio laterale e inferiore */
-        gap: 15px;
-        height: auto;
-        min-height: 120px; /* Assicura spazio per la sfumatura */
-        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        border-radius: 0;
-        border: none;
+        transform: none !important;
+        left: 0 !important;
+        width: 100% !important;
+    }
+    
+    /* 2. Forza il video a mantenere le proporzioni 16:9 senza schiacciarsi */
+    video#videoPlayer {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important; /* Aggiunge bande nere invece di deformare */
     }
 
-    /* 2. Barra di progresso: In alto e larga tutto lo schermo */
+    /* 2b. Barra di progresso: In alto e larga tutto lo schermo */
     #progressContainer {
         width: 100%;
         margin-bottom: 5px;
@@ -141,11 +137,13 @@
     gap: 60px;
     z-index: 50;
     transition: opacity 0.3s ease;
-    pointer-events: auto;
+    opacity: 0;
+    pointer-events: none;
 }
 
-.center-controls.hidden {
-    display: none;
+.center-controls.visible-center {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /* Stile base per tutti i pulsanti - nessuna tinta rossa */
@@ -295,21 +293,19 @@
     transition: transform 0.2s ease, opacity 0.1s ease;
 }
 
-/* Animazione di apparizione */
-.center-controls {
-    animation: glassFadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+/* Animazione di apparizione - leggera, senza filter blur */
+.center-controls.visible-center {
+    animation: centerFadeIn 0.3s ease-out;
 }
 
-@keyframes glassFadeIn {
+@keyframes centerFadeIn {
     from {
-        opacity: 0.01; /* <-- CORREZIONE: Forza il rendering del blur */
-        transform: translate(-50%, -50%) scale(0.9);
-        filter: blur(10px);
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.92);
     }
     to {
         opacity: 1;
         transform: translate(-50%, -50%) scale(1);
-        filter: blur(0);
     }
 }
 
@@ -1010,12 +1006,8 @@ h2[trending] {
 }
 /* --- BARRA DI NAVIGAZIONE MOBILE --- */
 
-/* Applica lo sfondo "glass" alla barra */
+/* Applica lo sfondo "liquid glass" alla barra mobile */
 #mobile-nav {
-  background: rgba(34, 31, 31, 0.45);
-  backdrop-filter: blur(16px) saturate(200%);
-  -webkit-backdrop-filter: blur(16px) saturate(200%);
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.36);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -1077,11 +1069,42 @@ h2[trending] {
     overflow: hidden;
   }
   
-  /* Aumenta la dimensione dei pulsanti per il tocco */
+  /* Pulsanti Play e Info compatti e pill-shaped su mobile */
   #play-button,
   #more-info-button {
-    padding: 0.75rem 1.25rem; /* Più padding verticale */
-    font-size: 1rem;
+    border-radius: 9999px !important; /* Forma pillola */
+    padding: 0 !important; /* Reset padding esterno */
+    font-size: 0.8rem !important;
+    min-width: unset !important;
+    min-height: unset !important;
+    overflow: hidden !important;
+  }
+
+  #play-button .lg-overlay-bg,
+  #more-info-button .lg-overlay-bg {
+    border-radius: 9999px !important;
+  }
+
+  #play-button .lg-content,
+  #more-info-button .lg-content {
+    padding: 0.4rem 1rem !important; /* Padding interno compatto */
+    font-size: 0.8rem !important;
+    gap: 6px !important;
+  }
+
+  #play-button .lg-content i,
+  #more-info-button .lg-content i {
+    font-size: 0.75rem !important;
+    margin-right: 4px !important;
+  }
+
+  /* Riduci spaziatura tra i pulsanti hero su mobile */
+  #hero-section .flex.space-x-4 {
+    gap: 0.5rem !important;
+  }
+
+  #hero-section .flex.space-x-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-left: 0 !important;
   }
 }
 /* Nuovo stile suggerito */

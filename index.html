@@ -222,7 +222,7 @@ let currentPartyCode = sessionStorage.getItem('lelePartyCode');
     mix-blend-mode: overlay;
 }
 
-/* Pulsante play personalizzato */
+/* Pulsante play personalizzato (liquid-glass) */
 #continue-watching-grid .play-button-glass {
     position: absolute;
     top: 50%;
@@ -230,9 +230,6 @@ let currentPartyCode = sessionStorage.getItem('lelePartyCode');
     transform: translate(-50%, -50%);
     width: 48px;
     height: 48px;
-    background: rgba(229, 9, 20, 0.85);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -240,7 +237,6 @@ let currentPartyCode = sessionStorage.getItem('lelePartyCode');
     opacity: 0;
     transition: all 0.3s ease;
     z-index: 5;
-    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
     border: none;
     cursor: pointer;
 }
@@ -456,71 +452,90 @@ main .max-w-7xl {
     color: #E50914;
 }
 
-/* Base per l'effetto glass avanzato */
+/* === LIQUID GLASS - Lightweight CSS-only === */
+.liquid-glass {
+    position: relative;
+    overflow: hidden;
+}
+/* Active glass effect - applied by JS */
+.liquid-glass.lg-active {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
+        0 4px 16px rgba(0, 0, 0, 0.2);
+}
+/* Top edge highlight - the "liquid" shine */
+.liquid-glass.lg-active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.25) 20%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0.25) 80%,
+        transparent 100%
+    );
+    z-index: 4;
+    pointer-events: none;
+}
+/* Button hover effect */
+.liquid-glass.lg-button { transition: all 0.3s ease-out; }
+.liquid-glass.lg-button:hover { transform: translateY(-2px) scale(1.05); }
+.liquid-glass.lg-button:hover::after {
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.35) 20%,
+        rgba(255, 255, 255, 0.55) 50%,
+        rgba(255, 255, 255, 0.35) 80%,
+        transparent 100%
+    );
+}
+/* Remove old filter-box styles - no longer needed */
+.lg-filter-box { display: none !important; }
+
+/* Animazione riflessi (kept for modal shine) */
+@keyframes shine {
+    0% { left: -100%; }
+    20% { left: 100%; }
+    100% { left: 100%; }
+}
+
+/* Base navbar */
         .glass-nav-container {
             position: fixed;
             width: 100%;
             z-index: 50;
             height: 4rem;
-            perspective: 1000px;
         }
 
-        /* Navbar come contenitore strutturale (sfondo gestito da .glass-nav-bg) */
         .glass-nav {
             position: relative;
             width: 100%;
             height: 100%;
-            transform-style: preserve-3d;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: height 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: visible;
         }
 
-        /* Animazione fluida */
-        @keyframes liquidMotion {
-            0% {
-                transform: translate(-5%, -5%) scale(1.05);
-                background-position: 0% 0%;
-            }
-            50% {
-                transform: translate(5%, 2%) scale(1.02);
-                background-position: 50% 50%;
-            }
-            100% {
-                transform: translate(-5%, 5%) scale(1.05);
-                background-position: 100% 100%;
-            }
-        }
-
-        /* Animazione riflessi */
-        @keyframes shine {
-            0% {
-                left: -100%;
-            }
-            20% {
-                left: 100%;
-            }
-            100% {
-                left: 100%;
-            }
-        }
-
-        /* Stato scroll - solo altezza (sfondo gestito da .glass-nav-bg) */
         .glass-nav.scrolled {
             height: 3.5rem;
         }
 
-        /* Contenuto navbar */
+        .glass-nav.scrolled #nav-glass .lg-overlay-bg {
+            background: rgba(34, 31, 31, 0.8) !important;
+        }
+
         .nav-content {
             position: relative;
             z-index: 10;
             height: 100%;
         }
 
-        /* Filtro SVG disabilitato */
-        .glass-filter {
-            display: none;
-        }
-
-/* === MODALE GLASS === */
+/* === MODALE GLASS (liquid-glass) === */
 .glass-modal {
     position: fixed;
     inset: 0;
@@ -528,65 +543,38 @@ main .max-w-7xl {
     justify-content: center;
     align-items: center;
     z-index: 100;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     overflow-y: auto;
     padding: 20px;
+}
+.glass-modal > .liquid-glass:first-child {
+    position: absolute;
+    inset: 0;
+    border-radius: 0;
+}
+.glass-modal > .liquid-glass:first-child .lg-overlay-bg {
+    background: rgba(0, 0, 0, 0.5);
 }
 
 .glass-modal-content {
     position: relative;
-    background: rgba(34, 31, 31, 0.65);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.36);
     border-radius: 12px;
     max-width: 90%;
     max-height: 90vh;
     min-height: min-content;
-    transform-style: preserve-3d;
     animation: modalAppear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    overflow: hidden;
+}
+
+/* Liquid-glass modal content wrapper */
+.glass-modal-content.liquid-glass .lg-content {
     overflow-y: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    max-height: 90vh;
 }
-
-.glass-modal-content::-webkit-scrollbar {
+.glass-modal-content.liquid-glass .lg-content::-webkit-scrollbar {
     display: none;
-}
-
-.glass-modal-content::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.12) 0%,
-        rgba(255, 255, 255, 0.06) 50%,
-        rgba(255, 255, 255, 0.12) 100%
-    );
-    z-index: -1;
-    mix-blend-mode: overlay;
-    opacity: 0.9;
-}
-
-.glass-modal-content::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.15) 50%,
-        rgba(255, 255, 255, 0) 100%
-    );
-    animation: shine 6s infinite;
-    z-index: -1;
 }
 
 @media (max-width: 768px) {
@@ -631,9 +619,6 @@ main .max-w-7xl {
     transform: translate(-50%, -50%);
     width: 48px;
     height: 48px;
-    background: rgba(229, 9, 20, 0.5);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -641,7 +626,6 @@ main .max-w-7xl {
     opacity: 0;
     transition: all 0.3s ease;
     z-index: 5;
-    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
     border: none;
     cursor: pointer;
 }
@@ -743,87 +727,53 @@ main .max-w-7xl {
     display: none; /* Chrome, Safari e Opera */
 }
 
-/* Stile base pulsanti con effetto glass */
-        .glass-button {
-            position: relative;
-            overflow: hidden;
-            border: none;
-            border-radius: 0.375rem;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
-            transform-style: preserve-3d;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 0.5rem 1.5rem;
-        }
+/* Stile base pulsanti con effetto liquid glass */
+.glass-button {
+    position: relative;
+    overflow: hidden;
+    border: none;
+    border-radius: 0.375rem;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    background: transparent;
+}
 
-        /* Effetto glass per il pulsante Play */
-        #play-button {
-            background: rgba(229, 9, 20, 0.85);
-            color: white;
-        }
+/* Effetto glass per il pulsante Play */
+#play-button .lg-overlay-bg {
+    background: rgba(229, 9, 20, 0.85) !important;
+}
 
-        /* Effetto glass per il pulsante Info */
-        #more-info-button {
-            background: rgba(109, 109, 109, 0.7);
-            color: white;
-        }
+/* Effetto glass per il pulsante Info */
+#more-info-button .lg-overlay-bg {
+    background: rgba(109, 109, 109, 0.7) !important;
+}
 
-        /* Overlay glass per entrambi i pulsanti */
-        .glass-button::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            z-index: -1;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-        }
+/* Hover states for liquid glass buttons */
+.glass-button:hover {
+    transform: translateY(-2px);
+}
 
-        /* Effetto liquido dinamico */
-        .glass-button::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(
-                135deg,
-                rgba(255, 255, 255, 0.15) 0%,
-                rgba(255, 255, 255, 0.05) 50%,
-                rgba(255, 255, 255, 0.15) 100%
-            );
-            animation: liquidMotion 6s infinite alternate;
-            z-index: -2;
-            mix-blend-mode: overlay;
-            opacity: 0.8;
-        }
+#play-button:hover .lg-overlay-bg {
+    background: rgba(229, 9, 20, 0.95) !important;
+}
 
-        /* Effetti hover */
-        .glass-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
+#more-info-button:hover .lg-overlay-bg {
+    background: rgba(109, 109, 109, 0.85) !important;
+}
 
-        #play-button:hover {
-            background: rgba(229, 9, 20, 0.95);
-            box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
-        }
+/* Icone all'interno dei pulsanti */
+.glass-button i {
+    transition: transform 0.3s ease;
+}
 
-        #more-info-button:hover {
-            background: rgba(109, 109, 109, 0.85);
-        }
-
-        /* Icone all'interno dei pulsanti */
-        .glass-button i {
-            transition: transform 0.3s ease;
-        }
-
-        .glass-button:hover i {
-            transform: scale(1.1);
-        }
+.glass-button:hover i {
+    transform: scale(1.1);
+}
 
 
 /* Mobile portrait specific styles */
@@ -1057,32 +1007,6 @@ main .max-w-7xl {
     }
 }
 
-/* Video Background a tutto schermo */
-#hero-video-wrapper {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    pointer-events: none;
-}
-
-#hero-video-wrapper iframe {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100vw;
-    height: 100vh;
-    /* Zoom aggressivo per tagliare i bordi neri e interfaccia */
-    transform: translate(-50%, -50%) scale(1.5);
-    pointer-events: none;
-}
-
-/* Adattamento per schermi ultra-wide o alti */
-@media (min-aspect-ratio: 16/9) {
-    #hero-video-wrapper iframe { height: 56.25vw; }
-}
-@media (max-aspect-ratio: 16/9) {
-    #hero-video-wrapper iframe { width: 177.78vh; }
-}
-
 
 .mobile-text-contrast {
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0,0,0,0.5);
@@ -1181,92 +1105,28 @@ main .max-w-7xl {
     to { opacity: 1; transform: scale(1); }
 }
 
-/* --- CSS NAVBAR CON glass-nav-bg --- */
+/* --- CSS NAVBAR (liquid-glass) --- */
 
-/* Navbar = contenitore strutturale, sfondo gestito da .glass-nav-bg */
 .glass-nav {
-    overflow: visible; /* Permette alla barra di ricerca di uscire */
+    overflow: visible;
 }
 
-/* Il div glass-nav-bg gestisce sfondo, sfocatura e taglio riflessi */
-.glass-nav-bg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(34, 31, 31, 0.45);
-    backdrop-filter: blur(16px) saturate(200%);
-    -webkit-backdrop-filter: blur(16px) saturate(200%);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
-    overflow: hidden; /* Mantiene i riflessi all'interno */
-    z-index: 0; /* Sta sotto il contenuto */
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* Aggiornamento stato scroll */
-.glass-nav.scrolled .glass-nav-bg {
-    background: rgba(34, 31, 31, 0.8);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-
-/* 3. Spostiamo gli effetti liquidi sul background */
-.glass-nav-bg::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.1) 0%,
-        rgba(255, 255, 255, 0.05) 50%,
-        rgba(255, 255, 255, 0.1) 100%
-    );
-    z-index: -1;
-    mix-blend-mode: overlay;
-    opacity: 0.8;
-}
-
-.glass-nav-bg::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0) 0%,
-        rgba(255, 255, 255, 0.1) 50%,
-        rgba(255, 255, 255, 0) 100%
-    );
-    animation: shine 8s infinite;
-    z-index: -1;
-}
-
-
-#detail-video-wrapper {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
+/* Navbar liquid-glass wrapper */
+#nav-glass {
     pointer-events: none;
 }
 
-#detail-video-wrapper iframe {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100vw;
-    height: 100vh;
-    /* Stesso zoom aggressivo della home */
-    transform: translate(-50%, -50%) scale(1.5);
-    pointer-events: none;
+#nav-glass .lg-overlay-bg {
+    transition: background 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* Adattamento aspect ratio (opzionale, uguale alla home) */
-@media (min-aspect-ratio: 16/9) {
-    #detail-video-wrapper iframe { height: 56.25vw; }
+#nav-glass .lg-content,
+#mobile-nav-glass .lg-content {
+    width: 100%;
+    height: 100%;
 }
-@media (max-aspect-ratio: 16/9) {
-    #detail-video-wrapper iframe { width: 177.78vh; }
-}
+
+
 /* Sostituisci le classi CSS relative alla Top 10 con queste */
 
 .top10-card {
@@ -1482,7 +1342,7 @@ main .max-w-7xl {
     color: white;
 }
 
-/* Stile base del modale stagioni - uguale a quello film */
+/* Stile base del modale stagioni - liquid glass */
 .season-episode-selector {
     position: fixed;
     inset: 0;
@@ -1499,11 +1359,7 @@ main .max-w-7xl {
 
 .selection-container {
     position: relative;
-    background: rgba(34, 31, 31, 0.65);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
     border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.36);
     border-radius: 12px;
     overflow: hidden;
     max-width: 90%;
@@ -1869,29 +1725,15 @@ main .max-w-7xl {
 <body class="bg-dark text-accent " >
     <div id="hr-keeper"></div>
 
-    <!-- Filtro SVG per l'effetto liquido avanzato -->
-    <svg style="display: none">
-        <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
-            <feTurbulence type="fractalNoise" baseFrequency="0.003 0.008" numOctaves="2" seed="17" result="turbulence" />
-            <feComponentTransfer in="turbulence" result="mapped">
-                <feFuncR type="gamma" amplitude="1" exponent="6" offset="0.5" />
-                <feFuncG type="gamma" amplitude="0" exponent="1" offset="0" />
-                <feFuncB type="gamma" amplitude="0" exponent="1" offset="0.5" />
-            </feComponentTransfer>
-            <feGaussianBlur in="turbulence" stdDeviation="2" result="softMap" />
-            <feSpecularLighting in="softMap" surfaceScale="3" specularConstant="0.8" specularExponent="30" lighting-color="white" result="specLight">
-                <fePointLight x="-100" y="-100" z="150" />
-            </feSpecularLighting>
-            <feComposite in="specLight" in2="SourceGraphic" operator="arithmetic" k1="0" k2="1" k3="0.4" k4="0" />
-        </filter>
-    </svg>
+    <!-- Lightweight liquid-glass CSS effect (no SVG filters) -->
 
     <!-- Navbar con effetto liquid glass premium -->
    <div class="glass-nav-container">
     <nav class="glass-nav">
-        <div class="glass-nav-bg"></div>
-
-        <div class="glass-filter"></div>
+        <div class="liquid-glass" id="nav-glass" style="position:absolute;inset:0;border-radius:0;">
+            <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(34,31,31,0.45);"></div>
+            <div class="lg-content" style="position:relative;z-index:3;"></div>
+        </div>
 
         <div class="nav-content">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
@@ -2157,19 +1999,14 @@ async function removeWatchProgress(key, cardElement) {
 
             const navbar = document.querySelector('.glass-nav');
 
-            // Gestione scroll con effetto parallax
+            // Gestione scroll con liquid glass
             function handleScroll() {
                 const scrollY = window.scrollY;
-                const scrollRatio = Math.min(scrollY / 200, 1);
 
                 if (scrollY > 10) {
                     navbar.classList.add('scrolled');
-
-                    // Effetto parallax leggero
-                    navbar.style.transform = `translateZ(-${scrollRatio * 5}px)`;
                 } else {
                     navbar.classList.remove('scrolled');
-                    navbar.style.transform = 'translateZ(0)';
                 }
             }
 
@@ -2345,11 +2182,13 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
                             </div>
                             <p id="hero-overview" class="text-gray-300 mb-6 text-sm md:text-base"></p>
                             <div class="flex space-x-4">
-                                <button id="play-button" class="glass-button" aria-label="Riproduci">
-                                    <i class="fas fa-play mr-2"></i> Play
+                                <button id="play-button" class="glass-button liquid-glass lg-button" style="border-radius:0.375rem;" aria-label="Riproduci">
+                                    <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(229,9,20,0.85);"></div>
+                                    <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;justify-content:center;font-weight:600;padding:0.5rem 1.5rem;color:white;"><i class="fas fa-play mr-2"></i> Play</div>
                                 </button>
-                                <button id="more-info-button" class="glass-button" aria-label="Maggiori informazioni">
-                                    <i class="fas fa-info-circle mr-2"></i> Info
+                                <button id="more-info-button" class="glass-button liquid-glass lg-button" style="border-radius:0.375rem;" aria-label="Maggiori informazioni">
+                                    <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(109,109,109,0.7);"></div>
+                                    <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;justify-content:center;font-weight:600;padding:0.5rem 1.5rem;color:white;"><i class="fas fa-info-circle mr-2"></i> Info</div>
                                 </button>
                             </div>
                         </div>
@@ -2510,17 +2349,15 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     </div>
 
 <div id="detail-view" class="hidden fixed inset-0 z-[60] bg-[#141414] overflow-y-auto custom-scrollbar">
-<button onclick="closeDetailView()" class="fixed top-4 left-4 z-50 glass-button rounded-full w-12 h-12 flex items-center justify-center bg-black/50 hover:bg-black/80 transition-all">
-    <i class="fas fa-arrow-left text-white text-xl"></i>
+<button onclick="closeDetailView()" class="fixed top-4 left-4 z-50 glass-button liquid-glass lg-button rounded-full" style="width:48px;height:48px;border-radius:50%;" aria-label="Indietro">
+    <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.5);border-radius:50%;"></div>
+    <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:white;">
+        <i class="fas fa-arrow-left text-xl"></i>
+    </div>
 </button>
 
 <div class="relative w-full min-h-[90vh] md:min-h-[85vh] flex items-end pt-24">
                 <div id="detail-backdrop" class="absolute inset-0 bg-cover bg-center bg-no-repeat"></div>
-<div id="detail-video-container" class="absolute inset-0 z-0 hidden pointer-events-none overflow-hidden">
-    <div id="detail-video-wrapper" class="w-full h-full relative">
-
-    </div>
-</div>
             <div class="absolute inset-0 bg-gradient-to-t from-[#141414] via-[#141414]/60 to-transparent"></div>
             <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-transparent h-40"></div>
 
@@ -2546,7 +2383,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
                     </button>
 
                     <div id="season-selector-container" class="hidden relative w-full md:w-auto group">
-                         <select id="season-select" class="w-full md:w-auto appearance-none bg-[#2a2a2a]/80 text-white border border-gray-600 px-5 py-3.5 pr-12 rounded-md font-bold cursor-pointer focus:outline-none focus:border-white focus:bg-[#2a2a2a] backdrop-blur-md transition-colors">
+                         <select id="season-select" class="w-full md:w-auto appearance-none bg-[#2a2a2a]/80 text-white border border-gray-600 px-5 py-3.5 pr-12 rounded-md font-bold cursor-pointer focus:outline-none focus:border-white focus:bg-[#2a2a2a] transition-colors">
                         </select>
                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-white group-hover:text-primary transition-colors">
                             <i class="fas fa-chevron-down text-sm"></i>
@@ -2592,9 +2429,15 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 
     <!-- Movie/TV Show Modal -->
 
-<div id="movie-modal" class="fixed inset-0 hidden overflow-hidden flex items-center justify-center glass-modal hidden opacity-0 scale-95 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center">    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+<div id="movie-modal" class="fixed inset-0 hidden overflow-hidden flex items-center justify-center glass-modal hidden opacity-0 scale-95 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] origin-center">
+    <div class="liquid-glass" style="position:absolute;inset:0;border-radius:0;">
+        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.5);"></div>
+        <div class="lg-content" style="position:relative;z-index:3;"></div>
+    </div>
     <div class="relative max-w-[90%] max-h-[90vh] w-full overflow-hidden">
-        <div class="max-h-[90vh] overflow-y-auto scrollbar-hide p-5 bg-secondary/85 backdrop-blur-2xl rounded-xl border border-white/10">
+        <div class="liquid-glass glass-modal-content" style="border-radius:12px;">
+            <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(34,31,31,0.65);border-radius:12px;"></div>
+            <div class="lg-content" style="position:relative;z-index:3;padding:1.25rem;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;max-height:90vh;">
             <!-- Contenuto del modale -->
           <div class="flex justify-between items-start mb-4">
                     <div>
@@ -2635,17 +2478,17 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
                         </div>
 
                         <div class="flex space-x-4 mt-6">
-                            <button id="modal-play-button" class="glass-button bg-red-700 text-white px-6 py-2 rounded-md flex items-center transition-colors duration-300">
-                                <i class="fas fa-play mr-2"></i> Play
+                            <button id="modal-play-button" class="glass-button liquid-glass lg-button" style="border-radius:0.375rem;">
+                                <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(185,28,28,0.85);"></div>
+                                <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;justify-content:center;font-weight:600;padding:0.5rem 1.5rem;color:white;"><i class="fas fa-play mr-2"></i> Play</div>
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-            </div>
         </div>
     </div>
-
+</div>
 
     <!-- Player Modal -->
 <div id="player-modal" class="fixed inset-0 z-[1000] overflow-hidden hidden bg-black">
@@ -2653,7 +2496,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         <div class="w-full max-w-5xl rounded-lg overflow-hidden shadow-2xl">
             <div class="video-container aspect-video group" id="videoContainer">
                 <!-- Aggiungi questo dentro #videoContainer -->
-<div id="centerControls" class="center-controls hidden">
+<div id="centerControls" class="center-controls">
     <button id="skipBackwardCenter" class="center-control-btn skip-backward" title="Indietro 10s">
         <i class="fas fa-backward"></i>
     </button>
@@ -2811,7 +2654,13 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 
 <!-- Season/Episode Selector Modal -->
 <div id="seasonEpisodeSelector" class="season-episode-selector glass-modal" style="display: none;">
-    <div class="selection-container glass-modal-content">
+    <div class="liquid-glass" style="position:absolute;inset:0;border-radius:0;">
+        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.5);"></div>
+        <div class="lg-content" style="position:relative;z-index:3;"></div>
+    </div>
+    <div class="selection-container liquid-glass glass-modal-content" style="border-radius:12px;">
+        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(34,31,31,0.65);border-radius:12px;"></div>
+        <div class="lg-content" style="position:relative;z-index:3;">
         <div class="selection-header">
             <h2 id="selectorTitle">Seleziona Stagione</h2>
             <button class="close-selector" onclick="closeSeasonEpisodeSelector()">
@@ -2820,6 +2669,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </div>
         <div id="selectorContent">
             <!-- Content will be loaded dynamically -->
+        </div>
         </div>
     </div>
 </div>
@@ -3201,159 +3051,35 @@ document.addEventListener('DOMContentLoaded', function() {
         const POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
         const PROXY_URL = 'https://api.leleflix.store/proxy/';
 
-        // Rotten Tomatoes API (RapidAPI)
-        // Endpoint: https://rapidapi.com/matepapava123/api/rottentomato
-        // Endpoints disponibili:
-        //   GET /by_name        → Cerca film e serie TV per titolo
-        //   GET /query_movies   → Cerca film con paginazione (per ottenere il titolo esatto)
-        //   GET /soon-in-theaters → Prossime serie TV in uscita
-        //   GET /today-top100TVshows-netflix → Top 100 Netflix
-        const RT_API_HOST = 'rottentomato.p.rapidapi.com';
-        const RT_API_KEY = 'INSERISCI_QUI_LA_TUA_RAPIDAPI_KEY'; // Ottieni la key da https://rapidapi.com/matepapava123/api/rottentomato
-
-        // Cache per i punteggi RT (evita chiamate ripetute)
-        const rtScoreCache = new Map();
-
-        // Funzione helper per le richieste RT API
-        async function rtApiRequest(endpoint, params = {}) {
-            const url = new URL(`https://${RT_API_HOST}${endpoint}`);
-            Object.entries(params).forEach(([key, val]) => {
-                if (val !== undefined && val !== null && val !== '') {
-                    url.searchParams.set(key, val);
-                }
-            });
-            const res = await fetch(url.toString(), {
-                method: 'GET',
-                headers: {
-                    'X-RapidAPI-Key': RT_API_KEY,
-                    'X-RapidAPI-Host': RT_API_HOST
-                }
-            });
-            if (!res.ok) throw new Error(`RT API ${endpoint} failed: ${res.status}`);
-            return res.json();
-        }
-
-        // Funzione per recuperare i punteggi RT reali
-        // Per i film: usa prima /query_movies per ottenere il titolo esatto, poi /by_name
-        // Per le serie TV: usa /by_name direttamente
-        async function fetchRottenTomatoesScore(title, type, year) {
-            // Se la API key non è configurata, salta la chiamata
-            if (!RT_API_KEY || RT_API_KEY === 'INSERISCI_QUI_LA_TUA_RAPIDAPI_KEY') {
-                return null;
-            }
-
-            const cacheKey = `${title}-${type}-${year || ''}`;
-            if (rtScoreCache.has(cacheKey)) return rtScoreCache.get(cacheKey);
-
+        // --- Rotten Tomatoes Scraper (via proxy, no API key needed) ---
+        async function fetchRTScores(title, type, year, forceRefresh = false) {
             try {
-                let searchTitle = title;
-
-                // STEP 1: Per i film, usa /query_movies per ottenere il titolo corretto
-                // (l'endpoint /by_name richiede il nome esatto del film)
-                if (type === 'movie') {
-                    try {
-                        const queryData = await rtApiRequest('/query_movies', {
-                            search: title,
-                            limit: '5'
-                        });
-                        // Cerca il miglior match tra i risultati
-                        const movieResults = queryData.results || queryData.movies || queryData || [];
-                        const items = Array.isArray(movieResults) ? movieResults : [];
-
-                        for (const item of items) {
-                            const itemTitle = item.title || item.name || '';
-                            const itemYear = item.year || item.releaseYear || item.release_date || '';
-                            const titleMatch = itemTitle.toLowerCase() === title.toLowerCase();
-                            const titleContains = itemTitle.toLowerCase().includes(title.toLowerCase().split(':')[0]);
-                            const yearMatch = !year || (itemYear && String(itemYear).includes(String(year)));
-
-                            if ((titleMatch || titleContains) && yearMatch) {
-                                searchTitle = itemTitle;
-                                break;
-                            }
-                        }
-                    } catch (e) {
-                        console.warn('RT /query_movies failed, using original title:', e);
-                    }
-                }
-
-                // STEP 2: Cerca con /by_name usando il titolo (corretto per i film, originale per le serie TV)
-                const byNameData = await rtApiRequest('/by_name', {
-                    title: searchTitle,
-                    type: type === 'tv' ? 'tv_shows' : 'movies'
+                const params = new URLSearchParams({
+                    title: title,
+                    type: type === 'tv' ? 'tv' : 'movie',
+                    ...(year && { year: year }),
+                    ...(forceRefresh && { force: 'true' })
                 });
-
-                // Parse dei risultati - la risposta può avere vari formati
-                let matchItem = null;
-                const results = byNameData.results || byNameData.movies || byNameData.tv_shows || byNameData.data || byNameData || [];
-                const items = Array.isArray(results) ? results : [];
-
-                for (const item of items) {
-                    const itemTitle = item.title || item.name || '';
-                    const itemType = (item.type || item.mediaType || item.media_type || '').toLowerCase();
-                    const itemYear = item.year || item.releaseYear || item.release_date || '';
-
-                    // Match per titolo (case insensitive)
-                    const titleMatch = itemTitle.toLowerCase() === title.toLowerCase();
-                    // Match approssimativo se il titolo contiene la query
-                    const titleContains = itemTitle.toLowerCase().includes(title.toLowerCase().split(':')[0]);
-                    // Match per tipo
-                    const typeMatch = !type || (
-                        (type === 'movie' && (itemType.includes('movie') || itemType === 'film')) ||
-                        (type === 'tv' && (itemType.includes('tv') || itemType.includes('series') || itemType.includes('show')))
-                    );
-
-                    if ((titleMatch || titleContains) && typeMatch) {
-                        // Se abbiamo un anno, preferiamo il match esatto
-                        if (year && itemYear && String(itemYear).includes(String(year))) {
-                            matchItem = item;
-                            break;
-                        }
-                        if (!matchItem) matchItem = item;
-                    }
-                }
-
-                if (!matchItem && items.length > 0) {
-                    matchItem = items[0]; // Fallback al primo risultato
-                }
-
-                if (!matchItem) {
-                    rtScoreCache.set(cacheKey, null);
+                const rtUrl = `${PROXY_URL}../rt-scores?${params}`;
+                console.log('[RT] Fetching scores for:', title, type, year, forceRefresh ? '(FORCE)' : '', '→', rtUrl);
+                const res = await fetch(rtUrl, { signal: AbortSignal.timeout(15000) });
+                if (!res.ok) {
+                    console.warn('[RT] HTTP error:', res.status);
                     return null;
                 }
-
-                // Estrai i punteggi - gestisce vari formati di risposta dell'API
-                const result = {
-                    criticScore: matchItem.criticScore ?? matchItem.tomatoScore ?? matchItem.criticsRating
-                        ?? matchItem.tomatometer ?? matchItem.critics_score ?? matchItem.score ?? null,
-                    audienceScore: matchItem.audienceScore ?? matchItem.audienceRating ?? matchItem.audience_score
-                        ?? matchItem.userScore ?? null,
-                    criticIcon: matchItem.criticIcon ?? matchItem.tomatoIcon ?? matchItem.criticsIcon ?? null,
-                    audienceIcon: matchItem.audienceIcon ?? matchItem.audienceIconUrl ?? null
-                };
-
-                // Se i punteggi sono presenti come oggetti annidati (es. ratings.tomatometer)
-                if (matchItem.ratings) {
-                    const ratings = matchItem.ratings;
-                    if (result.criticScore === null) result.criticScore = ratings.criticsRating ?? ratings.tomatometer ?? ratings.criticScore ?? null;
-                    if (result.audienceScore === null) result.audienceScore = ratings.audienceRating ?? ratings.audienceScore ?? null;
+                const data = await res.json();
+                if (data.error === 'blocked') {
+                    console.warn('[RT] Cloudflare blocked:', title, '— will retry');
+                    return null;
                 }
-
-                // Normalizza i punteggi a numeri interi
-                if (result.criticScore !== null) {
-                    result.criticScore = parseInt(String(result.criticScore).replace('%', ''), 10);
-                    if (isNaN(result.criticScore)) result.criticScore = null;
+                if (data.error === 'not_found' || (data.criticsScore === null && data.audienceScore === null)) {
+                    console.warn('[RT] Not found on RT:', title);
+                    return null;
                 }
-                if (result.audienceScore !== null) {
-                    result.audienceScore = parseInt(String(result.audienceScore).replace('%', ''), 10);
-                    if (isNaN(result.audienceScore)) result.audienceScore = null;
-                }
-
-                rtScoreCache.set(cacheKey, result);
-                return result;
-            } catch (error) {
-                console.warn('Rotten Tomatoes API error:', error);
-                rtScoreCache.set(cacheKey, null);
+                console.log('[RT] Got scores:', data.criticsScore + '%', '/', data.audienceScore + '%');
+                return data;
+            } catch (e) {
+                console.warn('[RT] fetch failed:', e.message);
                 return null;
             }
         }
@@ -3536,10 +3262,6 @@ async function openDetailView(contentOrId, type = 'movie') {
     // 1. Salva posizione scroll
     scrollPositionBeforeDetail = window.scrollY;
 
-    if (typeof player !== 'undefined' && player && typeof player.pauseVideo === 'function') {
-        player.pauseVideo();
-    }
-
     // 2. Recupera dati (logica invariata)
     let content;
     if (typeof contentOrId === 'object') {
@@ -3586,23 +3308,8 @@ function closeDetailView() {
 const homeView = document.getElementById('home-view');
     const detailView = document.getElementById('detail-view');
 
-    if (scrollPositionBeforeDetail < 500) {
-        if (typeof player !== 'undefined' && player && typeof player.playVideo === 'function') {
-            player.playVideo();
-        }
-    }
-
     // --- AGGIUNTA: Pulisci il video player ---
-    if (detailPlayer) {
-        detailPlayer.destroy();
-        detailPlayer = null;
-    }
     // Nascondi il container video per la prossima volta
-    const videoContainer = document.getElementById('detail-video-container');
-    if(videoContainer) {
-        videoContainer.classList.add('hidden', 'opacity-0');
-        videoContainer.classList.remove('opacity-100');
-    }
     // 1. Mostra SUBITO la home sotto (così si vede mentre il dettaglio scompare)
     homeView.classList.remove('hidden');
     window.scrollTo(0, scrollPositionBeforeDetail); // Ripristina scroll home
@@ -3652,24 +3359,24 @@ async function populateDetailView(content) {
         : `${content.runtime || 'N/A'} min`;
     document.getElementById('detail-overview').textContent = content.overview;
 
-    // --- PUNTEGGI MULTI-PIATTAFORMA (RT API + Fallback) ---
+    // --- PUNTEGGI MULTI-PIATTAFORMA (TMDB fallback + RT reali) ---
     const tmdbScore = content.vote_average || 0;
     const baseId = content.id;
-    const title = content.title || content.name || '';
-    const year = (content.release_date || content.first_air_date || '').split('-')[0];
+    const rtTitle = content.original_title || content.original_name || content.title || content.name || '';
+    const rtYear = (content.release_date || content.first_air_date || '').split('-')[0];
 
-    // Fallback simulato (usato se l'API RT non è disponibile)
+    // Fallback simulato basato su TMDB
     const fallbackCritic = Math.round(tmdbScore * 10);
     const fallbackAudience = Math.min(100, Math.max(0, fallbackCritic + ((baseId % 11) - 5) + 2));
     const fallbackImdb = Math.min(9.9, tmdbScore + ((baseId % 10) / 10) - 0.5).toFixed(1);
     const fallbackMeta = Math.max(0, fallbackCritic - ((baseId % 15) + 5));
 
-    // Valori iniziali dal fallback
+    // Valori iniziali dal fallback (saranno aggiornati se RT risponde)
     let criticScore = fallbackCritic;
     let audienceScore = fallbackAudience;
     let imdbScore = fallbackImdb;
     let metaScore = fallbackMeta;
-    let rtSource = 'simulated'; // Flag per indicare la fonte
+    let isRtLive = false;
 
     // Icone
     const pathTomato = './icons/tomato.svg';
@@ -3678,16 +3385,7 @@ async function populateDetailView(content) {
     const pathPopcornSpilled = './icons/popcorn-spilled.svg';
     const pathImdb = './icons/imdb.svg';
 
-    // Rimuovi vecchio contenitore
-    const oldScores = document.getElementById('dynamic-rt-scores');
-    if (oldScores) oldScores.remove();
-
-    // Creazione layout punteggi (inizialmente con fallback)
-    const scoreContainer = document.createElement('div');
-    scoreContainer.id = 'dynamic-rt-scores';
-    scoreContainer.className = 'flex flex-wrap items-center gap-x-6 gap-y-3 mb-6 mt-4 p-4 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md';
-
-    function renderScores(cScore, aScore, iScore, mScore, source) {
+    function renderDetailScores(cScore, aScore, iScore, mScore, live) {
         const isFresh = cScore >= 60;
         const isPopcornFresh = aScore >= 60;
         const criticIcon = isFresh ? pathTomato : pathSplat;
@@ -3696,11 +3394,12 @@ async function populateDetailView(content) {
         const globalAverage = Math.round(
             ((tmdbScore * 10) + cScore + aScore + (parseFloat(iScore) * 10) + mScore) / 5
         );
-        const rtBadge = source === 'rotten_tomatoes'
-            ? '<span class="text-[9px] text-green-400 font-bold ml-1">LIVE</span>'
-            : '';
+        const liveBadge = live ? '<span class="text-[9px] text-green-400 font-bold ml-1">LIVE</span>' : '';
 
-        scoreContainer.innerHTML = `
+        // Usa direttamente la variabile scoreContainer (closure) invece di getElementById
+        const container = document.getElementById('dynamic-rt-scores') || scoreContainer;
+        if (!container) return;
+        container.innerHTML = `
             <div class="flex items-center gap-3 pr-6 border-r border-white/10">
                 <div class="flex flex-col items-center">
                     <span class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">${globalAverage}</span>
@@ -3711,7 +3410,7 @@ async function populateDetailView(content) {
             <div class="flex items-center gap-4">
                 <div class="flex items-center gap-2" title="Tomatometer">
                     <img src="${criticIcon}" class="w-6 h-6 object-contain">
-                    <span class="text-white font-bold">${cScore}%</span>${rtBadge}
+                    <span class="text-white font-bold">${cScore}%</span>${liveBadge}
                 </div>
                 <div class="flex items-center gap-2" title="Audience Score">
                     <img src="${audienceIcon}" class="w-6 h-6 object-contain">
@@ -3734,23 +3433,41 @@ async function populateDetailView(content) {
         `;
     }
 
-    // Mostra subito i punteggi fallback
-    renderScores(criticScore, audienceScore, imdbScore, metaScore, 'simulated');
+    // Rimuovi vecchio contenitore
+    const oldScores = document.getElementById('dynamic-rt-scores');
+    if (oldScores) oldScores.remove();
+
+    const scoreContainer = document.createElement('div');
+    scoreContainer.id = 'dynamic-rt-scores';
+    scoreContainer.className = 'flex flex-wrap items-center gap-x-6 gap-y-3 mb-6 mt-4 p-4 rounded-xl border border-white/10';
+
+    // Inserisci il contenitore nel DOM PRIMA di renderizzare
     const metadataRow = document.getElementById('detail-year').parentElement;
     metadataRow.insertAdjacentElement('afterend', scoreContainer);
 
-    // Prova a caricare i punteggi reali da Rotten Tomatoes API
-    fetchRottenTomatoesScore(title, isTV ? 'tv' : 'movie', year).then(rtData => {
-        if (rtData) {
-            if (rtData.criticScore !== null) criticScore = parseInt(rtData.criticScore) || criticScore;
-            if (rtData.audienceScore !== null) audienceScore = parseInt(rtData.audienceScore) || audienceScore;
-            rtSource = 'rotten_tomatoes';
-            // Ricalcola IMDb e Metascore in base ai dati reali RT
-            // (manteniamo il fallback per questi se non abbiamo dati reali)
-            renderScores(criticScore, audienceScore, imdbScore, metaScore, rtSource);
+    // Mostra subito i punteggi fallback
+    renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, false);
+
+    // Prova a caricare i punteggi reali da Rotten Tomatoes (via proxy scraper)
+    // Force refresh on detail page to get latest scores (may have been cached as not_found before)
+    const rtContainerId = 'dynamic-rt-scores'; // ID fisso per verificare che il contenitore sia ancora in DOM
+    fetchRTScores(rtTitle, isTV ? 'tv' : 'movie', rtYear, true).then(rtData => {
+        console.log('[RT] Detail callback - rtData:', JSON.stringify(rtData));
+        // Verifica che il contenitore esista ancora nel DOM (l'utente potrebbe aver chiuso la pagina)
+        const currentContainer = document.getElementById(rtContainerId);
+        if (!currentContainer) {
+            console.warn('[RT] Container not found in DOM, skipping update');
+            return;
+        }
+        if (rtData && (rtData.criticsScore !== null || rtData.audienceScore !== null)) {
+            if (rtData.criticsScore !== null) criticScore = rtData.criticsScore;
+            if (rtData.audienceScore !== null) audienceScore = rtData.audienceScore;
+            isRtLive = true;
+            console.log('[RT] Updating scores to:', criticScore + '%', '/', audienceScore + '%');
+            renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, true);
         }
     }).catch(err => {
-        console.warn('RT score fetch failed, using simulated scores:', err);
+        console.warn('[RT] Detail fetch failed:', err);
     });
 
     try {
@@ -3843,8 +3560,6 @@ async function populateDetailView(content) {
 
     // --- TITOLI SIMILI ---
     loadSimilar(content.id, content.media_type);
-
-        loadDetailVideo(content);
 
 }
 
@@ -4492,11 +4207,11 @@ document.getElementById('mobile-search-button').addEventListener('click', functi
 
         // Fetch trending movies
 // Helper generico per fetch + filtra + render card
-async function fetchAndRender(urlTemplate, containerEl, mediaType, emptyMsg) {
+async function fetchAndRenderRT(tmdbPath, containerEl, mediaType, emptyMsg) {
     try {
         const pages = [1, 2, 3];
         const promises = pages.map(page =>
-            fetch(`${urlTemplate}&page=${page}`).then(res => res.json())
+            fetch(`${PROXY_URL}../tmdb-rt/${tmdbPath}?language=it-IT&page=${page}`).then(res => res.json())
         );
 
         const results = await Promise.all(promises);
@@ -4524,29 +4239,29 @@ async function fetchAndRender(urlTemplate, containerEl, mediaType, emptyMsg) {
 }
 
 async function getTrendingMovies() {
-    await fetchAndRender(
-        `${API_URL}/trending/movie/week?api_key=${API_KEY}&language=it-IT`,
+    await fetchAndRenderRT(
+        'trending/movie/week',
         trendingMoviesEl, 'movie', 'Nessun film disponibile in tendenza'
     );
 }
 
 async function getTopRatedMovies() {
-    await fetchAndRender(
-        `${API_URL}/movie/top_rated?api_key=${API_KEY}&language=it-IT`,
+    await fetchAndRenderRT(
+        'movie/top_rated',
         topRatedMoviesEl, 'movie', 'Nessun film disponibile trovato'
     );
 }
 
 async function getUpcomingMovies() {
-    await fetchAndRender(
-        `${API_URL}/movie/upcoming?api_key=${API_KEY}&language=it-IT`,
+    await fetchAndRenderRT(
+        'movie/upcoming',
         upcomingMoviesEl, 'movie', 'Nessun film disponibile trovato'
     );
 }
 
 async function getPopularTv() {
-    await fetchAndRender(
-        `${API_URL}/tv/popular?api_key=${API_KEY}&language=it-IT`,
+    await fetchAndRenderRT(
+        'tv/popular',
         popularTvEl, 'tv', 'Nessuna serie TV disponibile trovata'
     );
 }
@@ -4608,104 +4323,7 @@ async function getRandomHeroContent() {
     displayHeroMovie(currentHeroMovie, backdropUrl); // Passa l'URL per evitare duplicazioni
 }
 
-// --- GESTIONE VIDEO HERO IN HD ---
-
-// 1. Carica le API di YouTube in modo asincrono
-const tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-const firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-let player = null;
-let currentVideoId = null;
-let isYouTubeApiReady = false; // Flag di stato per l'API
-
-// Funzione chiamata automaticamente da YouTube quando è pronto
-function onYouTubeIframeAPIReady() {
-    console.log("YouTube API Ready");
-    isYouTubeApiReady = true;
-}
-
-// Funzione Helper per attendere che l'API sia pronta
-function waitForYouTubeApi() {
-    return new Promise(resolve => {
-        // Se è già pronta, risolvi subito
-        if (isYouTubeApiReady && window.YT) {
-            resolve();
-        } else {
-            // Altrimenti controlla ogni 100ms
-            const interval = setInterval(() => {
-                if (isYouTubeApiReady && window.YT) {
-                    clearInterval(interval);
-                    resolve();
-                }
-            }, 100);
-        }
-    });
-}
-let detailPlayer = null; // Variabile per il player della vista dettagli
-// Funzione chiamata dalle API di YouTube quando sono pronte
-
-
-// Funzione per i DETTAGLI
-async function loadDetailVideo(content) {
-    const container = document.getElementById('detail-video-container');
-
-    // Reset stato: Nascondi e rimuovi classe animazione per poterla ri-eseguire
-    container.classList.add('hidden');
-    container.classList.remove('video-entrance-active');
-
-    try {
-        if (detailPlayer) {
-            detailPlayer.destroy();
-            detailPlayer = null;
-        }
-
-        const res = await fetch(`${API_URL}/${content.media_type}/${content.id}/videos?api_key=${API_KEY}&language=en-US`);
-        const data = await res.json();
-
-        if (!data.results || data.results.length === 0) return;
-
-        const video = data.results.find(v => v.site === 'YouTube' && v.type === 'Trailer') || data.results[0];
-        if (!video) return;
-
-        const wrapper = document.getElementById('detail-video-wrapper');
-        wrapper.innerHTML = '<div id="detail-youtube-player"></div>';
-
-        detailPlayer = new YT.Player('detail-youtube-player', {
-            videoId: video.key,
-            playerVars: {
-                'autoplay': 1, 'controls': 0, 'rel': 0, 'showinfo': 0,
-                'mute': 1, 'loop': 1, 'playlist': video.key,
-                'playsinline': 1, 'iv_load_policy': 3, 'modestbranding': 1
-            },
-            events: {
-                'onReady': (event) => {
-                    event.target.mute();
-                    event.target.setPlaybackQuality('hd1080');
-                    event.target.playVideo();
-                },
-                'onStateChange': (event) => {
-                    if (event.data === YT.PlayerState.PLAYING) {
-                        event.target.setPlaybackQuality('hd1080');
-
-                        // APPLICAZIONE ANIMAZIONE
-                        setTimeout(() => {
-                            container.classList.remove('hidden');
-                            requestAnimationFrame(() => {
-                                container.classList.add('video-entrance-active');
-                            });
-                        }, 800);
-                    }
-                }
-            }
-        });
-
-    } catch (error) {
-        console.error("Errore video dettaglio:", error);
-    }
-}
-
+// --- GESTIONE VIDEO HERO ---
 let heroFadeTimeout = null;
 
 // Gestione stati (Buffer, Playing, ecc.)
@@ -4749,32 +4367,32 @@ async function displayHeroMovie(content) {
         heroRuntimeEl.textContent = `${content.episode_run_time?.[0] || 'N/A'} min/ep`;
     }
 
-    // 2b. Punteggi Rotten Tomatoes nell'hero
+    // 2b. Punteggio nell'hero (TMDB fallback + RT reali)
     const heroScoresContainer = document.getElementById('hero-rt-scores');
     if (heroScoresContainer) {
         // Mostra subito il punteggio TMDB come fallback
-        const tmdbScore = Math.round(content.vote_average * 10);
-        const isFresh = tmdbScore >= 60;
+        const tmdbHeroScore = Math.round(content.vote_average * 10);
+        const isFresh = tmdbHeroScore >= 60;
         const tomatoIcon = isFresh ? './icons/tomato.svg' : './icons/splat.svg';
         heroScoresContainer.innerHTML = `
             <div class="flex items-center gap-1.5">
                 <img src="${tomatoIcon}" class="w-4 h-4 object-contain" alt="RT">
-                <span class="text-white text-xs font-bold">${tmdbScore}%</span>
+                <span class="text-white text-xs font-bold">${tmdbHeroScore}%</span>
             </div>
         `;
 
         // Prova a caricare i punteggi reali da RT
-        const title = content.title || content.name || '';
-        const year = (content.release_date || content.first_air_date || '').split('-')[0];
-        fetchRottenTomatoesScore(title, content.media_type, year).then(rtData => {
-            if (rtData && rtData.criticScore !== null) {
-                const isRtFresh = rtData.criticScore >= 60;
+        const heroTitle = content.original_title || content.original_name || content.title || content.name || '';
+        const heroYear = (content.release_date || content.first_air_date || '').split('-')[0];
+        fetchRTScores(heroTitle, content.media_type, heroYear, true).then(rtData => {
+            if (rtData && rtData.criticsScore !== null) {
+                const isRtFresh = rtData.criticsScore >= 60;
                 const rtIcon = isRtFresh ? './icons/tomato.svg' : './icons/splat.svg';
                 const liveBadge = '<span class="text-[8px] text-green-400 font-bold ml-0.5">LIVE</span>';
                 heroScoresContainer.innerHTML = `
                     <div class="flex items-center gap-1.5">
                         <img src="${rtIcon}" class="w-4 h-4 object-contain" alt="RT">
-                        <span class="text-white text-xs font-bold">${rtData.criticScore}%</span>${liveBadge}
+                        <span class="text-white text-xs font-bold">${rtData.criticsScore}%</span>${liveBadge}
                     </div>
                     ${rtData.audienceScore !== null ? `
                     <div class="flex items-center gap-1.5">
@@ -4865,17 +4483,15 @@ async function displayHeroMovie(content) {
         if (!container) return;
 
         try {
-            const baseUrl = `${API_URL}/discover/movie?api_key=${API_KEY}&with_genres=${genreId}&language=it-IT&sort_by=popularity.desc`;
-
             const [res1, res2] = await Promise.all([
-                fetch(`${baseUrl}&page=1`),
-                fetch(`${baseUrl}&page=2`)
+                fetch(`${PROXY_URL}../tmdb-rt/discover/movie?language=it-IT&with_genres=${genreId}&sort_by=popularity.desc&page=1`),
+                fetch(`${PROXY_URL}../tmdb-rt/discover/movie?language=it-IT&with_genres=${genreId}&sort_by=popularity.desc&page=2`)
             ]);
 
             const data1 = await res1.json();
             const data2 = await res2.json();
 
-            const allMovies = [...data1.results, ...data2.results];
+            const allMovies = [...(data1.results || []), ...(data2.results || [])];
             const uniqueMovies = Array.from(new Map(allMovies.map(m => [m.id, m])).values());
 
             container.innerHTML = '';
@@ -4940,34 +4556,74 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
     const defaultPoster = item.poster_path ? `${POSTER_PATH}${item.poster_path}` : '';
     const defaultBackdrop = item.backdrop_path ? `https://image.tmdb.org/t/p/w780${item.backdrop_path}` : defaultPoster;
 
-    // --- LOGICA ROTTEN TOMATOES (Invariata) ---
-    const voteAvg = item.vote_average || 0;
-    const criticScore = Math.round(voteAvg * 10);
-    const isFresh = criticScore >= 60;
-    const variance = (item.id % 15) - 5;
-    let audienceScore = Math.min(100, Math.max(0, criticScore + variance));
-    const isPopcornFresh = audienceScore >= 60;
+    // --- ROTTEN TOMATOES (direct from server cache, or pending background scrape) ---
+    const rtData = item.rt || null;
+    const hasRT = rtData && (rtData.criticsScore !== null || rtData.audienceScore !== null);
 
     const pathTomato = './icons/tomato.svg';
     const pathSplat = './icons/splat.svg';
     const pathPopcornFull = './icons/popcorn-full.svg';
     const pathPopcornSpilled = './icons/popcorn-spilled.svg';
 
-    const criticIcon = isFresh ? pathTomato : pathSplat;
-    const audienceIcon = isPopcornFresh ? pathPopcornFull : pathPopcornSpilled;
+    // Store RT lookup data on card for deferred fetch
+    const rtTitle = item.original_title || item.original_name || item.title || item.name || '';
+    const rtYear = type === 'movie'
+        ? (item.release_date ? item.release_date.split('-')[0] : '')
+        : (item.first_air_date ? item.first_air_date.split('-')[0] : '');
+    card.dataset.rtTitle = rtTitle;
+    card.dataset.rtType = type;
+    card.dataset.rtYear = rtYear;
+    card.dataset.tmdbId = item.id;
+    card.dataset.rtLoaded = hasRT ? 'true' : 'false';
 
-    const rtBadge = `
-        <div class="absolute top-2 right-2 z-20 flex flex-col gap-1 items-end">
-            <div class="flex items-center gap-1.5 px-1.5 py-0.5 bg-black/80 backdrop-blur-md border border-white/10 rounded shadow-sm">
-                <img src="${criticIcon}" class="w-4 h-4 object-contain" alt="Critic">
-                <span class="text-white text-[11px] font-bold leading-none">${criticScore}%</span>
+    // Build RT badge HTML
+    let rtBadge = '';
+    if (hasRT) {
+        const cScore = rtData.criticsScore;
+        const aScore = rtData.audienceScore;
+        const criticIcon = cScore !== null ? (cScore >= 60 ? pathTomato : pathSplat) : pathTomato;
+        const audienceIcon = aScore !== null ? (aScore >= 60 ? pathPopcornFull : pathPopcornSpilled) : pathPopcornFull;
+
+        rtBadge = `
+        <div class="rt-badge absolute top-2 right-2 z-20 flex flex-col gap-1 items-end" data-card-id="${item.id}">
+            ${cScore !== null ? `
+            <div class="liquid-glass" style="border-radius:4px;">
+                <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
+                <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;padding:2px 6px;">
+                    <img src="${criticIcon}" class="w-4 h-4 object-contain" alt="Critic">
+                    <span class="text-white text-[11px] font-bold leading-none">${cScore}%</span>
+                </div>
+            </div>` : ''}
+            ${aScore !== null ? `
+            <div class="liquid-glass" style="border-radius:4px;">
+                <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
+                <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;padding:2px 6px;">
+                    <img src="${audienceIcon}" class="w-4 h-4 object-contain" alt="Audience">
+                    <span class="text-gray-200 text-[11px] font-bold leading-none">${aScore}%</span>
+                </div>
+            </div>` : ''}
+            <div class="rt-live-dot absolute -top-0.5 -left-0.5 w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Rotten Tomatoes Live Score"></div>
+        </div>`;
+    } else {
+        // Placeholder badge (hidden, will be filled by /rt-cached poll)
+        rtBadge = `
+        <div class="rt-badge absolute top-2 right-2 z-20 flex flex-col gap-1 items-end opacity-0" data-card-id="${item.id}">
+            <div class="liquid-glass" style="border-radius:4px;">
+                <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
+                <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;padding:2px 6px;">
+                    <img src="${pathTomato}" class="rt-critic-icon w-4 h-4 object-contain" alt="Critic">
+                    <span class="rt-critic-score text-white text-[11px] font-bold leading-none">--%</span>
+                </div>
             </div>
-            <div class="flex items-center gap-1.5 px-1.5 py-0.5 bg-black/80 backdrop-blur-md border border-white/10 rounded shadow-sm">
-                <img src="${audienceIcon}" class="w-4 h-4 object-contain" alt="Audience">
-                <span class="text-gray-200 text-[11px] font-bold leading-none">${audienceScore}%</span>
+            <div class="liquid-glass" style="border-radius:4px;">
+                <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
+                <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;padding:2px 6px;">
+                    <img src="${pathPopcornFull}" class="rt-audience-icon w-4 h-4 object-contain" alt="Audience">
+                    <span class="rt-audience-score text-gray-200 text-[11px] font-bold leading-none">--%</span>
+                </div>
             </div>
-        </div>
-    `;
+        </div>`;
+    }
 
     card.innerHTML = `
         <div class="movie-card-content">
@@ -5032,6 +4688,100 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
     return card;
 }
 
+// === RT CACHED POLLING SYSTEM ===
+// Polls /rt-cached for cards still missing RT scores (background scraper fills cache)
+function pollRTScores() {
+    const pendingCards = document.querySelectorAll('.movie-card[data-rt-loaded="false"]');
+    if (pendingCards.length === 0) return;
+
+    // Build compact items string: tmdbId|title|type|year
+    const items = [];
+    pendingCards.forEach(card => {
+        const title = card.dataset.rtTitle;
+        if (!title) return;
+        items.push(`${card.dataset.tmdbId}|${encodeURIComponent(title)}|${card.dataset.rtType}|${card.dataset.rtYear}`);
+    });
+
+    if (items.length === 0) return;
+
+    const url = `${PROXY_URL}../rt-cached?items=${items.join(',')}`;
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            const results = data.results || [];
+            results.forEach(result => {
+                if (result.criticsScore === null && result.audienceScore === null) {
+                    // If status is 'blocked', keep polling (don't mark as loaded)
+                    // If status is 'not_found', mark as loaded so we stop polling
+                    if (result.status === 'not_found') {
+                        const card = document.querySelector(`.movie-card[data-tmdb-id="${result.tmdbId}"]`);
+                        if (card) card.dataset.rtLoaded = 'true';
+                    }
+                    return;
+                }
+
+                const card = document.querySelector(`.movie-card[data-tmdb-id="${result.tmdbId}"]`);
+                if (!card || card.dataset.rtLoaded === 'true') return;
+
+                const badge = card.querySelector('.rt-badge');
+                if (!badge) return;
+
+                const cScore = result.criticsScore;
+                const aScore = result.audienceScore;
+
+                // Update critics
+                if (cScore !== null) {
+                    const cEl = badge.querySelector('.rt-critic-score');
+                    const cIcon = badge.querySelector('.rt-critic-icon');
+                    if (cEl) cEl.textContent = cScore + '%';
+                    if (cIcon) cIcon.src = cScore >= 60 ? './icons/tomato.svg' : './icons/splat.svg';
+                }
+
+                // Update audience
+                if (aScore !== null) {
+                    const aEl = badge.querySelector('.rt-audience-score');
+                    const aIcon = badge.querySelector('.rt-audience-icon');
+                    if (aEl) aEl.textContent = aScore + '%';
+                    if (aIcon) aIcon.src = aScore >= 60 ? './icons/popcorn-full.svg' : './icons/popcorn-spilled.svg';
+                }
+
+                // Show badge
+                badge.classList.remove('opacity-0');
+                badge.classList.add('opacity-100');
+
+                // Add LIVE dot
+                if (!badge.querySelector('.rt-live-dot')) {
+                    const dot = document.createElement('div');
+                    dot.className = 'rt-live-dot absolute -top-0.5 -left-0.5 w-2 h-2 bg-green-400 rounded-full animate-pulse';
+                    dot.title = 'Rotten Tomatoes Live Score';
+                    badge.style.position = 'relative';
+                    badge.appendChild(dot);
+                }
+
+                card.dataset.rtLoaded = 'true';
+            });
+
+            // Schedule next poll for remaining cards
+            const stillPending = document.querySelectorAll('.movie-card[data-rt-loaded="false"]');
+            if (stillPending.length > 0) {
+                setTimeout(pollRTScores, 3000);
+            }
+        })
+        .catch(() => {
+            // Retry on error
+            setTimeout(pollRTScores, 5000);
+        });
+}
+
+// Start polling after initial page load
+setTimeout(pollRTScores, 3000);
+// Also poll when sections load
+const _origFetchAndRenderRT = fetchAndRenderRT;
+fetchAndRenderRT = async function(...args) {
+    await _origFetchAndRenderRT.apply(this, args);
+    setTimeout(pollRTScores, 2000);
+};
 
 async function showMovieDetails(content, type = null) {
     const contentType = content.media_type || type || 'movie';
@@ -5194,9 +4944,12 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
   }
 </script>
 <nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 h-16 z-50">
-    <div class="glass-filter"></div>
+    <div class="liquid-glass" id="mobile-nav-glass" style="position:absolute;inset:0;border-radius:0;">
+        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(34,31,31,0.45);"></div>
+        <div class="lg-content" style="position:relative;z-index:3;"></div>
+    </div>
 
-    <div class="nav-content flex justify-around items-center h-full">
+    <div class="nav-content flex justify-around items-center h-full" style="position:relative;z-index:10;">
 
         <a href="#hero-section" class="mobile-nav-link">
             <i class="fas fa-home"></i>
@@ -5225,8 +4978,14 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
 
     </div>
 </nav>
-<div id="vlc-prompt" class="fixed inset-0 hidden flex items-center justify-center bg-black/90 backdrop-blur-sm" style="z-index: 9999 !important;">
-        <div class="bg-secondary p-6 rounded-xl max-w-sm w-full text-center border border-white/10 shadow-2xl transform transition-all scale-100 relative">
+<div id="vlc-prompt" class="fixed inset-0 hidden flex items-center justify-center" style="z-index: 9999 !important;">
+    <div class="liquid-glass" style="position:absolute;inset:0;border-radius:0;">
+        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.7);"></div>
+        <div class="lg-content" style="position:relative;z-index:3;"></div>
+    </div>
+        <div class="liquid-glass" style="border-radius:12px;max-width:24rem;width:100%;">
+            <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(34,31,31,0.85);border-radius:12px;"></div>
+            <div class="lg-content" style="position:relative;z-index:3;padding:1.5rem;text-align:center;">
         <div class="mb-4 text-primary text-4xl">
             <i class="fas fa-play-circle"></i>
         </div>
@@ -5246,7 +5005,8 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
                 Annulla
             </button>
         </div>
-    </div>
+            </div>
+        </div>
 </div>
 
 
@@ -5472,46 +5232,14 @@ clearTimeout(remoteTimeout);
         return m + ":" + (s < 10 ? "0" : "") + s;
     }
 </script>
-<script>
-    // --- RISPARMIO DATI HERO VIDEO (YouTube Fix) ---
-    document.addEventListener('DOMContentLoaded', function() {
-        const heroSection = document.getElementById('hero-section');
-
-        // Configurazione: scatta quando il 10% dell'elemento entra/esce
-        const observerOptions = {
-            root: null,
-            threshold: 0.1
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                // VERIFICA CORRETTA:
-                // Controlliamo se la variabile 'player' è definita e ha i metodi di YouTube.
-                // Usiamo 'typeof player' per evitare errori se la variabile non esiste ancora.
-                if (typeof player !== 'undefined' && player && typeof player.pauseVideo === 'function') {
-
-                    if (entry.isIntersecting) {
-                        // Video entra nello schermo -> Play
-                        // console.log("Hero visibile -> Play");
-                        player.playVideo();
-                    } else {
-                        // Video esce dallo schermo -> Pausa
-                        // console.log("Hero nascosto -> Pausa");
-                        player.pauseVideo();
-                    }
-                }
-            });
-        }, observerOptions);
-
-        // Inizia a monitorare la sezione Hero
-        if (heroSection) {
-            observer.observe(heroSection);
-        }
-    });
-</script>
-
-<div id="party-menu-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm">
-    <div class="bg-[#1a1a1a] border border-white/10 p-8 rounded-2xl max-w-md w-full text-center shadow-2xl transform scale-100 transition-all">
+<div id="party-menu-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
+    <div class="liquid-glass" style="position:absolute;inset:0;border-radius:0;">
+        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);"></div>
+        <div class="lg-content" style="position:relative;z-index:3;"></div>
+    </div>
+    <div class="liquid-glass" style="border-radius:16px;max-width:28rem;width:100%;">
+        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(26,26,26,0.85);border-radius:16px;"></div>
+        <div class="lg-content" style="position:relative;z-index:3;padding:2rem;text-align:center;">
         <div class="text-purple-500 text-5xl mb-4"><i class="fas fa-couch"></i></div>
         <h3 class="text-2xl font-bold text-white mb-2">LeleParty</h3>
         <p class="text-gray-400 mb-8">Guarda film in sincrono con gli amici.</p>
@@ -5523,7 +5251,7 @@ clearTimeout(remoteTimeout);
 
             <div class="relative">
                 <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-700"></div></div>
-                <div class="relative flex justify-center text-sm"><span class="px-2 bg-[#1a1a1a] text-gray-500">OPPURE</span></div>
+                <div class="relative flex justify-center text-sm"><span class="px-2 text-gray-500" style="background:transparent;">OPPURE</span></div>
             </div>
 
             <div class="flex gap-2">
@@ -5555,6 +5283,7 @@ clearTimeout(remoteTimeout);
 </div>
 
         <button onclick="closePartyMenu()" class="mt-6 text-gray-500 hover:text-white text-sm">Annulla</button>
+        </div>
     </div>
 </div>
 <script>
@@ -5857,42 +5586,7 @@ function setupPartyListeners() {
         }, 500);
     }
 
-    // FIX: Store interval ID so it can be cleared when party ends
-    let youtubeHooksInterval = null;
-
-    function attachYoutubeHooks() {
-        let lastTime = 0;
-        let lastState = -1;
-
-        // Clear any previous interval before creating a new one
-        if (youtubeHooksInterval) clearInterval(youtubeHooksInterval);
-
-        youtubeHooksInterval = setInterval(() => {
-            if (!player || !currentPartyCode || isRemoteUpdate) {
-                // FIX: Auto-cleanup when no party is active
-                if (!currentPartyCode && youtubeHooksInterval) {
-                    clearInterval(youtubeHooksInterval);
-                    youtubeHooksInterval = null;
-                }
-                return;
-            }
-
-            const currentTime = player.getCurrentTime();
-            const currentState = player.getPlayerState();
-
-            if (currentState !== lastState) {
-                if (currentState === 1) emitPartyEvent('play', currentTime);
-                if (currentState === 2) emitPartyEvent('pause', currentTime);
-                lastState = currentState;
-            }
-
-            if (Math.abs(currentTime - lastTime) > 2 && currentState === 1) {
-                emitPartyEvent('seek', currentTime);
-            }
-            lastTime = currentTime;
-        }, 500);
-    }
-
+    // Party sync uses the native video element, not YouTube
     function emitPartyEvent(action, time) {
         if(isRemoteUpdate) return;
         socket.emit('party_sync_event', {
@@ -5941,5 +5635,6 @@ function setupPartyListeners() {
     // --- FIX AVVIO PARTY: Auto-Click sul Prompt ---
 
 </script>
+<script src="liquid-glass.js"></script>
 </body>
 </html>
