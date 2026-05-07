@@ -4,6 +4,8 @@
 const PROGRESS_API_URL = 'https://api.leleflix.store/progress/save';
 
 class VideoPlayer {
+    // ── HLS Reconnection ───────────────────────────────────
+    // Tracks retry state for automatic reconnection on network errors
     constructor() {
         this.lastProgressSave = 0;
         this.lastSavedTime = 0;
@@ -50,6 +52,13 @@ class VideoPlayer {
         this.settingsMenu = document.getElementById('settingsMenu');
         this.audioMenu = document.getElementById('audioMenu');
         this.captionsMenu = document.getElementById('captionsMenu');
+        // Reconnection state
+        this.hlsRetryCount = 0;
+        this.hlsMaxRetries = 10;
+        this.hlsRetryDelay = 3000; // ms, increases exponentially
+        this.hlsCurrentUrl = null;
+        this.hlsResumeTime = 0;
+        this.hlsRecoveryTimer = null;
         this.initEventListeners();
     }
 
@@ -197,11 +206,16 @@ class VideoPlayer {
                 if (currentTime % 30 === 0 && currentTime !== this.lastSavedTime) {
                     this.savePlaybackProgress();
                     this.lastSavedTime = currentTime;
+                    // Reset retry count — playback is healthy
+                    if (this.hlsRetryCount > 0) this.hlsRetryCount = 0;
                 }
+                // Continuously save last known time for reconnection
+                this.hlsResumeTime = this.videoPlayer.currentTime;
             }
         });
         this.videoPlayer.addEventListener('pause', () => {
             this.savePlaybackProgress();
+            this.hlsResumeTime = this.videoPlayer.currentTime || this.hlsResumeTime;
         });
     }
 
@@ -704,12 +718,48 @@ class VideoPlayer {
             // Start HLS
             if (Hls.isSupported()) {
                 if (this.hls) this.hls.destroy();
-                this.hls = new Hls();
+                this.hls = new Hls({
+                    maxBufferLength: 30,
+                    maxMaxBufferLength: 60,
+                    maxBufferHole: 0.5,
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                });
 
+                // Store URL for reconnection
+                this.hlsCurrentUrl = url;
+                this.hlsRetryCount = 0;
+
+                // Non-fatal error recovery: let HLS.js handle internally
                 this.hls.on(Hls.Events.ERROR, (event, data) => {
-                    if (data.fatal) {
-                        this.showError('Errore fatale nello stream. Riprova più tardi.');
-                        if (this.abortController) this.abortController.abort();
+                    console.warn('[HLS] Error:', data.type, data.details, 'fatal:', data.fatal);
+
+                    if (!data.fatal) {
+                        // Non-fatal errors: HLS.js retries automatically
+                        return;
+                    }
+
+                    // Fatal error — save current time for resume
+                    this.hlsResumeTime = this.videoPlayer.currentTime || 0;
+
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            // Network error (connection lost, timeout, etc.) → auto-retry
+                            console.log('[HLS] Network error, attempting recovery...');
+                            this.tryHLSRecovery();
+                            break;
+
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            // Media error (decode, buffer) → try HLS.js built-in recovery first
+                            console.log('[HLS] Media error, trying hls.recoverMediaError()...');
+                            this.hls.recoverMediaError();
+                            break;
+
+                        default:
+                            // Unknown fatal error (e.g. manifest parse error) → try full recovery
+                            console.log('[HLS] Unknown fatal error, attempting full recovery...');
+                            this.tryHLSRecovery();
+                            break;
                     }
                 });
 
@@ -873,11 +923,128 @@ class VideoPlayer {
         }
     }
 
+    // ── HLS Automatic Recovery ─────────────────────────────
+    // Tries to reconnect with exponential backoff when connection drops.
+    // Shows a "reconnecting" toast instead of a fatal error.
+    tryHLSRecovery() {
+        if (this.hlsRetryCount >= this.hlsMaxRetries) {
+            console.error('[HLS] Max retries reached, giving up.');
+            this.showError('Connessione persa. Tocca Riprova quando sei di nuovo online.');
+            return;
+        }
+
+        this.hlsRetryCount++;
+        const delay = Math.min(this.hlsRetryDelay * Math.pow(1.5, this.hlsRetryCount - 1), 30000);
+
+        console.log(`[HLS] Recovery attempt ${this.hlsRetryCount}/${this.hlsMaxRetries} in ${Math.round(delay / 1000)}s`);
+        this.showToast(`Riconnessione... tentativo ${this.hlsRetryCount}/${this.hlsMaxRetries}`);
+
+        // Show loading overlay during recovery
+        this.loadingOverlay.classList.remove('hidden');
+        this.errorOverlay.classList.add('hidden');
+
+        // Clear any existing recovery timer
+        clearTimeout(this.hlsRecoveryTimer);
+
+        this.hlsRecoveryTimer = setTimeout(() => {
+            this.doHLSFullReconnect();
+        }, delay);
+    }
+
+    // Full reconnect: destroys HLS, recreates it, and resumes from last known time
+    doHLSFullReconnect() {
+        if (!this.hlsCurrentUrl) {
+            this.showError('Nessun URL di stream disponibile per la riconnessione.');
+            return;
+        }
+
+        const resumeTime = this.hlsResumeTime || this.videoPlayer.currentTime || 0;
+        console.log(`[HLS] Full reconnect from ${this.formatTime(resumeTime)}`);
+
+        // Destroy old HLS instance
+        if (this.hls) {
+            this.hls.destroy();
+            this.hls = null;
+        }
+
+        // Create fresh HLS instance
+        this.hls = new Hls({
+            maxBufferLength: 30,
+            maxMaxBufferLength: 60,
+            maxBufferHole: 0.5,
+            enableWorker: true,
+            lowLatencyMode: false,
+        });
+
+        // Re-attach error handler
+        this.hls.on(Hls.Events.ERROR, (event, data) => {
+            console.warn('[HLS] Error on reconnect:', data.type, data.details, 'fatal:', data.fatal);
+
+            if (!data.fatal) return;
+
+            this.hlsResumeTime = this.videoPlayer.currentTime || 0;
+
+            switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                    this.tryHLSRecovery();
+                    break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                    this.hls.recoverMediaError();
+                    break;
+                default:
+                    this.tryHLSRecovery();
+                    break;
+            }
+        });
+
+        this.hls.loadSource(this.hlsCurrentUrl);
+        this.hls.attachMedia(this.videoPlayer);
+
+        this.hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            const lvl = this.hls.levels.findIndex(l => l.height === 1080);
+            if (lvl >= 0) this.hls.currentLevel = lvl;
+
+            // Resume from where we left off
+            if (resumeTime > 2) {
+                this.videoPlayer.currentTime = resumeTime;
+            }
+
+            this.loadingOverlay.classList.add('hidden');
+            const playPromise = this.videoPlayer.play();
+            if (playPromise) {
+                playPromise.then(() => {
+                    this.hlsRetryCount = 0; // Reset retry count on successful playback
+                    if (resumeTime > 2) {
+                        this.showToast('Ripreso da dove hai perso la connessione');
+                    } else {
+                        this.showToast('Riconnesso con successo!');
+                    }
+                }).catch(err => {
+                    console.warn('[HLS] Autoplay after reconnect failed:', err);
+                    // Might need user interaction to play
+                    this.loadingOverlay.classList.add('hidden');
+                });
+            }
+
+            this.setupQualityOptions();
+        });
+    }
+
     // ── Event Listeners ─────────────────────────────────────
     // FIX Bug #3: All event listeners are added ONCE here, not duplicated in initPlayer()
     initEventListeners() {
-        // Retry button
-        this.retryButton.addEventListener('click', () => this.initPlayer());
+        // Retry button — try reconnect with resume first
+        this.retryButton.addEventListener('click', () => {
+            if (this.hlsCurrentUrl) {
+                // We have a stream URL — try reconnecting from last known position
+                this.hlsRetryCount = 0;
+                this.errorOverlay.classList.add('hidden');
+                this.doHLSFullReconnect();
+            } else {
+                // No URL — full restart
+                this.initPlayer();
+            }
+        });
 
         // Progress tracking (adds listeners to videoPlayer once)
         this.setupProgressTracking();
@@ -1418,6 +1585,13 @@ class VideoPlayer {
             this.abortController.abort();
         }
         this.stopRefreshKeeper();
+
+        // Clean up recovery timer and state
+        clearTimeout(this.hlsRecoveryTimer);
+        this.hlsRecoveryTimer = null;
+        this.hlsRetryCount = 0;
+        this.hlsCurrentUrl = null;
+        this.hlsResumeTime = 0;
 
         if (this.hls) {
             this.hls.destroy();
