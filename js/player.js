@@ -135,10 +135,15 @@ class VideoPlayer {
                 contentType: this.content.media_type || 'movie',
                 season: this.content.season_number || null,
                 episode: this.content.episode_number || null,
-                currentTime: 15,
-                duration: 1500,
-                title: this.content.title || this.content.name || 'VLC Playback'
+                currentTime: 1,
+                duration: 100,
+                title: this.content.title || this.content.name || 'Senza titolo'
             };
+            // If internal player has a duration, use real values
+            if (this.videoPlayer && this.videoPlayer.duration && this.videoPlayer.duration > 0) {
+                progressData.currentTime = Math.max(1, this.videoPlayer.currentTime || 1);
+                progressData.duration = this.videoPlayer.duration;
+            }
             fetch(PROGRESS_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -519,27 +524,59 @@ class VideoPlayer {
             };
 
             // ACTION: External Player
-            btnExternal.onclick = () => {
+            btnExternal.onclick = async () => {
                 this.logView();
                 cleanup();
                 if (typeof this.saveVLCStart === 'function') this.saveVLCStart();
 
                 const baseUrl = getApiBaseUrl();
+                // Get client IP for progress tracking on the proxy side
+                const vlcClientIp = await this.getClientIP();
+                const params = new URLSearchParams();
+                if (vlcClientIp) params.set('clientIp', vlcClientIp);
+                // Pass resume time so the m3u8 manifest includes #EXT-X-START
+                const resumeTime = this.content.resumeTime || 0;
+                if (resumeTime > 10) params.set('start', Math.floor(resumeTime));
+                const queryStr = params.toString() ? `?${params.toString()}` : '';
                 let videoUrl = '';
                 if (this.content.media_type === 'movie') {
-                    videoUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
+                    videoUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8${queryStr}`;
                 } else {
-                    videoUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
+                    videoUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8${queryStr}`;
                 }
 
                 console.log('Opening External:', videoUrl);
 
                 if (isAndroid) {
-                    const intentUrl = `intent://${videoUrl.replace(/^https?:\/\//, '')}#Intent;scheme=https;type=video/*;end`;
-                    window.location.href = intentUrl;
+                    // Build proper Android intent URL preserving the original scheme and query params
+                    // Use video/* MIME type — most Android players register for this, not application/x-mpegURL
+                    try {
+                        const urlObj = new URL(videoUrl);
+                        const intentHost = urlObj.host; // includes port if non-standard
+                        const intentPath = urlObj.pathname + urlObj.search; // path + query params
+                        const intentScheme = urlObj.protocol.replace(':', '');
+                        const fallbackUrl = encodeURIComponent(videoUrl);
+                        const intentUrl = `intent://${intentHost}${intentPath}#Intent;scheme=${intentScheme};type=video/*;S.browser_fallback_url=${fallbackUrl};end`;
+                        console.log('Android intent:', intentUrl);
+                        window.location.href = intentUrl;
+                    } catch(e) {
+                        console.error('Intent creation failed, opening URL directly:', e);
+                        window.location.href = videoUrl;
+                    }
                 } else if (isIOS) {
                     window.location.href = videoUrl;
                 } else {
+                    // Build progress data payload for the external tab
+                    const progressPayload = {
+                        tmdbId: this.content.id,
+                        contentType: this.content.media_type || 'movie',
+                        season: this.content.season_number || null,
+                        episode: this.content.episode_number || null,
+                        title: this.content.title || this.content.name || 'Senza titolo'
+                    };
+                    const progressApiUrl = PROGRESS_API_URL;
+                    const resumeTime = this.content.resumeTime || 0;
+
                     const w = window.open('', '_blank');
                     w.document.write(`
                         <!DOCTYPE html>
@@ -557,14 +594,70 @@ class VideoPlayer {
                             <script>
                                 const v = document.getElementById('v');
                                 const url = "${videoUrl}";
+                                const resumeTime = ${resumeTime};
+                                const progressApiUrl = "${progressApiUrl}";
+                                const progressPayload = ${JSON.stringify(progressPayload)};
+                                let lastSavedTime = -1;
+                                let clientIp = null;
+
+                                // Fetch IP once
+                                fetch('https://api.ipify.org?format=json')
+                                    .then(r => r.json())
+                                    .then(d => { clientIp = d.ip; })
+                                    .catch(() => { clientIp = 'unknown'; });
+
+                                function saveProgress() {
+                                    if (!clientIp || !v.duration || v.duration <= 0) return;
+                                    const ct = Math.floor(v.currentTime);
+                                    if (ct === lastSavedTime) return;
+                                    const pct = (v.currentTime / v.duration) * 100;
+                                    if (pct < 3 || pct > 97) return;
+                                    lastSavedTime = ct;
+                                    const payload = {
+                                        ...progressPayload,
+                                        ip: clientIp,
+                                        currentTime: v.currentTime,
+                                        duration: v.duration
+                                    };
+                                    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                                    navigator.sendBeacon(progressApiUrl, blob);
+                                }
+
+                                // Save progress every 15 seconds
+                                v.addEventListener('timeupdate', () => {
+                                    if (!v.paused && v.duration) {
+                                        const ct = Math.floor(v.currentTime);
+                                        if (ct % 15 === 0 && ct !== lastSavedTime) {
+                                            saveProgress();
+                                        }
+                                    }
+                                });
+
+                                // Save on pause
+                                v.addEventListener('pause', saveProgress);
+
+                                // Save before page closes
+                                window.addEventListener('beforeunload', saveProgress);
+                                window.addEventListener('pagehide', saveProgress);
+
                                 if (Hls.isSupported()) {
                                     const hls = new Hls();
                                     hls.loadSource(url);
                                     hls.attachMedia(v);
-                                    hls.on(Hls.Events.MANIFEST_PARSED, () => v.play());
+                                    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                                        if (resumeTime > 10) {
+                                            v.currentTime = resumeTime;
+                                        }
+                                        v.play();
+                                    });
                                 } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
                                     v.src = url;
-                                    v.addEventListener('loadedmetadata', () => v.play());
+                                    v.addEventListener('loadedmetadata', () => {
+                                        if (resumeTime > 10) {
+                                            v.currentTime = resumeTime;
+                                        }
+                                        v.play();
+                                    });
                                 }
                             <\/script>
                         </body>
@@ -579,11 +672,17 @@ class VideoPlayer {
             btnCopy.onclick = async () => {
                 this.logView();
                 const baseUrl = getApiBaseUrl();
+                const copyClientIp = await this.getClientIP();
+                const copyParams = new URLSearchParams();
+                if (copyClientIp) copyParams.set('clientIp', copyClientIp);
+                const copyResumeTime = this.content.resumeTime || 0;
+                if (copyResumeTime > 10) copyParams.set('start', Math.floor(copyResumeTime));
+                const copyQueryStr = copyParams.toString() ? `?${copyParams.toString()}` : '';
                 let videoUrl = '';
                 if (this.content.media_type === 'movie') {
-                    videoUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8`;
+                    videoUrl = `${baseUrl}/vlc/movie/${this.content.id}.m3u8${copyQueryStr}`;
                 } else {
-                    videoUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8`;
+                    videoUrl = `${baseUrl}/vlc/series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}.m3u8${copyQueryStr}`;
                 }
                 try {
                     await navigator.clipboard.writeText(videoUrl);
@@ -680,6 +779,9 @@ class VideoPlayer {
                 proxyUrl = `${PROXY_URL}series/${this.content.id}/${this.content.season_number}/${this.content.episode_number}`;
             }
             proxyUrl += `?streamId=${this.currentStreamId}`;
+            // Pass client's public IP so proxy can use it for progress tracking
+            const clientIp = await this.getClientIP();
+            if (clientIp) proxyUrl += `&clientIp=${encodeURIComponent(clientIp)}`;
 
             const proxyResponse = await fetch(proxyUrl, { signal: this.abortController.signal });
             if (!proxyResponse.ok) throw new Error('Failed to fetch stream URL');
@@ -1165,6 +1267,26 @@ class VideoPlayer {
                 this.showNextEpisodePrompt();
             }
         });
+
+        // ── Save progress when user returns from external player (mobile) ──
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.content && !this.playerModal.classList.contains('hidden')) {
+                // User came back to the page — save current progress
+                this.savePlaybackProgress();
+            }
+        });
+
+        // ── Save progress before page is hidden/unloaded ──
+        window.addEventListener('beforeunload', () => {
+            if (this.content && !this.playerModal.classList.contains('hidden')) {
+                this.savePlaybackProgress();
+            }
+        });
+        window.addEventListener('pagehide', () => {
+            if (this.content && !this.playerModal.classList.contains('hidden')) {
+                this.savePlaybackProgress();
+            }
+        });
     }
 
     // ── Toggle Play/Pause ───────────────────────────────────
@@ -1619,6 +1741,11 @@ class VideoPlayer {
             } catch (err) {
                 console.warn('Sblocco orientamento fallito:', err);
             }
+        }
+
+        // Refresh "Continua a guardare" section after saving progress
+        if (typeof displayContinueWatching === 'function') {
+            setTimeout(() => displayContinueWatching(), 1000);
         }
     }
 
