@@ -1,7 +1,7 @@
 // LeleFlix Player – Fixed JavaScript
 // Fixes all 10 bugs listed in the requirements
 
-const PROGRESS_API_URL = 'https://api.leleflix.store/progress/save';
+const PROGRESS_API_URL = 'http://192.168.141:3000/progress/save';
 
 class VideoPlayer {
     // ── HLS Reconnection ───────────────────────────────────
@@ -23,7 +23,7 @@ class VideoPlayer {
         this.lastTapTime = 0;
         this.currentStreamId = null;
         this.abortController = null;
-        this.PROXY_BASE_URL = 'https://api.leleflix.store/proxy';
+        this.PROXY_BASE_URL = 'http://192.168.141:3000/proxy';
         this.videoPlayer = document.getElementById('videoPlayer');
         this.playerModal = document.getElementById('player-modal');
         this.loadingOverlay = document.getElementById('loadingOverlay');
@@ -492,7 +492,7 @@ class VideoPlayer {
                 if (typeof PROXY_URL !== 'undefined') {
                     try { return new URL(PROXY_URL).origin; } catch (e) { }
                 }
-                return 'https://api.leleflix.store';
+                return 'http://192.168.141:3000';
             };
 
             // ACTION: Internal Player
@@ -801,6 +801,7 @@ class VideoPlayer {
                 this.enterFullscreen().catch(e => console.log('Fullscreen immediato fallito (Normale per Guest):', e));
             }
             this.playerModal.classList.remove('hidden');
+            document.body.classList.add('overlay-active');
             // Set PWA status bar to black when player opens
             this.setThemeColor('#000000');
             // Also set body background to pure black to eliminate the
@@ -1727,6 +1728,7 @@ class VideoPlayer {
         this.currentStreamId = null;
         this.abortController = null;
         this.playerModal.classList.add('hidden');
+        document.body.classList.remove('overlay-active');
         // Restore PWA status bar color and body background when player closes
         this.restoreThemeColor();
         this.setPlayerBackground(false);

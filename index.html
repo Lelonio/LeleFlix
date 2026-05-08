@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <title>LeleFlix</title>
   <link rel="manifest" href="manifest.json">
@@ -1111,6 +1111,103 @@ main .max-w-7xl {
     overflow: visible;
 }
 
+/* === iOS 26 Mobile Top Bar (floating search pill) === */
+@media (max-width: 767px) {
+    .glass-nav-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 50;
+        height: auto !important;
+        padding: 10px 12px 0;
+        padding-top: calc(10px + env(safe-area-inset-top, 0px));
+        background: transparent !important;
+        pointer-events: none;
+    }
+
+    .glass-nav {
+        position: relative;
+        height: auto !important;
+        max-width: 480px;
+        margin: 0 auto;
+        border-radius: 20px !important;
+        overflow: visible !important;
+        transition: none !important;
+    }
+
+    .glass-nav.scrolled {
+        height: auto !important;
+    }
+
+    .glass-nav.scrolled #nav-glass .lg-overlay-bg {
+        background: rgba(28, 25, 25, 0.72) !important;
+    }
+
+    #nav-glass {
+        border-radius: 20px !important;
+    }
+
+    #nav-glass .lg-overlay-bg {
+        background: rgba(28, 25, 25, 0.62) !important;
+        border-radius: 20px !important;
+    }
+
+    /* Nav content: compact row with logo + search */
+    .glass-nav .nav-content {
+        padding: 8px 14px !important;
+        height: auto !important;
+        pointer-events: all;
+    }
+
+    /* Make search box interactive too */
+    #mobile-search-box {
+        pointer-events: all;
+    }
+
+    .glass-nav .nav-content .max-w-7xl {
+        padding: 0 !important;
+        height: auto !important;
+    }
+
+    .glass-nav .nav-content .flex {
+        height: auto !important;
+    }
+
+    /* Mobile search toggle: iOS 26 style */
+    #mobile-search-toggle {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease, transform 0.15s ease;
+    }
+
+    #mobile-search-toggle:active {
+        transform: scale(0.9);
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Mobile search box: expanded state */
+    #mobile-search-box {
+        border-top: none !important;
+        padding: 0 14px 10px !important;
+    }
+
+    #mobile-search-box input {
+        border-radius: 12px !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #mobile-search-box input:focus {
+        border-color: rgba(229, 9, 20, 0.5);
+        background: rgba(255, 255, 255, 0.12) !important;
+    }
+}
+
 /* Navbar liquid-glass wrapper */
 #nav-glass {
     pointer-events: none;
@@ -1120,8 +1217,7 @@ main .max-w-7xl {
     transition: background 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-#nav-glass .lg-content,
-#mobile-nav-glass .lg-content {
+#nav-glass .lg-content {
     width: 100%;
     height: 100%;
 }
@@ -2044,12 +2140,11 @@ function resetToHomeView() {
     }, 300);
 }
 
-// Modifica la funzione initializeMobileNavDynamics per usare resetToHomeView
+// iOS 26-style pill navigation dynamics
 function initializeMobileNavDynamics() {
-    const mobileLinks = document.querySelectorAll('#mobile-nav a.mobile-nav-link');
+    const mobileLinks = document.querySelectorAll('#mobile-nav .ios-pill-tab');
     const sections = document.querySelectorAll('#hero-section, #movie-trend, #tv-popular, #critics, #new');
-
-    // Prendiamo l'elemento dei risultati di ricerca
+    const indicator = document.getElementById('ios-pill-indicator');
     const searchResultsEl = document.getElementById('search-results-section');
 
     if (!mobileLinks.length || !sections.length) return;
@@ -2057,63 +2152,92 @@ function initializeMobileNavDynamics() {
     let userClicked = false;
     let clickTimer = null;
 
-    // ----- 1. Feedback immediato al CLICK (Modificato) -----
+    // --- Move indicator pill to the active tab ---
+    function moveIndicator(tabEl) {
+        if (!indicator || !tabEl) return;
+        const nav = tabEl.closest('.ios-pill-nav');
+        if (!nav) return;
+        const navRect = nav.getBoundingClientRect();
+        const tabRect = tabEl.getBoundingClientRect();
+
+        // Set indicator width to match the tab, with small horizontal inset
+        const indicatorInset = 6; // px inset on each side
+        const indicatorWidth = tabRect.width - (indicatorInset * 2);
+        indicator.style.width = indicatorWidth + 'px';
+
+        // Center the indicator on the tab
+        const offset = tabRect.left - navRect.left + indicatorInset;
+
+        indicator.style.transform = `translateX(${offset}px)`;
+
+        // Toggle party style
+        const tabName = tabEl.dataset.tab;
+        indicator.classList.toggle('at-party', tabName === 'party');
+
+        // Show indicator once positioned
+        indicator.classList.add('positioned');
+    }
+
+    // Set initial indicator position (after layout)
+    function initIndicator() {
+        const activeTab = document.querySelector('#mobile-nav .ios-pill-tab.active');
+        if (activeTab) moveIndicator(activeTab);
+    }
+
+    // Run after a frame so layout is computed
+    requestAnimationFrame(() => requestAnimationFrame(initIndicator));
+
+    // Also reposition on resize/orientation change
+    window.addEventListener('resize', initIndicator);
+    window.addEventListener('orientationchange', () => setTimeout(initIndicator, 150));
+
+    // --- Activate a tab (shared logic) ---
+    function activateTab(tabEl) {
+        mobileLinks.forEach(l => l.classList.remove('active'));
+        tabEl.classList.add('active');
+        moveIndicator(tabEl);
+    }
+
+    // ----- 1. CLICK handler -----
     mobileLinks.forEach(link => {
         link.addEventListener('click', (e) => {
-            e.preventDefault(); // Blocca sempre lo scorrimento predefinito
+            e.preventDefault();
             const href = e.currentTarget.getAttribute('href');
 
-            // --- NUOVA LOGICA SEMPLIFICATA ---
+            // Home tap while search is active → reset
             if (href === '#hero-section') {
-                // Controlla se i risultati della ricerca sono VISIBILI
                 const isSearchActive = searchResultsEl && !searchResultsEl.classList.contains('hidden');
-
                 if (isSearchActive) {
-                    // Se la ricerca è attiva, resetta alla home
                     resetToHomeView();
-                    return; // Esce dalla funzione
+                    activateTab(e.currentTarget);
+                    return;
                 }
             }
-            // --- FINE NUOVA LOGICA ---
 
-            // (Codice esistente per il flag e il timer)
             userClicked = true;
             clearTimeout(clickTimer);
-            clickTimer = setTimeout(() => {
-                userClicked = false;
-            }, 1000);
+            clickTimer = setTimeout(() => { userClicked = false; }, 1000);
 
-            // (Codice esistente per la classe 'active')
-            mobileLinks.forEach(l => l.classList.remove('active'));
-            e.currentTarget.classList.add('active');
+            activateTab(e.currentTarget);
 
-            // (Codice esistente per lo scorrimento manuale)
             const targetSection = document.querySelector(href);
             if (targetSection) {
-                targetSection.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center'
-                });
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     });
 
-    // ----- 2. Feedback dinamico allo SCROLL (Invariato) -----
-    const observerOptions = {
-        root: null,
-        rootMargin: '0px',
-        threshold: 0.75
-    };
+    // ----- 2. SCROLL-based IntersectionObserver -----
+    const observerOptions = { root: null, rootMargin: '0px', threshold: 0.75 };
 
     const observerCallback = (entries) => {
         if (userClicked) return;
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 const id = entry.target.id;
-                const correspondingLink = document.querySelector(`#mobile-nav a[href="#${id}"]`);
+                const correspondingLink = document.querySelector(`#mobile-nav .ios-pill-tab[href="#${id}"]`);
                 if (correspondingLink) {
-                    mobileLinks.forEach(l => l.classList.remove('active'));
-                    correspondingLink.classList.add('active');
+                    activateTab(correspondingLink);
                 }
             }
         });
@@ -3288,9 +3412,10 @@ async function openDetailView(contentOrId, type = 'movie') {
     detailView.classList.add('detail-view-enter');
     detailView.scrollTop = 0;
 
-    // Nascondi Navbar
+    // Nascondi Navbar + mobile pill nav
     const navbar = document.querySelector('.glass-nav-container');
     if(navbar) navbar.style.display = 'none';
+    document.body.classList.add('overlay-active');
 
     // Opzionale: Nascondi la home DOPO che l'animazione è finita per evitare "buchi" neri durante la transizione
     // Se preferisci le performance, puoi nasconderla subito commentando l'event listener qui sotto e usando homeView.classList.add('hidden') subito.
@@ -3314,9 +3439,10 @@ const homeView = document.getElementById('home-view');
     homeView.classList.remove('hidden');
     window.scrollTo(0, scrollPositionBeforeDetail); // Ripristina scroll home
 
-    // 2. Ripristina Navbar
+    // 2. Ripristina Navbar + mobile pill nav
     const navbar = document.querySelector('.glass-nav-container');
     if(navbar) navbar.style.display = 'block';
+    document.body.classList.remove('overlay-active');
 
     // 3. AVVIA ANIMAZIONE USCITA
     detailView.classList.remove('detail-view-enter'); // Sicurezza
@@ -4163,6 +4289,7 @@ closePlayer.addEventListener('click', () => {
     }
 
     document.getElementById('player-modal').classList.add('hidden');
+    document.body.classList.remove('overlay-active');
 
     // Rimuovi blocco landscape se attivo
 // Esci dal fullscreen se attivo
@@ -4257,6 +4384,7 @@ document.getElementById('mobile-search-button').addEventListener('click', functi
                 }
                 if (e.target === playerModal) {
                     playerModal.classList.add('hidden');
+                    document.body.classList.remove('overlay-active');
                 }
             });
 
@@ -5032,39 +5160,36 @@ document.getElementById('modal-play-button').addEventListener('click', () => {
     }).catch(err => console.error('❌ Service Worker errore:', err));
   }
 </script>
-<nav id="mobile-nav" class="md:hidden fixed bottom-0 left-0 right-0 h-16 z-50">
-    <div class="liquid-glass" id="mobile-nav-glass" style="position:absolute;inset:0;border-radius:0;">
-        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(34,31,31,0.45);"></div>
-        <div class="lg-content" style="position:relative;z-index:3;"></div>
-    </div>
+<!-- iOS 26-style floating pill bottom navigation -->
+<nav id="mobile-nav" class="md:hidden" aria-label="Navigazione principale">
+    <div class="ios-pill-nav">
+        <!-- Active indicator pill (slides behind the active tab) -->
+        <div class="ios-pill-indicator" id="ios-pill-indicator"></div>
 
-    <div class="nav-content flex justify-around items-center h-full" style="position:relative;z-index:10;">
-
-        <a href="#hero-section" class="mobile-nav-link">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
+        <a href="#hero-section" class="ios-pill-tab active" data-tab="home">
+            <span class="ios-pill-icon"><i class="fas fa-house"></i></span>
+            <span class="ios-pill-label">Home</span>
         </a>
 
-        <a href="#movie-trend" class="mobile-nav-link">
-            <i class="fas fa-film"></i>
-            <span>Film</span>
+        <a href="#movie-trend" class="ios-pill-tab" data-tab="film">
+            <span class="ios-pill-icon"><i class="fas fa-film"></i></span>
+            <span class="ios-pill-label">Film</span>
         </a>
 
-        <a href="#tv-popular" class="mobile-nav-link">
-            <i class="fas fa-tv"></i>
-            <span>Serie TV</span>
+        <a href="#tv-popular" class="ios-pill-tab" data-tab="tv">
+            <span class="ios-pill-icon"><i class="fas fa-tv"></i></span>
+            <span class="ios-pill-label">Serie TV</span>
         </a>
 
-        <a href="#critics" class="mobile-nav-link">
-            <i class="fas fa-star"></i>
-            <span>Più votati</span>
+        <a href="#critics" class="ios-pill-tab" data-tab="top">
+            <span class="ios-pill-icon"><i class="fas fa-star"></i></span>
+            <span class="ios-pill-label">Top</span>
         </a>
 
-        <a href="#" onclick="openPartyMenu(); return false;" class="mobile-nav-link text-purple-400">
-    <i class="fas fa-users"></i>
-    <span>Party</span>
-</a>
-
+        <a href="#" onclick="openPartyMenu(); return false;" class="ios-pill-tab" data-tab="party">
+            <span class="ios-pill-icon"><i class="fas fa-users"></i></span>
+            <span class="ios-pill-label">Party</span>
+        </a>
     </div>
 </nav>
 <div id="vlc-prompt" class="fixed inset-0 hidden flex items-center justify-center" style="z-index: 9999 !important;">
