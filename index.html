@@ -5820,6 +5820,29 @@ if (data.content) data.content.forceInternalPlayer = true;
                 showPartyToast(`L'host ha avviato: ${titleSafe}`);
             }
         }
+        else if (data.action === 'close_player') {
+            // L'host ha chiuso il player → chiudi anche per i membri
+            console.log("L'host ha chiuso il player, chiusura in corso...");
+            const closeBtn = document.getElementById('close-player');
+            if (closeBtn) {
+                closeBtn.click();
+            } else {
+                // Fallback: chiudi manualmente
+                const playerModal = document.getElementById('player-modal');
+                if (playerModal && !playerModal.classList.contains('hidden')) {
+                    const video = document.getElementById('videoPlayer');
+                    if (video) {
+                        if (window.hls) { window.hls.destroy(); window.hls = null; }
+                        video.pause();
+                        video.removeAttribute('src');
+                        video.load();
+                    }
+                    playerModal.classList.add('hidden');
+                    document.body.classList.remove('overlay-active');
+                    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+                }
+            }
+        }
         else {
             // Comandi Play/Pausa/Seek
             handleVideoSync(data);
@@ -6355,6 +6378,15 @@ window.setupPartyListeners = function setupPartyListeners() {
             mutations.forEach((mutation) => {
                 if (mutation.attributeName === 'class' && _chatPlayerModal.classList.contains('hidden')) {
                     returnChatPanelToWidget();
+
+                    // Se siamo l'host di un party, notifica gli altri membri che il player è stato chiuso
+                    if (currentPartyCode && isPartyHost) {
+                        socket.emit('party_sync_event', {
+                            code: currentPartyCode,
+                            action: 'close_player'
+                        });
+                        console.log("📤 Host: evento close_player inviato al party");
+                    }
                 }
             });
         });
