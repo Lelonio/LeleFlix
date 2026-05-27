@@ -1905,6 +1905,43 @@ body.overlay-active #party-chat-fab {
     }
 }
 
+/* === Click-to-Play Overlay (Party Mode) === */
+#autoplay-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 80;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+}
+
+#autoplay-overlay:hover {
+    background: rgba(0, 0, 0, 0.65);
+}
+
+@keyframes clickToPlayPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 8px 32px rgba(128, 0, 255, 0.3);
+    }
+    50% {
+        transform: scale(1.08);
+        box-shadow: 0 12px 48px rgba(128, 0, 255, 0.5);
+    }
+}
+
+/* Fullscreen support for click-to-play overlay */
+:fullscreen #autoplay-overlay,
+::-webkit-full-screen #autoplay-overlay {
+    position: absolute;
+    inset: 0;
+}
+
 /* === Flying Reactions Overlay === */
 .flying-reactions-container {
     position: absolute;

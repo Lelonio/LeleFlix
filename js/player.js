@@ -973,16 +973,18 @@ class VideoPlayer {
         const overlay = document.createElement('div');
         overlay.id = 'autoplay-overlay';
         overlay.innerHTML = `
-            <div style="text-align: center; animation: bounce 1s infinite;">
+            <div style="text-align: center;">
                 <div style="
                     width: 96px; height: 96px;
                     background: rgba(128, 0, 255, 0.7);
                     backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
                     border-radius: 50%;
                     display: flex; align-items: center; justify-content: center;
                     margin: 0 auto 24px;
                     box-shadow: 0 8px 32px rgba(128,0,255,0.3);
                     border: 4px solid rgba(255,255,255,0.15);
+                    animation: clickToPlayPulse 2s ease-in-out infinite;
                 ">
                     <i class="fas fa-expand" style="font-size: 2.5rem; color: white; padding-left: 4px;"></i>
                 </div>
