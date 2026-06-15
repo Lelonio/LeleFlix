@@ -43,7 +43,7 @@ sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],          
     </script>
 
     <script>
-    const socket = io('https://api.leleflix.store'); // Usa il tuo dominio corretto
+    const socket = io('http://192.168.1.141:3000'); // Usa il tuo dominio corretto
 
     // Funzione per mostrare l'animazione
     function showCastAnimation(title) {
@@ -113,9 +113,12 @@ let currentPartyCode = sessionStorage.getItem('lelePartyCode');
 
             // Ci riconnettiamo alla stanza sul server (così riceviamo i comandi)
             // IMPORTANTE: Questo non deve resettare la UI, perché le variabili sono già settate
-            socket.emit('party_join', currentPartyCode);
+            const rejoinNickname = (typeof partyChatNickname !== 'undefined' ? partyChatNickname : null) || sessionStorage.getItem('lelePartyNickname') || 'Ospite';
+            const wasHost = sessionStorage.getItem('lelePartyHost') === 'true';
+            socket.emit('party_join', { code: currentPartyCode, nickname: rejoinNickname, isHost: wasHost });
 
-            showPartyToast("Bentornato nel Party! Sessione ripristinata.");
+            // Il toast "Bentornato" viene mostrato solo se il rejoin ha successo
+            // (party_joined handler si occupa di questo)
 
             // Se c'è un player attivo (es. refresh mentre guardavi), riattiva i listener
             if (document.getElementById('videoPlayer')) {
@@ -2056,7 +2059,7 @@ async function removeWatchProgress(key, cardElement) {
     if (confirmed) {
         try {
             // 2. Chiama l'endpoint DELETE del tuo backend
-            const response = await fetch(`https://api.leleflix.store/progress/${key}`, {
+            const response = await fetch(`http://192.168.1.141:3000/progress/${key}`, {
                 method: 'DELETE'
             });
 
@@ -3126,7 +3129,7 @@ async function displayContinueWatching() {
 async function getContinueWatching() {
     try {
         const ip = await getClientIP();
-        const response = await fetch(`https://api.leleflix.store/progress/${ip}`);
+        const response = await fetch(`http://192.168.1.141:3000/progress/${ip}`);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -3184,7 +3187,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const API_URL = 'https://api.themoviedb.org/3';
         const IMG_PATH = 'https://image.tmdb.org/t/p/w1280';
         const POSTER_PATH = 'https://image.tmdb.org/t/p/w500';
-        const PROXY_URL = 'https://api.leleflix.store/proxy/';
+        const PROXY_URL = 'http://192.168.1.141:3000/proxy/';
 
         // --- Rotten Tomatoes Scraper (via proxy, no API key needed) ---
         async function fetchRTScores(title, type, year, forceRefresh = false) {
@@ -3288,14 +3291,69 @@ async function searchMedia(query) {
   document.getElementById("search-results-section").classList.remove("hidden");
 
 try {
-        const res = await fetch(`${API_URL}/search/multi?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=it-IT`);
-        const data = await res.json();
+        // Recupera TUTTE le pagine (fino a un massimo) dei risultati per tipo.
+        // Usare search/movie + search/tv invece di search/multi evita i risultati
+        // "person" (che occupavano slot inutili) e dà più risultati pertinenti.
+        // La paginazione è fondamentale: prima si scaricava solo la pagina 1 (~20
+        // risultati ordinati per popolarità), quindi un titolo disponibile ma poco
+        // popolare veniva scartato dal filtro → "nessun risultato" anche con il
+        // titolo corretto.
+        const MAX_PAGES = 5;
+        const fetchAllPages = async (kind) => {
+            const buildUrl = (page) =>
+                `${API_URL}/search/${kind}?api_key=${API_KEY}&query=${encodeURIComponent(query)}&language=it-IT&include_adult=false&page=${page}`;
+            const first = await fetch(buildUrl(1)).then(r => r.json()).catch(() => ({ results: [] }));
+            let results = first.results || [];
+            const totalPages = Math.min(first.total_pages || 1, MAX_PAGES);
+            if (totalPages > 1) {
+                const extra = await Promise.all(
+                    Array.from({ length: totalPages - 1 }, (_, i) =>
+                        fetch(buildUrl(i + 2)).then(r => r.json()).catch(() => ({ results: [] }))
+                    )
+                );
+                extra.forEach(p => { results = results.concat(p.results || []); });
+            }
+            return results.map(item => ({ ...item, media_type: kind }));
+        };
 
-        const filteredResults = (data.results || []).filter(item =>
-            ['movie', 'tv'].includes(item.media_type) &&
-            item.poster_path &&
-            availableContent.some(ac => ac.tmdb_id === item.id)
-        );
+        const [movieResults, tvResults] = await Promise.all([
+            fetchAllPages('movie'),
+            fetchAllPages('tv')
+        ]);
+
+        // Set per lookup O(1) degli id disponibili
+        const availableIds = new Set(availableContent.map(ac => ac.tmdb_id));
+
+        // Filtra (solo contenuti disponibili con poster) e deduplica
+        const seen = new Set();
+        let filteredResults = [...movieResults, ...tvResults].filter(item => {
+            if (!item.poster_path || !availableIds.has(item.id)) return false;
+            const key = `${item.media_type}-${item.id}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+
+        // Ordina per pertinenza: match esatto > inizia con > contiene > popolarità.
+        // Normalizza (minuscolo, senza accenti/punteggiatura) così piccole differenze
+        // di digitazione non penalizzano il risultato giusto.
+        const normalize = s => (s || '')
+            .toLowerCase()
+            .normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-z0-9 ]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        const q = normalize(query);
+        const relevance = (item) => {
+            const title = normalize(item.title || item.name);
+            const orig = normalize(item.original_title || item.original_name);
+            let score = 0;
+            if (title === q || orig === q) score = 1000;
+            else if (title.startsWith(q) || orig.startsWith(q)) score = 500;
+            else if (title.includes(q) || orig.includes(q)) score = 250;
+            return score + (item.popularity || 0);
+        };
+        filteredResults.sort((a, b) => relevance(b) - relevance(a));
 
     if (filteredResults.length === 0) {
       resultsGrid.innerHTML = `
@@ -4133,7 +4191,7 @@ fetchCardAssets(item.id, item.media_type, t10Logo, t10Poster);
 // Carica tutti i contenuti disponibili
 async function loadAvailableContent() {
   try {
-    const response = await fetch('https://api.leleflix.store/home/available');
+    const response = await fetch('http://192.168.1.141:3000/home/available');
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const data = await response.json();
@@ -5459,55 +5517,107 @@ clearTimeout(remoteTimeout);
 </script>
 <div id="party-menu-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
     <div class="liquid-glass" style="position:absolute;inset:0;border-radius:0;">
-        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);"></div>
+        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);"></div>
         <div class="lg-content" style="position:relative;z-index:3;"></div>
     </div>
-    <div class="liquid-glass" style="border-radius:16px;max-width:28rem;width:100%;">
-        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(26,26,26,0.85);border-radius:16px;"></div>
-        <div class="lg-content" style="position:relative;z-index:3;padding:2rem;text-align:center;">
-        <div class="text-purple-500 text-5xl mb-4"><i class="fas fa-couch"></i></div>
-        <h3 class="text-2xl font-bold text-white mb-2">LeleParty</h3>
-        <p class="text-gray-400 mb-8">Guarda film in sincrono con gli amici.</p>
+    <div class="party-modal-card liquid-glass lg-active">
+        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(22,22,28,0.92);border-radius:20px;"></div>
+        <div class="lg-content" style="position:relative;z-index:3;padding:0;">
 
-        <div id="party-start-view" class="flex flex-col gap-4">
-            <button onclick="createParty()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-3">
-                <i class="fas fa-plus-circle"></i> Crea Nuova Stanza
-            </button>
-
-            <div class="relative">
-                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-700"></div></div>
-                <div class="relative flex justify-center text-sm"><span class="px-2 text-gray-500" style="background:transparent;">OPPURE</span></div>
-            </div>
-
-            <div class="flex gap-2">
-                <input id="party-code-input" type="text" placeholder="Codice Stanza (es. 123456)" class="flex-1 bg-black/50 border border-gray-700 rounded-lg px-4 text-white focus:outline-none focus:border-purple-500 text-center font-mono text-lg">
-                <button onclick="joinParty()" class="bg-gray-700 hover:bg-gray-600 text-white px-6 rounded-lg font-bold">
-                    Entra
+            <!-- Header -->
+            <div class="party-modal-header">
+                <div class="party-modal-logo">
+                    <i class="fas fa-couch"></i>
+                </div>
+                <div>
+                    <h3 class="party-modal-title">LeleParty</h3>
+                    <p class="party-modal-subtitle">Guarda film in sincrono con gli amici</p>
+                </div>
+                <button onclick="closePartyMenu()" class="party-modal-close" title="Chiudi">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
-        </div>
 
-        <div id="party-lobby-view" class="hidden">
-    <p class="text-gray-400 mb-2">Codice Stanza:</p>
-    <div class="text-5xl font-mono font-bold text-white tracking-wider mb-6 select-all bg-black/30 py-4 rounded-xl border border-purple-500/30 text-purple-400" id="display-party-code">------</div>
+            <!-- ═══ START VIEW: Crea / Unisciti ═══ -->
+            <div id="party-start-view" class="party-modal-body">
+                <!-- Nickname -->
+                <div class="party-nickname-row">
+                    <label class="party-nickname-label"><i class="fas fa-user"></i> Il tuo nickname</label>
+                    <div class="party-nickname-input-wrap">
+                        <input id="party-nickname-input" type="text" maxlength="20" placeholder="Scegli un nickname..." class="party-nickname-input">
+                    </div>
+                </div>
 
-    <div id="party-status-message" class="bg-gray-800/50 p-4 rounded-lg text-gray-300 mb-6 border border-white/5 transition-all">
-        In attesa...
-    </div>
+                <div class="party-divider"><span>OPPURE</span></div>
 
-    <div id="party-participants" class="mb-6 flex justify-center gap-2">
-        </div>
+                <!-- Crea stanza -->
+                <button onclick="createParty()" class="party-btn party-btn-create">
+                    <div class="party-btn-icon"><i class="fas fa-plus"></i></div>
+                    <div class="party-btn-text">
+                        <strong>Crea Nuova Stanza</strong>
+                        <small>Ottieni un codice da condividere</small>
+                    </div>
+                </button>
 
-    <button onclick="closePartyMenu()" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold transition border border-white/10">
-        <i class="fas fa-arrow-down mr-2"></i> Riduci a icona e naviga
-    </button>
+                <!-- Unisciti -->
+                <div class="party-join-section">
+                    <label class="party-nickname-label"><i class="fas fa-key"></i> Unisciti con un codice</label>
+                    <div class="party-join-row">
+                        <input id="party-code-input" type="text" maxlength="6" placeholder="123456" class="party-code-input">
+                        <button onclick="joinParty()" class="party-btn-join">Entra</button>
+                    </div>
+                </div>
+            </div>
 
-    <button onclick="leaveParty()" class="w-full bg-red-900/50 hover:bg-red-700 text-red-200 py-2 rounded-xl font-bold transition text-sm">
-        <i class="fas fa-sign-out-alt mr-2"></i> Abbandona Party
-    </button>
-</div>
+            <!-- ═══ LOBBY VIEW: Stanza attiva ═══ -->
+            <div id="party-lobby-view" class="party-modal-body hidden">
+                <!-- Codice stanza -->
+                <div class="party-code-section">
+                    <span class="party-code-label">Codice Stanza</span>
+                    <div class="party-code-display" id="display-party-code" title="Clicca per copiare" onclick="copyPartyCode()">------</div>
+                    <button class="party-copy-btn" onclick="copyPartyCode()" title="Copia codice">
+                        <i class="fas fa-copy"></i> Copia
+                    </button>
+                </div>
 
-        <button onclick="closePartyMenu()" class="mt-6 text-gray-500 hover:text-white text-sm">Annulla</button>
+                <!-- Partecipanti -->
+                <div class="party-participants-section">
+                    <div class="party-section-title">
+                        <i class="fas fa-users"></i> Partecipanti
+                        <span id="party-member-count" class="party-member-count">0</span>
+                    </div>
+                    <div id="party-participants" class="party-participants-list">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Il tuo nickname (modificabile) -->
+                <div class="party-nickname-section">
+                    <label class="party-nickname-label"><i class="fas fa-user-edit"></i> Il tuo nickname</label>
+                    <div class="party-nickname-edit-row">
+                        <input id="party-lobby-nickname" type="text" maxlength="20" class="party-nickname-input" placeholder="Il tuo nickname...">
+                        <button onclick="changePartyNickname()" class="party-nickname-save-btn" title="Salva">
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stato / Messaggio -->
+                <div id="party-status-message" class="party-status-message">
+                    In attesa...
+                </div>
+
+                <!-- Azioni -->
+                <div class="party-lobby-actions">
+                    <button onclick="closePartyMenu()" class="party-btn party-btn-minimize">
+                        <i class="fas fa-compress-alt"></i> Riduci a icona
+                    </button>
+                    <button onclick="leaveParty()" class="party-btn party-btn-leave">
+                        <i class="fas fa-sign-out-alt"></i> Abbandona
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -5622,6 +5732,12 @@ clearTimeout(remoteTimeout);
     window.openPartyMenu = function openPartyMenu() {
         document.getElementById('party-menu-modal').classList.remove('hidden');
 
+        // Pre-popola il nickname
+        const nickInput = document.getElementById('party-nickname-input');
+        if (nickInput && !nickInput.value) {
+            nickInput.value = partyChatNickname || '';
+        }
+
         // Se siamo già in un party, mostra la lobby direttamente
         if (currentPartyCode) {
             showLobbyView(currentPartyCode);
@@ -5637,137 +5753,221 @@ clearTimeout(remoteTimeout);
 
 window.leaveParty = function leaveParty() {
         if (confirm("Vuoi davvero lasciare il Watch Party?")) {
-            // 1. Notifica il server (rimuovi dalla stanza)
             if (currentPartyCode) {
                 socket.emit('party_leave', currentPartyCode);
             }
-
-            // 2. Pulisci Storage
             sessionStorage.removeItem('lelePartyCode');
             sessionStorage.removeItem('lelePartyHost');
-
-            // 3. Reset Variabili
             currentPartyCode = null;
             isPartyHost = false;
-
-            // 4. Reset UI
             document.getElementById('party-lobby-view').classList.add('hidden');
             document.getElementById('party-start-view').classList.remove('hidden');
-
-            // 5. Chiudi il modale
             window.closePartyMenu();
-
-            // 6. Aggiorna visibilità chat
             if (typeof updatePartyChatVisibility === 'function') {
                 updatePartyChatVisibility();
             }
         }
     }
 
-    // --- AGGIUNGI QUESTO BLOCCO ---
+    // --- HELPER: Rendering partecipanti ---
+    function renderParticipants(participants) {
+        const listDiv = document.getElementById('party-participants');
+        const countSpan = document.getElementById('party-member-count');
+        if (!listDiv) return;
+
+        listDiv.innerHTML = '';
+        if (countSpan) countSpan.textContent = participants.length;
+
+        participants.forEach((p, idx) => {
+            const initials = p.nickname ? p.nickname.substring(0, 2).toUpperCase() : '?';
+            const isHost = p.isHost;
+            const avatarClass = isHost ? 'host-avatar' : 'member-avatar';
+            const roleClass = isHost ? 'host-role' : '';
+            const roleText = isHost ? 'Host' : 'Membro';
+            const icon = isHost ? '<i class="fas fa-crown" style="font-size:0.7rem;"></i>' : '';
+
+            const row = document.createElement('div');
+            row.className = 'party-participant';
+            row.style.animationDelay = (idx * 0.05) + 's';
+            row.innerHTML = `
+                <div class="party-participant-avatar ${avatarClass}">${isHost ? icon : initials}</div>
+                <div class="party-participant-info">
+                    <div class="party-participant-name">${escapeHtml(p.nickname || 'Ospite')}</div>
+                    <div class="party-participant-role ${roleClass}">${roleText}</div>
+                </div>
+            `;
+            listDiv.appendChild(row);
+        });
+    }
+
 
     // Quando qualcun altro entra nella stanza
     socket.on('party_member_joined', () => {
         console.log("Nuovo membro rilevato!");
-
-        // 1. Notifica Toast (appare ovunque tu sia)
         showPartyToast("Un amico si è unito al Party! 🥳");
+    });
 
-        // 2. Aggiorna la grafica nel modale (se aperto)
-        const participantsDiv = document.getElementById('party-participants');
-        if (participantsDiv) {
-            // Aggiungi un'icona utente
-            const icon = document.createElement('div');
-            icon.className = 'w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-black font-bold animate-bounce';
-            icon.innerHTML = '<i class="fas fa-user"></i>';
-            participantsDiv.appendChild(icon);
-        }
-
-        // 3. Se sei l'host, cambia il messaggio per incoraggiare l'azione
-        if (isPartyHost) {
-            const statusMsg = document.getElementById('party-status-message');
-            statusMsg.innerHTML = `<span class="text-green-400 font-bold">Ci sono spettatori!</span><br>Chiudi questa finestra e fai Play su un film qualsiasi per iniziare.`;
-            statusMsg.classList.add('bg-green-900/30', 'border-green-500/50');
+    // --- LISTA PARTECIPANTI IN TEMPO REALE ---
+    socket.on('party_participants', (data) => {
+        if (data && data.participants) {
+            renderParticipants(data.participants);
+            updateLobbyMessage(data.participants.length);
         }
     });
-    // -----------------------------
+
+    // --- COPIA CODICE ---
+    window.copyPartyCode = function copyPartyCode() {
+        const code = currentPartyCode || document.getElementById('display-party-code').textContent;
+        if (!code || code === '------') return;
+        navigator.clipboard.writeText(code).then(() => {
+            const btn = document.querySelector('.party-copy-btn');
+            if (btn) {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copiato!';
+                setTimeout(() => { btn.innerHTML = orig; }, 1500);
+            }
+        }).catch(() => {
+            window.prompt('Copia il codice:', code);
+        });
+    }
+
+    // --- CAMBIA NICKNAME DAL MODALE ---
+    window.changePartyNickname = function changePartyNickname() {
+        const input = document.getElementById('party-lobby-nickname');
+        if (!input) return;
+        const newNick = input.value.trim();
+        if (!newNick || newNick.length < 2) {
+            input.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+            setTimeout(() => { input.style.borderColor = ''; }, 1500);
+            return;
+        }
+        if (newNick === partyChatNickname) return;
+
+        const oldNick = partyChatNickname;
+        partyChatNickname = newNick;
+        sessionStorage.setItem('lelePartyNickname', newNick);
+        updateNicknameLabel();
+
+        if (currentPartyCode) {
+            socket.emit('party_nickname_change', {
+                code: currentPartyCode,
+                nickname: newNick
+            });
+        }
+
+        const btn = document.querySelector('.party-nickname-save-btn');
+        if (btn) {
+            btn.style.background = 'linear-gradient(135deg, #16a34a, #22c55e)';
+            setTimeout(() => { btn.style.background = ''; }, 1200);
+        }
+    }
 
     window.createParty = function createParty() {
-        socket.emit('party_create');
+        const nickInput = document.getElementById('party-nickname-input');
+        if (nickInput && nickInput.value.trim()) {
+            partyChatNickname = nickInput.value.trim();
+            sessionStorage.setItem('lelePartyNickname', partyChatNickname);
+            updateNicknameLabel();
+        }
+        socket.emit('party_create', { nickname: partyChatNickname });
         isPartyHost = true;
     }
 
 socket.on('party_created', (code) => {
         currentPartyCode = code;
         isPartyHost = true;
-        // SALVA
         sessionStorage.setItem('lelePartyCode', code);
         sessionStorage.setItem('lelePartyHost', 'true');
-
         showLobbyView(code);
     });
 
-    // 3. Unione (Salva stato)
     socket.on('party_joined', (code) => {
-        // Aggiorniamo il codice corrente
+        const wasRejoin = !!currentPartyCode; // Se avevamo già il codice, è un rejoin
         currentPartyCode = code;
-
-        // Se non avevamo già definito se siamo host (es. nuovo accesso), salviamo che siamo guest
         if (sessionStorage.getItem('lelePartyHost') === null) {
             isPartyHost = false;
             sessionStorage.setItem('lelePartyCode', code);
             sessionStorage.setItem('lelePartyHost', 'false');
         }
-
-        // Aggiorna la UI del menu (ma non aprirlo forzatamente se siamo in ripristino)
-        // Se il menu è aperto, mostrerà la lobby corretta
         const startView = document.getElementById('party-start-view');
         const lobbyView = document.getElementById('party-lobby-view');
         if(startView && lobbyView) {
             startView.classList.add('hidden');
             lobbyView.classList.remove('hidden');
             document.getElementById('display-party-code').textContent = code;
-            updateLobbyMessage(); // Funzione helper per il testo
+            updateLobbyMessage();
         }
-
-        // Non resettiamo isPartyHost qui, ci fidiamo del sessionStorage o della creazione
+        // Mostra toast solo per i rejoin (non per i join freschi)
+        if (wasRejoin) {
+            showPartyToast("Bentornato nel Party! Sessione ripristinata.");
+        }
     });
 
-    function updateLobbyMessage() {
+    function updateLobbyMessage(memberCount) {
         const statusMsg = document.getElementById('party-status-message');
-        const participantsDiv = document.getElementById('party-participants');
+        if (!statusMsg) return;
+        const count = memberCount || 1;
 
-        // Reset icona utente principale
-        if(participantsDiv) {
-            participantsDiv.innerHTML = '<div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white"><i class="fas fa-crown"></i></div>';
-        }
-
-        if (statusMsg) {
-            if (isPartyHost) {
+        if (isPartyHost) {
+            if (count <= 1) {
                 statusMsg.innerHTML = `
-                    <i class="fas fa-crown text-yellow-500 mb-2 text-2xl"></i><br>
-                    Sei l'Host.<br>
-                    <span class="text-sm text-gray-400">Condividi il codice. Quando sei pronto, chiudi qui e avvia un film.</span>
+                    <div style="font-size:1.3rem;margin-bottom:6px;">👑</div>
+                    Sei l'<strong>Host</strong>.<br>
+                    <span style="font-size:0.8rem;opacity:0.6;">Condividi il codice con i tuoi amici. Quando sono pronti, avvia un film.</span>
                 `;
             } else {
                 statusMsg.innerHTML = `
-                    <i class="fas fa-popcorn text-purple-400 mb-2 text-2xl"></i><br>
-                    Sei dentro!<br>
-                    <span class="text-sm text-gray-400">Rilassati, il film partirà automaticamente quando l'host lo avvia.</span>
+                    <div style="font-size:1.3rem;margin-bottom:6px;">🎬</div>
+                    <strong>${count} spettatori</strong> collegati!<br>
+                    <span style="font-size:0.8rem;opacity:0.6;">Chiudi qui e avvia un film per iniziare la visione di gruppo.</span>
                 `;
             }
+        } else {
+            statusMsg.innerHTML = `
+                <div style="font-size:1.3rem;margin-bottom:6px;">🍿</div>
+                Sei dentro!<br>
+                <span style="font-size:0.8rem;opacity:0.6;">Rilassati, il film partirà automaticamente quando l'host lo avvia.</span>
+            `;
         }
     }
 
-    function joinParty() {
-        const code = document.getElementById('party-code-input').value.trim();
-        if(code.length !== 6) return alert("Codice non valido");
-        socket.emit('party_join', code);
+    window.joinParty = function joinParty() {
+        const codeInput = document.getElementById('party-code-input');
+        const code = codeInput ? codeInput.value.trim() : '';
+        if(code.length !== 6) return alert("Codice non valido (6 cifre)");
+
+        const nickInput = document.getElementById('party-nickname-input');
+        if (nickInput && nickInput.value.trim()) {
+            partyChatNickname = nickInput.value.trim();
+            sessionStorage.setItem('lelePartyNickname', partyChatNickname);
+            updateNicknameLabel();
+        }
+
+        console.log("📡 Tentativo di unirsi al party con codice:", code);
+        socket.emit('party_join', { code, nickname: partyChatNickname || 'Ospite' });
     }
 
-
-
-    socket.on('party_error', (msg) => alert(msg));
+    socket.on('party_error', (msg) => {
+        alert(msg);
+        // Se l'errore è "Codice non valido o stanza chiusa", pulisci la sessione stale
+        if (msg.includes('non valido') || msg.includes('chiusa')) {
+            console.log("🧹 Pulizia sessione party scaduta");
+            sessionStorage.removeItem('lelePartyCode');
+            sessionStorage.removeItem('lelePartyHost');
+            currentPartyCode = null;
+            isPartyHost = false;
+            // Resetta la UI al view iniziale
+            const startView = document.getElementById('party-start-view');
+            const lobbyView = document.getElementById('party-lobby-view');
+            if (startView && lobbyView) {
+                startView.classList.remove('hidden');
+                lobbyView.classList.add('hidden');
+            }
+            if (typeof updatePartyChatVisibility === 'function') {
+                updatePartyChatVisibility();
+            }
+        }
+    });
 
     // --- VISTA LOBBY ---
     function showLobbyView(code) {
@@ -5775,25 +5975,16 @@ socket.on('party_created', (code) => {
         document.getElementById('party-lobby-view').classList.remove('hidden');
         document.getElementById('display-party-code').textContent = code;
 
-        // Reset visuale partecipanti (mettiamo solo noi stessi all'inizio)
-        const participantsDiv = document.getElementById('party-participants');
-        participantsDiv.innerHTML = '<div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white"><i class="fas fa-crown"></i></div>';
-
-        const statusMsg = document.getElementById('party-status-message');
-
-        if (isPartyHost) {
-            statusMsg.innerHTML = `
-                <i class="fas fa-crown text-yellow-500 mb-2 text-2xl"></i><br>
-                Sei l'Host.<br>
-                <span class="text-sm text-gray-400">Condividi il codice. Quando sei pronto, chiudi qui e avvia un film.</span>
-            `;
-        } else {
-            statusMsg.innerHTML = `
-                <i class="fas fa-popcorn text-purple-400 mb-2 text-2xl"></i><br>
-                Sei dentro!<br>
-                <span class="text-sm text-gray-400">Rilassati, il film partirà automaticamente quando l'host lo avvia.</span>
-            `;
+        const lobbyNick = document.getElementById('party-lobby-nickname');
+        if (lobbyNick) {
+            lobbyNick.value = partyChatNickname || '';
+            // Permetti invio rapido col tasto Enter
+            lobbyNick.onkeydown = (e) => {
+                if (e.key === 'Enter') { e.preventDefault(); changePartyNickname(); }
+            };
         }
+
+        updateLobbyMessage();
     }
 
     // --- SINCRONIZZAZIONE ---
@@ -6000,15 +6191,15 @@ window.setupPartyListeners = function setupPartyListeners() {
                 partyChatNickname = newNick;
                 sessionStorage.setItem('lelePartyNickname', newNick);
                 updateNicknameLabel();
-                // Messaggio di sistema nella chat
-                appendChatMessage('Sistema', `${oldNick} ha cambiato nome in ${newNick}`, null, true);
-                // Notifica il server con un messaggio di sistema
+                // Usa il nuovo evento server per il cambio nickname (gestisce partecipanti + messaggio sistema)
                 if (currentPartyCode) {
-                    socket.emit('party_chat_message', {
+                    socket.emit('party_nickname_change', {
                         code: currentPartyCode,
-                        nickname: 'Sistema',
-                        text: `${oldNick} ha cambiato nome in ${newNick}`
+                        nickname: newNick
                     });
+                } else {
+                    // Se non siamo in un party, mostra solo localmente
+                    appendChatMessage('Sistema', `${oldNick} ha cambiato nome in ${newNick}`, null, true);
                 }
             }
             cleanup();
@@ -6085,7 +6276,7 @@ window.setupPartyListeners = function setupPartyListeners() {
     socket.on('party_chat_message', (data) => {
         // Mostra solo se siamo nella stessa stanza
         if (data.code !== currentPartyCode) return;
-        appendChatMessage(data.nickname, data.text, data.msgId, false, data.isReaction || false);
+        appendChatMessage(data.nickname, data.text, data.msgId, data.isSystem || false, data.isReaction || false);
 
         // Se è una reazione e il player è aperto, mostra la reazione volante
         if (data.isReaction) {
@@ -6119,7 +6310,9 @@ window.setupPartyListeners = function setupPartyListeners() {
                 const isMine = msg.nickname === partyChatNickname;
                 const time = new Date(msg.timestamp).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-                if (msg.isReaction) {
+                if (msg.isSystem) {
+                    msgEl.innerHTML = `<span class="party-chat-system">${escapeHtml(msg.text)}</span>`;
+                } else if (msg.isReaction) {
                     msgEl.classList.add(isMine ? 'party-chat-mine' : 'party-chat-other');
                     msgEl.classList.add('party-chat-reaction');
                     msgEl.innerHTML = `
@@ -6278,12 +6471,6 @@ window.setupPartyListeners = function setupPartyListeners() {
             if (badge) badge.style.display = 'none';
             if (playerBadge) playerBadge.classList.add('hidden');
         }
-    }
-
-    function escapeHtml(str) {
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
     }
 
     // Aggiorna visibilità del widget chat in base allo stato del party
