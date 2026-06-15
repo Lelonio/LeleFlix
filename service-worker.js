@@ -1,6 +1,6 @@
 // Aumenta la versione per forzare l'aggiornamento
-const CACHE_NAME = "leleflix-v21"; // Aggiornato a v7
-const IMAGE_CACHE_NAME = "leleflix-images-v9"; // Nuova cache specifica per le immagini
+const CACHE_NAME = "leleflix-v22"; // Aggiornato a v7
+const IMAGE_CACHE_NAME = "leleflix-images-v10"; // Nuova cache specifica per le immagini
 
 const urlsToCache = [
   "./",
