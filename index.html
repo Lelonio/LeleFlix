@@ -6614,21 +6614,53 @@ window.setupPartyListeners = function setupPartyListeners() {
     <a href="#" onclick="if(typeof openPartyMenu==='function')openPartyMenu();return false;" class="ios-tab tab-party"><i class="fas fa-users"></i><span>Party</span></a>
 </nav>
 <script>
-// Scroll-spy leggero per la tab bar (evidenzia la sezione attiva)
+// Scroll-spy: evidenzia la sezione corrente sia nella bottom tab bar
+// (mobile) sia nei link della navbar in alto (desktop).
 (function () {
     const tabs = [...document.querySelectorAll('.ios-tab[data-spy]')];
-    if (!tabs.length) return;
-    const setActive = (id) => tabs.forEach(t => t.classList.toggle('active', t.dataset.spy === id));
+    // link in alto: <a href="#sezione"> nella navbar desktop
+    const topLinks = [...document.querySelectorAll('.glass-nav .nav-content .flex.space-x-4 > a[href^="#"]')]
+        .map(a => ({ a, id: a.getAttribute('href').slice(1) }))
+        .filter(x => x.id);
+
+    const setActive = (id) => {
+        tabs.forEach(t => t.classList.toggle('active', t.dataset.spy === id));
+        topLinks.forEach(({ a, id: lid }) => {
+            a.classList.remove('text-accent');           // pulisce lo stato statico iniziale
+            a.classList.toggle('nav-current', lid === id);
+        });
+    };
+
+    // click → attiva subito (oltre allo scroll)
     tabs.forEach(t => t.addEventListener('click', () => setActive(t.dataset.spy)));
-    const targets = tabs.map(t => document.getElementById(t.dataset.spy)).filter(Boolean);
-    if ('IntersectionObserver' in window && targets.length) {
-        const io = new IntersectionObserver((entries) => {
-            const vis = entries.filter(e => e.isIntersecting)
-                               .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-            if (vis) setActive(vis.target.id);
-        }, { rootMargin: '-45% 0px -45% 0px', threshold: [0.1, 0.5] });
-        targets.forEach(el => io.observe(el));
-    }
+    topLinks.forEach(({ a, id }) => a.addEventListener('click', () => setActive(id)));
+
+    // sezioni da seguire = unione di quelle referenziate da tab e link
+    const ids = [...new Set([...tabs.map(t => t.dataset.spy), ...topLinks.map(x => x.id)])];
+    const sections = ids.map(id => document.getElementById(id)).filter(Boolean);
+    if (!sections.length) return;
+
+    // Scroll-spy via posizione reale (robusto, niente IntersectionObserver):
+    // la sezione attiva è l'ultima il cui bordo superiore ha superato la linea
+    // di riferimento (40% dell'altezza viewport).
+    let ticking = false;
+    const update = () => {
+        ticking = false;
+        const line = window.innerHeight * 0.40;
+        let currentId = sections[0].id;
+        for (const el of sections) {
+            if (el.getBoundingClientRect().top - line <= 0) currentId = el.id;
+        }
+        setActive(currentId);
+    };
+    const onScroll = () => {
+        if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    };
+    // capture:true → cattura anche lo scroll di eventuali contenitori interni
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    update();
 })();
 
 // Segmented control iOS: filtra i contenuti (Tutto / Film / Serie TV)

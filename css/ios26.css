@@ -411,3 +411,37 @@ body.flt-tv [id^="genre-"] { display: none !important; }
 /* Evita la doppia bottom-nav su mobile: nascondo la #mobile-nav
    preesistente, uso la .ios-tabbar del tema. */
 #mobile-nav { display: none !important; }
+
+/* ============================================================
+   MODALE "Opzioni di Riproduzione" (#vlc-prompt) — iOS 26
+   ============================================================ */
+#vlc-prompt > .liquid-glass:last-of-type {
+    border-radius: 26px !important;
+    max-width: 22rem !important;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.55), inset 0 1px 0.5px rgba(255,255,255,0.5) !important;
+}
+#vlc-prompt > .liquid-glass:last-of-type .lg-overlay-bg { border-radius: 26px !important; }
+#vlc-prompt h3 { letter-spacing: -0.02em; font-weight: 700; }
+#vlc-prompt .text-primary { color: var(--ios-accent) !important; }
+/* bottoni azione in stile iOS (squircle, peso, feedback) */
+#vlc-prompt button[id^="btn-"] {
+    border-radius: 14px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em;
+    padding: 13px 16px !important;
+    transition: transform 0.16s cubic-bezier(0.2,0.8,0.2,1), filter 0.2s ease !important;
+}
+#vlc-prompt button[id^="btn-"]:active { transform: scale(0.97); }
+#btn-play-internal { background: var(--ios-accent) !important; }
+#btn-cancel-prompt {
+    border-radius: 999px !important;
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--ios-text-dim) !important;
+}
+
+/* Link nav desktop attivo (gestito da scroll-spy → .nav-current) */
+.glass-nav .nav-content .flex.space-x-4 > a.nav-current {
+    color: #fff !important;
+    background: radial-gradient(120% 120% at 50% 15%,
+        rgba(255,255,255,0.22), rgba(255,255,255,0.06)) !important;
+}
