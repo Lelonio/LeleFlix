@@ -211,7 +211,16 @@ body.overlay-active .ios-tabbar { opacity: 0; pointer-events: none; transform: t
 
 /* ── 1) HERO: large title + backdrop più cinematografico ── */
 #hero-section { height: 86vh; min-height: 86dvh; }
-#hero-backdrop { transform: scale(1.04); filter: saturate(1.05) contrast(1.02); }
+/* Backdrop sovradimensionato e ancorato in alto: lascia margine sopra/sotto
+   così il parallax (traslazione allo scroll) non scopre mai bordi.
+   La scala è gestita da GSAP (Ken Burns), niente transform statica qui. */
+#hero-backdrop {
+    filter: saturate(1.05) contrast(1.02);
+    top: -16% !important;
+    height: 132% !important;
+    bottom: auto !important;
+    will-change: transform;
+}
 #hero-title { letter-spacing: -0.035em !important; }
 /* Dissolvenza inferiore dell'hero verso il bg della pagina (#06070a),
    su TUTTE le dimensioni. Il vecchio .hero-fade aveva lo sfondo solo in

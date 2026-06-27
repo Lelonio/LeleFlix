@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
         <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ios26.css">
     <script>
@@ -6602,6 +6603,7 @@ window.setupPartyListeners = function setupPartyListeners() {
 <script>
 (function () {
     if (typeof gsap === 'undefined') return;
+    if (typeof ScrollTrigger !== 'undefined') gsap.registerPlugin(ScrollTrigger);
     const mm = gsap.matchMedia();
     mm.add('(prefers-reduced-motion: no-preference)', () => {
         // Ken Burns: zoom lento e continuo sul backdrop dell'hero
@@ -6610,6 +6612,20 @@ window.setupPartyListeners = function setupPartyListeners() {
             gsap.fromTo(backdrop,
                 { scale: 1.06 },
                 { scale: 1.15, duration: 20, ease: 'none', repeat: -1, yoyo: true });
+
+            // Parallax: il backdrop trasla più lentamente del contenuto allo scroll.
+            // Tween separato su yPercent → convive col Ken Burns (scale).
+            if (typeof ScrollTrigger !== 'undefined') {
+                gsap.to(backdrop, {
+                    yPercent: 12, ease: 'none',
+                    scrollTrigger: {
+                        trigger: '#hero-section',
+                        start: 'top top',
+                        end: 'bottom top',
+                        scrub: true
+                    }
+                });
+            }
         }
 
         // Entrata in stagger del contenuto quando l'hero viene popolato
@@ -6635,6 +6651,68 @@ window.setupPartyListeners = function setupPartyListeners() {
             });
             obs.observe(title, { childList: true, characterData: true, subtree: true });
         }
+        return () => {};
+    });
+})();
+</script>
+
+<!-- ============================================================
+     SCROLL REVEAL (GSAP ScrollTrigger) — titoli e card entrano
+     in scena allo scroll. Contenuto async (card iniettate dal JS):
+     un MutationObserver attiva il reveal quando le card arrivano.
+     Rispetta prefers-reduced-motion via gsap.matchMedia().
+     ============================================================ -->
+<script>
+(function () {
+    if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
+    gsap.registerPlugin(ScrollTrigger);
+
+    const mm = gsap.matchMedia();
+    mm.add('(prefers-reduced-motion: no-preference)', () => {
+        // Titoli di sezione: salgono e compaiono
+        gsap.utils.toArray('main section h2, #similar-section h3, #episodes-section h3').forEach(h => {
+            gsap.from(h, {
+                scrollTrigger: { trigger: h, start: 'top 90%', once: true },
+                y: 22, autoAlpha: 0, duration: 0.6, ease: 'power3.out'
+            });
+        });
+
+        // Card di una riga: entrano in stagger quando la riga è visibile
+        const revealRow = (row) => {
+            if (row.dataset.gsapReveal) return;
+            const cards = row.querySelectorAll('.movie-card');
+            if (!cards.length) return;
+            row.dataset.gsapReveal = '1';
+            gsap.from(cards, {
+                scrollTrigger: { trigger: row, start: 'top 88%', once: true },
+                y: 26, autoAlpha: 0, duration: 0.6, stagger: 0.06,
+                ease: 'power3.out',
+                clearProps: 'transform'   // ripristina l'hover-lift CSS dopo l'entrata
+            });
+        };
+
+        let refreshTimer;
+        const scheduleRefresh = () => {
+            clearTimeout(refreshTimer);
+            refreshTimer = setTimeout(() => ScrollTrigger.refresh(), 120);
+        };
+
+        gsap.utils.toArray('.carousel-row, #similar-grid').forEach(row => {
+            revealRow(row);
+            if (!row.dataset.gsapReveal) {
+                // contenuto async: attendi che il JS inietti le card
+                const obs = new MutationObserver(() => {
+                    if (row.querySelector('.movie-card')) {
+                        obs.disconnect();
+                        revealRow(row);
+                        scheduleRefresh();
+                    }
+                });
+                obs.observe(row, { childList: true });
+            }
+        });
+
+        ScrollTrigger.refresh();
         return () => {};
     });
 })();
