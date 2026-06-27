@@ -1,0 +1,178 @@
+/* ============================================================
+   LELEFLIX — TEMA iOS 26
+   Layer di override sopra style.css. Trasforma l'interfaccia
+   in un'app iOS 26: SF Pro, Liquid Glass, large titles, squircle,
+   bottom floating tab bar. Non tocca la logica JS.
+   Caricato DOPO style.css per vincere nella cascade.
+   ============================================================ */
+
+:root {
+    --ios-bg: #06070a;
+    --ios-bg-2: #0d0f14;
+    --ios-text: #f5f5f7;
+    --ios-text-dim: rgba(235, 235, 245, 0.62);
+    --ios-accent: #ff453a;        /* iOS systemRed (un filo desaturato) */
+    --ios-radius-lg: 22px;
+    --ios-radius-md: 16px;
+    --ios-tabbar-h: 64px;
+    --font-ios: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+                "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ── Base ──────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: var(--font-ios) !important;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    background:
+        radial-gradient(1200px 800px at 50% -10%, rgba(255, 69, 58, 0.06), transparent 60%),
+        radial-gradient(1000px 700px at 90% 10%, rgba(120, 90, 255, 0.05), transparent 55%),
+        var(--ios-bg) !important;
+    color: var(--ios-text);
+    /* spazio per la bottom tab bar */
+    padding-bottom: calc(var(--ios-tabbar-h) + 28px + env(safe-area-inset-bottom, 0px)) !important;
+    letter-spacing: -0.01em;
+}
+
+::selection { background: rgba(255, 69, 58, 0.30); }
+
+/* Scrollbar discreta stile iOS */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.14); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Tipografia: large titles ──────────────────────────── */
+h1, .hero-title {
+    font-weight: 800 !important;
+    letter-spacing: -0.03em !important;
+    line-height: 1.04 !important;
+    text-wrap: balance;
+}
+main h2, section > .max-w-7xl > h2, section h2 {
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    font-size: clamp(1.35rem, 1rem + 1.4vw, 1.9rem) !important;
+}
+/* sezioni: più respiro */
+section[id$="-section"], section.mb-12 { margin-bottom: 2.75rem !important; }
+
+/* ── Top bar: minimale, large-title feel ───────────────── */
+/* I link del menu migrano nella bottom tab bar → li nascondo in alto */
+.glass-nav .nav-content .md\:block .flex.space-x-4 { display: none !important; }
+.glass-nav-container { height: auto; }
+.glass-nav { height: 3.75rem; }
+/* il vetro della nav diventa quasi invisibile finché non si scrolla */
+#nav-glass .lg-overlay-bg { background: rgba(10, 12, 16, 0.28) !important; }
+.glass-nav.scrolled #nav-glass .lg-overlay-bg { background: rgba(10, 12, 16, 0.62) !important; }
+.glass-nav .h-8 { height: 2rem; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
+
+/* ── Bottoni hero (Play / Info) in stile iOS ───────────── */
+#hero-section a, #hero-section button, .hero-buttons a, .hero-buttons button {
+    border-radius: 999px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em;
+    transition: transform 0.18s cubic-bezier(0.2,0.8,0.2,1), filter 0.18s ease !important;
+}
+#hero-section a:active, #hero-section button:active { transform: scale(0.96); }
+
+/* ── Card poster: squircle + motion iOS ────────────────── */
+.movie-card {
+    border-radius: var(--ios-radius-md) !important;
+    transition: transform 0.32s cubic-bezier(0.2,0.8,0.2,1), box-shadow 0.32s ease !important;
+}
+.movie-card:hover {
+    transform: translateY(-6px) scale(1.04) !important;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(255,255,255,0.10) inset;
+}
+.movie-card img { border-radius: inherit; }
+
+/* ── Bottoni generici → pill iOS con feedback pressione ── */
+button:not(.center-control-btn):not(.carousel-btn):not(.ios-tab):active {
+    transform: scale(0.97);
+}
+
+/* ============================================================
+   BOTTOM FLOATING TAB BAR — la firma "app iOS"
+   ============================================================ */
+.ios-tabbar {
+    position: fixed;
+    left: 50%;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    max-width: calc(100vw - 24px);
+
+    /* Liquid Glass (rim + rifrazione via #liquid-glass-filter) */
+    background: linear-gradient(180deg,
+        rgba(255,255,255,0.14) 0%,
+        rgba(255,255,255,0.04) 22%,
+        rgba(0,0,0,0.34) 100%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%) brightness(1.12);
+    backdrop-filter: blur(8px) saturate(200%) brightness(1.10) url(#liquid-glass-filter);
+    border: 0.5px solid rgba(255,255,255,0.26);
+    box-shadow:
+        0 18px 50px rgba(0,0,0,0.55),
+        inset 0 1px 0.5px rgba(255,255,255,0.65),
+        inset 0 0 0 0.5px rgba(255,255,255,0.10),
+        inset 0 -10px 22px rgba(0,0,0,0.22);
+    overflow: visible !important;
+}
+
+.ios-tab {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 60px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    color: var(--ios-text-dim);
+    text-decoration: none;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    transition: color 0.2s ease, transform 0.18s cubic-bezier(0.2,0.8,0.2,1), background 0.2s ease;
+}
+.ios-tab i { font-size: 18px; line-height: 1; }
+.ios-tab span { line-height: 1; }
+.ios-tab:hover { color: var(--ios-text); }
+.ios-tab:active { transform: scale(0.90); }
+
+.ios-tab.active {
+    color: #fff;
+    background: radial-gradient(120% 120% at 50% 18%,
+        rgba(255,255,255,0.24), rgba(255,255,255,0.06) 60%, transparent);
+}
+.ios-tab.active i {
+    color: var(--ios-accent);
+    filter: drop-shadow(0 0 10px rgba(255,69,58,0.45));
+}
+.ios-tab.tab-party.active i,
+.ios-tab.tab-party i { color: #c08bff; }
+.ios-tab.tab-party.active i { filter: drop-shadow(0 0 10px rgba(170,110,255,0.5)); }
+
+/* Nascondi la tab bar quando il player o un modale a tutto schermo è aperto */
+body.overlay-active .ios-tabbar { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(20px); }
+.ios-tabbar { transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.2,0.8,0.2,1); }
+
+@media (max-width: 768px) {
+    .ios-tabbar {
+        backdrop-filter: blur(22px) saturate(190%) brightness(1.10);
+        -webkit-backdrop-filter: blur(22px) saturate(190%) brightness(1.10);
+        left: 12px; right: 12px;
+        transform: none;
+        justify-content: space-around;
+        gap: 0;
+    }
+    body.overlay-active .ios-tabbar { transform: translateY(20px); }
+    .ios-tab { min-width: 0; flex: 1; }
+}
