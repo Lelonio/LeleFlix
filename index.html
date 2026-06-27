@@ -6612,20 +6612,6 @@ window.setupPartyListeners = function setupPartyListeners() {
             gsap.fromTo(backdrop,
                 { scale: 1.06 },
                 { scale: 1.15, duration: 20, ease: 'none', repeat: -1, yoyo: true });
-
-            // Parallax: il backdrop trasla più lentamente del contenuto allo scroll.
-            // Tween separato su yPercent → convive col Ken Burns (scale).
-            if (typeof ScrollTrigger !== 'undefined') {
-                gsap.to(backdrop, {
-                    yPercent: 12, ease: 'none',
-                    scrollTrigger: {
-                        trigger: '#hero-section',
-                        start: 'top top',
-                        end: 'bottom top',
-                        scrub: true
-                    }
-                });
-            }
         }
 
         // Entrata in stagger del contenuto quando l'hero viene popolato
