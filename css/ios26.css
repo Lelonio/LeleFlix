@@ -407,3 +407,7 @@ body.flt-tv [id^="genre-"] { display: none !important; }
     body { padding-bottom: 2rem !important; }
 }
 /* Mobile (≤768px): l'header non mostra i link (Tailwind), si usa la tab bar */
+
+/* Evita la doppia bottom-nav su mobile: nascondo la #mobile-nav
+   preesistente, uso la .ios-tabbar del tema. */
+#mobile-nav { display: none !important; }

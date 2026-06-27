@@ -1,13 +1,26 @@
-// Aumenta la versione per forzare l'aggiornamento
-const CACHE_NAME = "leleflix-v22"; // Aggiornato a v7
-const IMAGE_CACHE_NAME = "leleflix-images-v10"; // Nuova cache specifica per le immagini
+// ============================================================
+// LeleFlix Service Worker
+// Strategia:
+//  - App shell (HTML/CSS/JS same-origin) → NETWORK-FIRST con bypass
+//    della cache HTTP (cache:'reload'): ogni deploy si vede SUBITO
+//    quando sei online; la cache è solo fallback offline.
+//  - Immagini TMDB → CACHE-FIRST (veloci, non cambiano).
+//  - API JSON → NETWORK-ONLY (dati sempre freschi).
+// Bumpare CACHE_NAME NON è più necessario per vedere le modifiche,
+// serve solo a svuotare la vecchia cache una volta.
+// ============================================================
+const CACHE_NAME = "leleflix-v9";
+const IMAGE_CACHE_NAME = "leleflix-images-v6";
 
+// Precache minimo per il funzionamento OFFLINE (fallback).
 const urlsToCache = [
   "./",
   "./index.html",
   "./manifest.json",
   "./css/style.css",
-  "./js/player.js", 
+  "./css/ios26.css",
+  "./liquid-glass.js",
+  "./js/player.js",
   "./icon-192.png",
   "./icon-512.png",
   "./logo.png"
@@ -17,68 +30,73 @@ const urlsToCache = [
 self.addEventListener("install", event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      console.log('Opened static cache');
-      return cache.addAll(urlsToCache);
-    })
+    caches.open(CACHE_NAME).then(cache =>
+      // cache:'reload' → forza il download fresco dei file in precache
+      cache.addAll(urlsToCache.map(u => new Request(u, { cache: "reload" })))
+    )
   );
 });
 
-// 2. ATTIVAZIONE (Gestione pulizia cache)
+// 2. ATTIVAZIONE — pulizia delle cache vecchie
 self.addEventListener("activate", event => {
-  // Manteniamo sia la cache dell'app che quella delle immagini
-  const cacheWhitelist = [CACHE_NAME, IMAGE_CACHE_NAME];
-  
+  const whitelist = [CACHE_NAME, IMAGE_CACHE_NAME];
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys()
+      .then(names => Promise.all(
+        names.filter(n => whitelist.indexOf(n) === -1)
+             .map(n => caches.delete(n))
+      ))
+      .then(() => self.clients.claim())
   );
-  return self.clients.claim();
 });
 
-// 3. FETCH (Gestione Intelligente)
-self.addEventListener('fetch', event => {
-  const requestUrl = new URL(event.request.url);
+// 3. FETCH
+self.addEventListener("fetch", event => {
+  const req = event.request;
+  if (req.method !== "GET") return; // POST/PUT (progress, log…) sempre alla rete
+  const url = new URL(req.url);
 
-  // 1. GESTIONE IMMAGINI TMDB (Salvale in cache!)
-  if (requestUrl.hostname.includes('image.tmdb.org')) {
+  // 1) Immagini TMDB → cache-first
+  if (url.hostname.includes("image.tmdb.org")) {
     event.respondWith(
-      caches.open(IMAGE_CACHE_NAME).then(cache => {
-        return cache.match(event.request).then(response => {
-          // Se l'immagine è già nella cache del browser, usala subito
-          if (response) return response;
-          
-          // Altrimenti scaricala da TMDB e salvala per la prossima volta
-          return fetch(event.request).then(networkResponse => {
-            if(networkResponse && networkResponse.status === 200) {
-              cache.put(event.request, networkResponse.clone());
-            }
-            return networkResponse;
-          });
-        });
-      })
+      caches.open(IMAGE_CACHE_NAME).then(cache =>
+        cache.match(req).then(hit =>
+          hit || fetch(req).then(res => {
+            if (res && res.status === 200) cache.put(req, res.clone());
+            return res;
+          })
+        )
+      )
     );
     return;
   }
 
-  // 2. GESTIONE API (Non cachare mai le API JSON per avere dati freschi)
-  if (requestUrl.pathname.includes('/api/') || requestUrl.search.includes('api_key')) {
-     event.respondWith(fetch(event.request));
-     return;
+  // 2) API → network-only (mai cache)
+  if (url.pathname.includes("/api/") || url.search.includes("api_key")) {
+    event.respondWith(fetch(req));
+    return;
   }
 
-  // 3. GESTIONE FILE STATICI APP (HTML, CSS, JS)
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
+  // 3) App shell same-origin (navigazioni + .html/.css/.js) → NETWORK-FIRST
+  const isShell = url.origin === self.location.origin && (
+    req.mode === "navigate" ||
+    /\.(?:html|css|js)$/.test(url.pathname) ||
+    url.pathname.endsWith("/")
   );
+  if (isShell) {
+    event.respondWith(
+      // cache:'reload' → bypassa anche la cache HTTP del browser/CDN
+      fetch(req, { cache: "reload" })
+        .then(res => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then(c => c.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req).then(hit => hit || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // 4) Tutto il resto (CDN esterni, ecc.) → cache-first con fallback rete
+  event.respondWith(caches.match(req).then(hit => hit || fetch(req)));
 });
