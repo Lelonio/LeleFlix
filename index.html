@@ -44,9 +44,13 @@ sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],          
     </script>
 
     <script>
-    // ── Endpoint unico dell'API (Pi via Cloudflare Tunnel) ──
-    // Cambia SOLO questa riga se l'hostname dell'API cambia in futuro.
-    const API_BASE = 'https://api.leleflix.store';
+    // ── Endpoint UNICO dell'API (Pi via Cloudflare Tunnel) ──────────
+    // Sorgente di verità per TUTTO il frontend (anche player.js la usa).
+    // PONTE: ora punta al dominio attuale ancora vivo. Quando
+    // lflx.net.eu.org è Active sul tunnel, cambia SOLO la stringa qui sotto.
+    // Override al volo per test: localStorage.setItem('LELEFLIX_API','https://...').
+    window.API_BASE = localStorage.getItem('LELEFLIX_API') || 'https://api.leleflix.store';
+    const API_BASE = window.API_BASE;
     const socket = io(API_BASE);
 
     // Funzione per mostrare l'animazione

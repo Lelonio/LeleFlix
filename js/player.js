@@ -1,7 +1,9 @@
 // LeleFlix Player – Fixed JavaScript
 // Fixes all 10 bugs listed in the requirements
 
-const PROGRESS_API_URL = 'https://api.leleflix.store/progress/save';
+// Usa l'endpoint unico definito in index.html (window.API_BASE).
+const LELEFLIX_API = (typeof window !== 'undefined' && window.API_BASE) || 'https://api.leleflix.store';
+const PROGRESS_API_URL = `${LELEFLIX_API}/progress/save`;
 
 class VideoPlayer {
     // ── HLS Reconnection ───────────────────────────────────
@@ -23,7 +25,7 @@ class VideoPlayer {
         this.lastTapTime = 0;
         this.currentStreamId = null;
         this.abortController = null;
-        this.PROXY_BASE_URL = 'https://api.leleflix.store/proxy';
+        this.PROXY_BASE_URL = `${LELEFLIX_API}/proxy`;
         this.videoPlayer = document.getElementById('videoPlayer');
         this.playerModal = document.getElementById('player-modal');
         this.loadingOverlay = document.getElementById('loadingOverlay');
@@ -492,7 +494,7 @@ class VideoPlayer {
                 if (typeof PROXY_URL !== 'undefined') {
                     try { return new URL(PROXY_URL).origin; } catch (e) { }
                 }
-                return 'https://api.leleflix.store';
+                return LELEFLIX_API;
             };
 
             // ACTION: Internal Player

@@ -280,3 +280,92 @@ body.flt-tv [id^="genre-"] { display: none !important; }
         rgba(8,8,11,0.66) 100%) !important;
 }
 .ios-tab { text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+/* ============================================================
+   SEZIONE DETTAGLI (#detail-view) — stile iOS 26
+   Trama, punteggi e contenuti simili.
+   ============================================================ */
+#detail-view {
+    background: var(--ios-bg) !important;
+    font-family: var(--font-ios);
+}
+/* la sfumatura in basso del backdrop fonde col bg iOS (non più #141414) */
+#detail-view .bg-gradient-to-t {
+    background-image: linear-gradient(to top,
+        var(--ios-bg) 0%, rgba(6,7,10,0.6) 36%, transparent 78%) !important;
+}
+#detail-title { letter-spacing: -0.035em !important; font-weight: 800 !important; }
+
+/* meta badge (rating / HD) → pillole iOS */
+#detail-rating,
+#detail-view .flex.flex-wrap .border {
+    border-radius: 999px !important;
+    border: 0.5px solid rgba(255,255,255,0.22) !important;
+    background: rgba(255,255,255,0.08) !important;
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+
+/* PLAY → pill iOS con feedback pressione */
+#detail-play-btn {
+    border-radius: 999px !important;
+    letter-spacing: -0.01em;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.40);
+    transition: transform 0.18s cubic-bezier(0.2,0.8,0.2,1), filter 0.2s ease !important;
+}
+#detail-play-btn:active { transform: scale(0.96); }
+
+/* selettore stagione → pill di vetro */
+#season-select {
+    border-radius: 999px !important;
+    background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(0,0,0,0.30)) !important;
+    border: 0.5px solid rgba(255,255,255,0.24) !important;
+    -webkit-backdrop-filter: blur(14px) saturate(190%);
+    backdrop-filter: blur(6px) saturate(190%) url(#liquid-glass-filter);
+    color: #fff;
+}
+
+/* ── TRAMA: larghezza di lettura ottimale + colore iOS ──── */
+#detail-overview {
+    max-width: 62ch;
+    color: rgba(245,245,247,0.92) !important;
+    letter-spacing: -0.005em;
+    line-height: 1.55;
+}
+
+/* ── PUNTEGGI: card di vetro iOS (override degli inline JS) ─ */
+#dynamic-rt-scores {
+    border-radius: var(--ios-radius-lg) !important;
+    background: linear-gradient(180deg,
+        rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 30%, rgba(0,0,0,0.30) 100%) !important;
+    border: 0.5px solid rgba(255,255,255,0.22) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(200%) brightness(1.10) !important;
+    backdrop-filter: blur(6px) saturate(200%) brightness(1.08) url(#liquid-glass-filter) !important;
+    box-shadow:
+        0 12px 32px rgba(0,0,0,0.45),
+        inset 0 1px 0.5px rgba(255,255,255,0.50),
+        inset 0 0 0 0.5px rgba(255,255,255,0.08) !important;
+    padding: 16px 22px !important;
+    gap: 14px 24px !important;
+}
+#dynamic-rt-scores .text-3xl { letter-spacing: -0.03em; }
+
+/* ── CONTENUTI SIMILI ───────────────────────────────────── */
+#similar-section h3,
+#episodes-section h3 { letter-spacing: -0.02em !important; }
+#similar-grid { gap: 18px !important; }
+
+/* ── EPISODI: header sticky col bg iOS + righe a vetro ──── */
+#episodes-section .sticky {
+    background: var(--ios-bg) !important;
+    border-color: rgba(255,255,255,0.08) !important;
+}
+#episodes-list > * {
+    border-radius: var(--ios-radius-md) !important;
+    transition: transform 0.2s cubic-bezier(0.2,0.8,0.2,1), background 0.2s ease;
+}
+#episodes-list > *:hover { transform: translateY(-2px); }
+
+/* back button detail → vetro chiaro iOS */
+#detail-view button[onclick="closeDetailView()"] .lg-overlay-bg {
+    background: rgba(255,255,255,0.08) !important;
+}
