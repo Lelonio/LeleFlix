@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
         <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ios26.css">
     <script>
         tailwind.config = {
             important: true,
@@ -467,11 +468,12 @@ main .max-w-7xl {
 }
 /* Active glass effect - applied by JS */
 .liquid-glass.lg-active {
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 0.5px solid rgba(255, 255, 255, 0.22);
     box-shadow:
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+        inset 0 1px 0.5px 0 rgba(255, 255, 255, 0.55),   /* rim light top (iOS) */
+        inset 0 0 0 0.5px rgba(255, 255, 255, 0.10),      /* hairline edge */
         inset 0 -1px 0 0 rgba(255, 255, 255, 0.05),
-        0 4px 16px rgba(0, 0, 0, 0.2);
+        0 8px 28px rgba(0, 0, 0, 0.28);
 }
 /* Top edge highlight - the "liquid" shine */
 .liquid-glass.lg-active::after {
@@ -6587,6 +6589,36 @@ window.setupPartyListeners = function setupPartyListeners() {
 
 </script>
 <script src="liquid-glass.js"></script>
+
+<!-- ============================================================
+     BOTTOM TAB BAR — stile app iOS 26. Riusa le destinazioni
+     della vecchia navbar (ancore di sezione + Party).
+     ============================================================ -->
+<nav class="ios-tabbar" aria-label="Navigazione principale">
+    <a href="#hero-section" class="ios-tab active" data-spy="hero-section"><i class="fas fa-house"></i><span>Home</span></a>
+    <a href="#movie-trend" class="ios-tab" data-spy="movie-trend"><i class="fas fa-film"></i><span>Film</span></a>
+    <a href="#tv-popular" class="ios-tab" data-spy="tv-popular"><i class="fas fa-tv"></i><span>Serie</span></a>
+    <a href="#critics" class="ios-tab" data-spy="critics"><i class="fas fa-star"></i><span>Top</span></a>
+    <a href="#" onclick="if(typeof openPartyMenu==='function')openPartyMenu();return false;" class="ios-tab tab-party"><i class="fas fa-users"></i><span>Party</span></a>
+</nav>
+<script>
+// Scroll-spy leggero per la tab bar (evidenzia la sezione attiva)
+(function () {
+    const tabs = [...document.querySelectorAll('.ios-tab[data-spy]')];
+    if (!tabs.length) return;
+    const setActive = (id) => tabs.forEach(t => t.classList.toggle('active', t.dataset.spy === id));
+    tabs.forEach(t => t.addEventListener('click', () => setActive(t.dataset.spy)));
+    const targets = tabs.map(t => document.getElementById(t.dataset.spy)).filter(Boolean);
+    if ('IntersectionObserver' in window && targets.length) {
+        const io = new IntersectionObserver((entries) => {
+            const vis = entries.filter(e => e.isIntersecting)
+                               .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+            if (vis) setActive(vis.target.id);
+        }, { rootMargin: '-45% 0px -45% 0px', threshold: [0.1, 0.5] });
+        targets.forEach(el => io.observe(el));
+    }
+})();
+</script>
 
 <!-- ============================================================
      LIQUID GLASS FEDELE — filtro di rifrazione (feDisplacementMap)
