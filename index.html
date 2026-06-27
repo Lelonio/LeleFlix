@@ -2332,6 +2332,14 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
         </section>
 
 <main class="w-full pb-20 overflow-x-hidden relative z-20 -mt-16 md:-mt-24">
+<!-- Segmented control iOS (filtro Tutto / Film / Serie TV) -->
+<div class="ios-segmented-wrap">
+    <div class="ios-segmented" role="tablist" aria-label="Filtro contenuti">
+        <button class="ios-seg active" data-filter="" role="tab">Tutto</button>
+        <button class="ios-seg" data-filter="movie" role="tab">Film</button>
+        <button class="ios-seg" data-filter="tv" role="tab">Serie TV</button>
+    </div>
+</div>
 <div class="w-full px-4 sm:px-6 lg:px-8 pb-8 pt-0">
         <section id="continue-watching" class="mb-12 hidden relative">
             <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Continua a guardare</h2>
@@ -6617,6 +6625,40 @@ window.setupPartyListeners = function setupPartyListeners() {
         }, { rootMargin: '-45% 0px -45% 0px', threshold: [0.1, 0.5] });
         targets.forEach(el => io.observe(el));
     }
+})();
+
+// Segmented control iOS: filtra i contenuti (Tutto / Film / Serie TV)
+(function () {
+    const segs = [...document.querySelectorAll('.ios-seg')];
+    if (!segs.length) return;
+    segs.forEach(seg => seg.addEventListener('click', () => {
+        segs.forEach(s => s.classList.remove('active'));
+        seg.classList.add('active');
+        document.body.classList.remove('flt-movie', 'flt-tv');
+        const f = seg.dataset.filter;
+        if (f === 'movie') document.body.classList.add('flt-movie');
+        else if (f === 'tv') document.body.classList.add('flt-tv');
+    }));
+})();
+
+// Skeleton loader iOS: placeholder shimmer nelle righe vuote in attesa dei poster
+(function () {
+    document.querySelectorAll('.carousel-row').forEach(row => {
+        if (row.children.length) return;
+        for (let i = 0; i < 6; i++) {
+            const sk = document.createElement('div');
+            sk.className = 'skeleton-card';
+            row.appendChild(sk);
+        }
+        const obs = new MutationObserver(() => {
+            const hasReal = [...row.children].some(c => !c.classList.contains('skeleton-card'));
+            if (hasReal) {
+                row.querySelectorAll('.skeleton-card').forEach(s => s.remove());
+                obs.disconnect();
+            }
+        });
+        obs.observe(row, { childList: true });
+    });
 })();
 </script>
 
