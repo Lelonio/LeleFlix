@@ -54,8 +54,12 @@ function applyGlassEffect(glassEl) {
     }
 
     if (supportsBackdropFilter && !skipBlur) {
-        glassEl.style.backdropFilter = `blur(${blur}px) saturate(180%) brightness(1.05)`;
-        glassEl.style.webkitBackdropFilter = `blur(${blur}px) saturate(180%) brightness(1.05)`;
+        // Stile iOS 26: frost luminoso. NIENTE url(#liquid-glass-filter) qui:
+        // questi elementi includono backdrop a tutto schermo (modali) dove la
+        // rifrazione è inutile e pesante. La rifrazione vera resta sugli
+        // elementi piccoli (tab bar, segmented, ricerca, player) via CSS.
+        glassEl.style.backdropFilter = `blur(${blur}px) saturate(200%) brightness(1.1)`;
+        glassEl.style.webkitBackdropFilter = `blur(${blur}px) saturate(200%) brightness(1.1)`;
     }
 }
 

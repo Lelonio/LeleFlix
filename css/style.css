@@ -2881,3 +2881,59 @@ body.overlay-active #party-chat-fab {
         -webkit-backdrop-filter: blur(16px) saturate(190%) brightness(1.10);
     }
 }
+
+/* ============================================================
+   LIQUID GLASS iOS 26 — chrome pagina principale
+   Frecce caroselli + barra di ricerca: stessa lente di vetro
+   con rifrazione (#liquid-glass-filter) e rim light.
+   ============================================================ */
+.carousel-btn {
+    -webkit-backdrop-filter: blur(14px) saturate(200%) brightness(1.12);
+    backdrop-filter: blur(4px) saturate(200%) brightness(1.10) url(#liquid-glass-filter);
+    background: radial-gradient(135% 135% at 50% 18%,
+        rgba(255, 255, 255, 0.26) 0%,
+        rgba(255, 255, 255, 0.07) 44%,
+        rgba(0, 0, 0, 0.28) 100%);
+    border: 0.5px solid rgba(255, 255, 255, 0.32);
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.35),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.80),
+        inset 0 -3px 6px rgba(0, 0, 0, 0.22),
+        inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+}
+.carousel-btn:hover {
+    background: radial-gradient(135% 135% at 50% 18%,
+        rgba(255, 255, 255, 0.34) 0%,
+        rgba(255, 255, 255, 0.10) 44%,
+        rgba(0, 0, 0, 0.30) 100%);
+}
+
+/* Barra di ricerca: pillola di vetro iOS */
+#search-input,
+#mobile-search-input {
+    -webkit-backdrop-filter: blur(14px) saturate(200%) brightness(1.10);
+    backdrop-filter: blur(4px) saturate(200%) brightness(1.08) url(#liquid-glass-filter);
+    background: linear-gradient(180deg,
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(255, 255, 255, 0.05) 30%,
+        rgba(0, 0, 0, 0.28) 100%) !important;
+    border: 0.5px solid rgba(255, 255, 255, 0.28) !important;
+    border-radius: 999px !important;
+    box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.30),
+        inset 0 1px 0.5px rgba(255, 255, 255, 0.55),
+        inset 0 0 0 0.5px rgba(255, 255, 255, 0.10);
+}
+#search-input::placeholder,
+#mobile-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.70);
+}
+
+@media (max-width: 768px) {
+    .carousel-btn,
+    #search-input,
+    #mobile-search-input {
+        backdrop-filter: blur(16px) saturate(190%) brightness(1.10);
+        -webkit-backdrop-filter: blur(16px) saturate(190%) brightness(1.10);
+    }
+}
