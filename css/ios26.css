@@ -546,3 +546,10 @@ body.overlay-active .ios-tabbar { opacity: 0; pointer-events: none; transform: t
 }
 .pi-sim:active { transform: scale(0.96); }
 .pi-sim img { width: 96px; height: 144px; object-fit: cover; border-radius: 10px; display: block; }
+
+/* Mobile portrait: il tasto "prossimo episodio" è ridondante (c'è già
+   la lista episodi sotto). Lo nasconde solo in verticale; in landscape
+   (fullscreen) resta utile. !important per battere il display inline del JS. */
+@media (max-width: 768px) and (orientation: portrait) {
+    #nextEpisodeBtn { display: none !important; }
+}
