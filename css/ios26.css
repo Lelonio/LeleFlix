@@ -424,18 +424,29 @@ body.overlay-active .ios-tabbar { opacity: 0; pointer-events: none; transform: t
    nero ("player orizzontale nella pagina verticale"). Su portrait lo
    ancoriamo in alto a tutta larghezza, stile player inline mobile.
    ============================================================ */
-/* Pannello info sotto il video: solo mobile portrait */
-#player-info { display: none; }
+/* Pannello info sotto il video (nascosto di default; mostrato inline) */
+#player-info { display: none; color: #fff; background: #000; }
 
+/* Tipografia comune del pannello (mobile + desktop) */
+#player-info-title { font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+#player-info-meta { color: var(--ios-text-dim); margin-bottom: 14px; }
+#player-info-overview { color: rgba(245,245,247,0.9); line-height: 1.55; }
+#player-info-cast-wrap { margin-top: 18px; }
+#player-info-cast-wrap.hidden { display: none; }
+#player-info .pi-label {
+    display: block; color: var(--ios-text-dim);
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+}
+#player-info-cast { color: rgba(245,245,247,0.9); line-height: 1.45; }
+
+/* ── MOBILE PORTRAIT: video in alto full-width + info scrollabile sotto ── */
 @media (max-width: 768px) and (orientation: portrait) {
-    /* wrapper di centratura → allinea in alto, niente padding */
     #player-modal > div {
         align-items: flex-start !important;
         justify-content: flex-start !important;
         padding: 0 !important;
         min-height: 100dvh;
     }
-    /* card del player → colonna: video in alto + info sotto, piena altezza */
     #player-modal > div > div {
         max-width: 100% !important;
         border-radius: 0 !important;
@@ -443,34 +454,67 @@ body.overlay-active .ios-tabbar { opacity: 0; pointer-events: none; transform: t
         flex-direction: column;
         height: 100dvh;
     }
-    /* video 16:9 in alto, altezza deterministica (no aspect-ratio nel flex) */
     #videoContainer {
         flex: 0 0 auto !important;
         width: 100% !important;
         height: 56.25vw !important;   /* 16:9 di tutta la larghezza */
         aspect-ratio: auto !important;
     }
-
-    /* Info: trama + cast, scrollabile nello spazio nero sotto */
     #player-info {
-        display: block;
-        flex: 1 1 auto;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        background: #000;
-        color: #fff;
+        display: block; flex: 1 1 auto;
+        overflow-y: auto; -webkit-overflow-scrolling: touch;
         padding: 18px 16px calc(28px + env(safe-area-inset-bottom, 0px));
     }
-    #player-info-title { font-size: 1.18rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
-    #player-info-meta { color: var(--ios-text-dim); font-size: 0.85rem; margin-bottom: 14px; }
-    #player-info-overview { color: rgba(245,245,247,0.9); font-size: 0.93rem; line-height: 1.55; }
-    #player-info-cast-wrap { margin-top: 18px; }
-    #player-info-cast-wrap.hidden { display: none; }
-    #player-info .pi-label {
-        display: block; color: var(--ios-text-dim);
-        font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px;
+    #player-info-title { font-size: 1.18rem; }
+    #player-info-meta { font-size: 0.85rem; }
+    #player-info-overview { font-size: 0.93rem; }
+    #player-info-cast { font-size: 0.9rem; }
+}
+
+/* ── DESKTOP non-fullscreen: due colonne — video a sinistra, info a
+   destra (sidebar scrollabile). ── */
+@media (min-width: 769px) {
+    #player-modal { overflow: hidden !important; }
+    #player-modal > div {
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 24px !important;
+        min-height: 100vh;
     }
-    #player-info-cast { color: rgba(245,245,247,0.9); font-size: 0.9rem; line-height: 1.45; }
+    /* card = riga: video + sidebar; altezza calcolata perché il video resti 16:9 */
+    #player-modal > div > div {
+        max-width: none !important;
+        width: min(1400px, 96vw) !important;
+        height: min(80vh, calc((min(1400px, 96vw) - 360px) * 9 / 16));
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: stretch;
+        border-radius: 16px !important;
+    }
+    #videoContainer {
+        flex: 1 1 auto !important;
+        height: 100% !important;
+        width: auto !important;
+        aspect-ratio: auto !important;
+        min-width: 0;
+    }
+    /* Sidebar info a destra */
+    #player-info {
+        display: block;
+        flex: 0 0 360px;
+        width: 360px;
+        height: 100%;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 22px 18px;
+        background: #0a0a0a;
+        border-left: 0.5px solid rgba(255,255,255,0.08);
+    }
+    #player-info::-webkit-scrollbar { width: 6px; }
+    #player-info-title { font-size: 1.3rem; }
+    #player-info-meta { font-size: 0.9rem; }
+    #player-info-overview { font-size: 0.95rem; line-height: 1.6; }
+    #player-info-cast { font-size: 0.9rem; }
 }
 
 /* Controlli video sempre cliccabili e sopra al video (stile YouTube) */
@@ -552,4 +596,11 @@ body.overlay-active .ios-tabbar { opacity: 0; pointer-events: none; transform: t
    (fullscreen) resta utile. !important per battere il display inline del JS. */
 @media (max-width: 768px) and (orientation: portrait) {
     #nextEpisodeBtn { display: none !important; }
+}
+
+/* Mobile portrait: nascondi lingua audio e sottotitoli per fare spazio;
+   si gestiscono in fullscreen/landscape. Resta il tasto schermo intero. */
+@media (max-width: 768px) and (orientation: portrait) {
+    #captionsBtn, #audioTrackBtn,
+    #captionsMenu, #audioMenu { display: none !important; }
 }
