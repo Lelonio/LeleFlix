@@ -604,3 +604,29 @@ body.overlay-active .ios-tabbar { opacity: 0; pointer-events: none; transform: t
     #captionsBtn, #audioTrackBtn,
     #captionsMenu, #audioMenu { display: none !important; }
 }
+
+/* Mobile portrait: il tasto schermo intero torna DENTRO la barra controlli
+   (accanto a impostazioni), annullando lo stile "floating" di style.css. */
+@media (max-width: 768px) and (orientation: portrait) {
+    #fullscreenBtn {
+        position: static !important;
+        bottom: auto !important;
+        right: auto !important;
+        top: auto !important;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        z-index: auto !important;
+        display: inline-flex !important;
+        align-items: center;
+        color: #fff;
+    }
+    #fullscreenBtn i { font-size: 1.05rem !important; padding: 0 !important; }
+}
