@@ -417,3 +417,132 @@ body.overlay-active .ios-tabbar { opacity: 0; pointer-events: none; transform: t
     background: radial-gradient(120% 120% at 50% 15%,
         rgba(255,255,255,0.22), rgba(255,255,255,0.06)) !important;
 }
+
+/* ============================================================
+   PLAYER MOBILE PORTRAIT — fix layout
+   Il video era un riquadro 16:9 centrato a metà schermo nel modale
+   nero ("player orizzontale nella pagina verticale"). Su portrait lo
+   ancoriamo in alto a tutta larghezza, stile player inline mobile.
+   ============================================================ */
+/* Pannello info sotto il video: solo mobile portrait */
+#player-info { display: none; }
+
+@media (max-width: 768px) and (orientation: portrait) {
+    /* wrapper di centratura → allinea in alto, niente padding */
+    #player-modal > div {
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+        padding: 0 !important;
+        min-height: 100dvh;
+    }
+    /* card del player → colonna: video in alto + info sotto, piena altezza */
+    #player-modal > div > div {
+        max-width: 100% !important;
+        border-radius: 0 !important;
+        display: flex !important;
+        flex-direction: column;
+        height: 100dvh;
+    }
+    /* video 16:9 in alto, altezza deterministica (no aspect-ratio nel flex) */
+    #videoContainer {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        height: 56.25vw !important;   /* 16:9 di tutta la larghezza */
+        aspect-ratio: auto !important;
+    }
+
+    /* Info: trama + cast, scrollabile nello spazio nero sotto */
+    #player-info {
+        display: block;
+        flex: 1 1 auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        background: #000;
+        color: #fff;
+        padding: 18px 16px calc(28px + env(safe-area-inset-bottom, 0px));
+    }
+    #player-info-title { font-size: 1.18rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+    #player-info-meta { color: var(--ios-text-dim); font-size: 0.85rem; margin-bottom: 14px; }
+    #player-info-overview { color: rgba(245,245,247,0.9); font-size: 0.93rem; line-height: 1.55; }
+    #player-info-cast-wrap { margin-top: 18px; }
+    #player-info-cast-wrap.hidden { display: none; }
+    #player-info .pi-label {
+        display: block; color: var(--ios-text-dim);
+        font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px;
+    }
+    #player-info-cast { color: rgba(245,245,247,0.9); font-size: 0.9rem; line-height: 1.45; }
+}
+
+/* Controlli video sempre cliccabili e sopra al video (stile YouTube) */
+#controlsContainer, #centerControls, #backButtonContainer { pointer-events: auto; }
+#videoPlayer { pointer-events: auto; }
+
+/* ============================================================
+   PLAYER MOBILE PORTRAIT — controlli compatti (stile YouTube)
+   Sul video piccolo la barra di vetro copriva tutto: la rendiamo
+   una barra sottile ancorata in fondo al video, così il film si vede.
+   ============================================================ */
+@media (max-width: 768px) and (orientation: portrait) {
+    #controlsContainer {
+        position: absolute !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        transform: none !important;
+        border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        background: linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.35) 70%, transparent 100%) !important;
+        padding: 4px 10px 6px !important;
+        gap: 2px !important;
+    }
+    /* barra di avanzamento sottile */
+    #controlsContainer .progress-container { height: 4px !important; margin: 0 0 4px !important; }
+    /* riga pulsanti compatta */
+    #controlsContainer .flex.items-center.justify-between { padding: 0 !important; }
+
+    /* pulsanti centrali (play/skip) più piccoli e semi-trasparenti sul mini-video */
+    #centerControls .center-control-btn { width: 48px !important; height: 48px !important; }
+    #centerControls .center-control-btn.play-btn { width: 56px !important; height: 56px !important; }
+    #centerControls .center-control-btn i { font-size: 1.1rem !important; }
+    #centerControls .center-control-btn.play-btn i { font-size: 1.4rem !important; }
+}
+
+/* ── Player info: Episodi + Simili (mostrati nel pannello mobile) ── */
+#player-info-episodes, #player-info-similar { margin-top: 20px; }
+#pi-episodes { display: flex; flex-direction: column; gap: 8px; }
+.pi-ep {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    background: rgba(255,255,255,0.05); border: 0.5px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 8px; text-align: left; cursor: pointer; color: #fff;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+.pi-ep:active { transform: scale(0.98); }
+.pi-ep-current { border-color: var(--ios-accent); background: rgba(255,69,58,0.12); }
+.pi-ep-thumb {
+    position: relative; flex: 0 0 auto; width: 92px; height: 52px;
+    border-radius: 8px; overflow: hidden; background: #1a1a1a;
+    display: flex; align-items: center; justify-content: center;
+}
+.pi-ep-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.pi-ep-num {
+    position: absolute; left: 4px; bottom: 2px; font-size: 0.7rem; font-weight: 700;
+    color: #fff; text-shadow: 0 1px 3px #000;
+}
+.pi-ep-meta { display: flex; flex-direction: column; min-width: 0; }
+.pi-ep-title { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pi-ep-dur { font-size: 0.78rem; color: var(--ios-text-dim); }
+
+/* Simili: riga orizzontale di poster */
+.pi-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.pi-row::-webkit-scrollbar { display: none; }
+.pi-sim {
+    flex: 0 0 auto; width: 96px; padding: 0; border: none; background: none; cursor: pointer;
+    border-radius: 10px; overflow: hidden; transition: transform 0.18s ease;
+}
+.pi-sim:active { transform: scale(0.96); }
+.pi-sim img { width: 96px; height: 144px; object-fit: cover; border-radius: 10px; display: block; }

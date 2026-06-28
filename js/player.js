@@ -388,6 +388,123 @@ class VideoPlayer {
             playerTitle = `${this.content.name} - S${String(this.content.season_number).padStart(2, '0')}E${String(this.content.episode_number).padStart(2, '0')}: ${episodeTitle}`;
         }
         document.getElementById('player-title').textContent = playerTitle;
+        this.updatePlayerInfo();
+    }
+
+    // ── Pannello info sotto il video (mobile portrait): trama, cast,
+    //    episodi (serie) e contenuti simili ──
+    updatePlayerInfo() {
+        const wrap = document.getElementById('videoContainer')?.parentElement;
+        if (!wrap || !this.content) return;
+        let panel = document.getElementById('player-info');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'player-info';
+            panel.innerHTML =
+                '<h3 id="player-info-title"></h3>' +
+                '<div id="player-info-meta"></div>' +
+                '<p id="player-info-overview"></p>' +
+                '<div id="player-info-cast-wrap" class="hidden"><span class="pi-label">Cast</span><p id="player-info-cast"></p></div>' +
+                '<div id="player-info-episodes" class="hidden"><span class="pi-label">Episodi</span><div id="pi-episodes"></div></div>' +
+                '<div id="player-info-similar" class="hidden"><span class="pi-label">Potrebbe piacerti anche</span><div id="pi-similar" class="pi-row"></div></div>';
+            wrap.appendChild(panel);
+        }
+        const c = this.content;
+        const type = c.media_type === 'tv' ? 'tv' : 'movie';
+        panel.querySelector('#player-info-title').textContent = c.title || c.name || 'Senza titolo';
+        const year = (c.release_date || c.first_air_date || '').split('-')[0];
+        const rating = c.vote_average ? '★ ' + c.vote_average.toFixed(1) : '';
+        panel.querySelector('#player-info-meta').textContent = [year, rating].filter(Boolean).join('   ·   ');
+        panel.querySelector('#player-info-overview').textContent = c.overview || 'Nessuna descrizione disponibile.';
+
+        // ── Cast ──
+        const castWrap = panel.querySelector('#player-info-cast-wrap');
+        const setCast = (arr) => {
+            const names = (arr || []).slice(0, 8).map(p => p.name).filter(Boolean);
+            if (names.length) { panel.querySelector('#player-info-cast').textContent = names.join(', '); castWrap.classList.remove('hidden'); }
+            else castWrap.classList.add('hidden');
+        };
+        const existingCast = (c.credits && c.credits.cast) || c.cast || [];
+        if (existingCast.length) setCast(existingCast);
+        else {
+            castWrap.classList.add('hidden');
+            const base = (typeof window !== 'undefined' && window.API_BASE) || '';
+            if (base && c.id) {
+                fetch(`${base}/tmdb-rt/${type}/${c.id}?append_to_response=credits`)
+                    .then(r => r.ok ? r.json() : null)
+                    .then(d => { if (d && d.credits) setCast(d.credits.cast); }).catch(() => {});
+            }
+        }
+
+        this.renderPlayerEpisodes(panel, c, type);
+        this.renderPlayerSimilar(panel, c, type);
+    }
+
+    // Episodi della stagione corrente (solo serie TV)
+    renderPlayerEpisodes(panel, c, type) {
+        const wrap = panel.querySelector('#player-info-episodes');
+        const list = panel.querySelector('#pi-episodes');
+        if (type !== 'tv' || !c.id || !c.season_number || typeof API_URL === 'undefined') {
+            wrap.classList.add('hidden'); return;
+        }
+        const tvData = c.tv_data || { name: c.name || c.title, id: c.id };
+        fetch(`${API_URL}/tv/${c.id}/season/${c.season_number}?api_key=${API_KEY}&language=it-IT`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                if (!d || !d.episodes || !d.episodes.length) { wrap.classList.add('hidden'); return; }
+                list.innerHTML = '';
+                d.episodes.forEach(ep => {
+                    const still = ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : '';
+                    const row = document.createElement('button');
+                    row.className = 'pi-ep' + (ep.episode_number === c.episode_number ? ' pi-ep-current' : '');
+                    row.innerHTML =
+                        `<div class="pi-ep-thumb">${still ? `<img src="${still}" alt="">` : ''}<span class="pi-ep-num">${ep.episode_number}</span></div>` +
+                        `<div class="pi-ep-meta"><span class="pi-ep-title">${ep.name || 'Episodio ' + ep.episode_number}</span>` +
+                        `<span class="pi-ep-dur">${ep.runtime ? ep.runtime + ' min' : ''}</span></div>`;
+                    row.addEventListener('click', () => {
+                        if (typeof playMovie !== 'function') return;
+                        playMovie({
+                            id: c.id, media_type: 'tv', title: tvData.name, name: tvData.name,
+                            season_number: parseInt(c.season_number), episode_number: ep.episode_number,
+                            episode_data: ep, tv_data: tvData
+                        });
+                    });
+                    list.appendChild(row);
+                });
+                wrap.classList.remove('hidden');
+            }).catch(() => wrap.classList.add('hidden'));
+    }
+
+    // Contenuti simili / consigliati (film e serie)
+    renderPlayerSimilar(panel, c, type) {
+        const wrap = panel.querySelector('#player-info-similar');
+        const row = panel.querySelector('#pi-similar');
+        if (!c.id || typeof API_URL === 'undefined') { wrap.classList.add('hidden'); return; }
+        fetch(`${API_URL}/${type}/${c.id}/recommendations?api_key=${API_KEY}&language=it-IT`)
+            .then(r => r.ok ? r.json() : null)
+            .then(d => {
+                let items = (d && d.results) ? d.results.filter(i => i.poster_path) : [];
+                const avail = (typeof availableContent !== 'undefined' && availableContent) ? availableContent : null;
+                if (avail) items = items.filter(i => avail.some(a => a.tmdb_id === i.id));
+                items = items.slice(0, 12);
+                if (!items.length) { wrap.classList.add('hidden'); return; }
+                row.innerHTML = '';
+                const poster = (typeof POSTER_PATH !== 'undefined') ? POSTER_PATH : 'https://image.tmdb.org/t/p/w500';
+                items.forEach(item => {
+                    const card = document.createElement('button');
+                    card.className = 'pi-sim';
+                    card.innerHTML = `<img src="${poster}${item.poster_path}" alt="${item.title || item.name || ''}" loading="lazy">`;
+                    card.addEventListener('click', () => {
+                        if (typeof openDetailView !== 'function') return;
+                        const closeBtn = document.getElementById('close-player');
+                        if (closeBtn) closeBtn.click();
+                        const t = item.media_type === 'tv' || item.first_air_date ? 'tv' : 'movie';
+                        setTimeout(() => openDetailView(item.id, t), 60);
+                    });
+                    row.appendChild(card);
+                });
+                wrap.classList.remove('hidden');
+            }).catch(() => wrap.classList.add('hidden'));
     }
 
     // ── Next Episode Prompt ─────────────────────────────────
