@@ -630,3 +630,21 @@ body.overlay-active .ios-tabbar { opacity: 0; pointer-events: none; transform: t
     }
     #fullscreenBtn i { font-size: 1.05rem !important; padding: 0 !important; }
 }
+
+/* Mobile portrait: i pulsanti dei controlli devono ricevere i click.
+   L'area di tocco estesa della progress bar li copriva → alzo lo stacking
+   della riga pulsanti e impedisco alla progress bar di estendersi verso l'alto. */
+@media (max-width: 768px) and (orientation: portrait) {
+    #controlsContainer .flex.items-center.justify-between {
+        position: relative !important;
+        z-index: 5 !important;
+    }
+    #controlsContainer .flex.items-center.justify-between button {
+        position: relative;
+        z-index: 5;
+        pointer-events: auto;
+    }
+    /* la zona di tocco estesa della barra si espande solo verso il basso,
+       mai sopra (dove ci sono i pulsanti) */
+    #progressContainer::before { top: 0 !important; bottom: -14px !important; }
+}
