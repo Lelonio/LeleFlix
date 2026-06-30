@@ -113,10 +113,15 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
+    width: 2px;
+    height: 2px;
+    /* NON opacity:0 (il browser potrebbe non renderizzarlo e l'anti-VRR non
+       funzionerebbe): quasi invisibile ma su un layer composito sempre attivo */
+    opacity: 0.02;
     pointer-events: none;
+    z-index: 2147483647;
+    background: #000;
+    will-change: transform;
     transform: translateZ(0);
     animation: hr-keeper-anim 0.8s infinite linear;
 }

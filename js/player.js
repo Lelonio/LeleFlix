@@ -113,17 +113,59 @@ class VideoPlayer {
         this.setThemeColor('#E50914');
     }
 
-    // ── Refresh Keeper ──────────────────────────────────────
+    // ── Refresh Keeper + Wake Lock ──────────────────────────
+    // Su Android, durante la riproduzione senza tocchi lo schermo entra in
+    // VRR/idle e abbassa il refresh → judder/stutter. Contromisure:
+    //  1) un micro-movimento per ogni frame (requestAnimationFrame) tiene il
+    //     compositor a refresh pieno;
+    //  2) Screen Wake Lock per evitare il dimming/idle dello schermo.
     startRefreshKeeper() {
+        this.requestScreenWakeLock();
         const el = document.getElementById('hr-keeper');
-        if (!el) return;
-        el.style.animationPlayState = 'running';
+        if (el) el.style.animationPlayState = 'running';
+        if (this._rafKeeper) return;
+        let flip = 0;
+        const tick = () => {
+            if (el) {
+                flip ^= 1;
+                el.style.transform = `translateZ(0) translateX(${flip ? 0.5 : 0}px)`;
+            }
+            this._rafKeeper = requestAnimationFrame(tick);
+        };
+        this._rafKeeper = requestAnimationFrame(tick);
+
+        // Riacquisisce il wake lock quando si torna in foreground
+        if (!this._wakeVisBound) {
+            this._wakeVisBound = () => {
+                if (document.visibilityState === 'visible' &&
+                    this.videoPlayer && !this.videoPlayer.paused) {
+                    this.requestScreenWakeLock();
+                }
+            };
+            document.addEventListener('visibilitychange', this._wakeVisBound);
+        }
     }
 
     stopRefreshKeeper() {
         const el = document.getElementById('hr-keeper');
-        if (!el) return;
-        el.style.animationPlayState = 'paused';
+        if (el) el.style.animationPlayState = 'paused';
+        if (this._rafKeeper) { cancelAnimationFrame(this._rafKeeper); this._rafKeeper = null; }
+        this.releaseScreenWakeLock();
+    }
+
+    requestScreenWakeLock() {
+        if (!('wakeLock' in navigator) || this._wakeLock) return;
+        navigator.wakeLock.request('screen').then(wl => {
+            this._wakeLock = wl;
+            wl.addEventListener('release', () => { this._wakeLock = null; });
+        }).catch(() => { /* negato/non supportato: ignora */ });
+    }
+
+    releaseScreenWakeLock() {
+        if (this._wakeLock) {
+            try { this._wakeLock.release(); } catch (e) { }
+            this._wakeLock = null;
+        }
     }
 
     // ── VLC Start Save ──────────────────────────────────────
@@ -621,7 +663,7 @@ class VideoPlayer {
                 const container = document.getElementById('videoContainer');
                 if (container && container.requestFullscreen) {
                     container.requestFullscreen().catch(() => { });
-                    if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => { });
+                    if (screen.orientation?.lock) Promise.resolve(screen.orientation.lock('landscape')).catch(() => { });
                 }
                 resolve('internal');
             };
@@ -954,12 +996,12 @@ class VideoPlayer {
 
                 // Non-fatal error recovery: let HLS.js handle internally
                 this.hls.on(Hls.Events.ERROR, (event, data) => {
-                    console.warn('[HLS] Error:', data.type, data.details, 'fatal:', data.fatal);
-
                     if (!data.fatal) {
-                        // Non-fatal errors: HLS.js retries automatically
+                        // Non-fatal (es. bufferSeekOverHole): HLS.js recupera da solo,
+                        // niente log per non sporcare la console.
                         return;
                     }
+                    console.warn('[HLS] Error:', data.type, data.details, 'fatal:', data.fatal);
 
                     // Fatal error — save current time for resume
                     this.hlsResumeTime = this.videoPlayer.currentTime || 0;
@@ -1634,8 +1676,9 @@ class VideoPlayer {
             }
             this.fullscreenBtn.innerHTML = '<i class="fas fa-expand text-lg"></i>';
             document.getElementById('videoContainer').classList.remove('fullscreen-active');
+            // unlock() ritorna undefined (void), NON una Promise → niente .catch()
             if (screen.orientation?.unlock) {
-                screen.orientation.unlock().catch(() => { });
+                try { screen.orientation.unlock(); } catch (e) { }
             }
         } else {
             this.enterFullscreen().then(() => {
@@ -1649,7 +1692,7 @@ class VideoPlayer {
         const container = document.getElementById('videoContainer');
         if (container && container.requestFullscreen) {
             return container.requestFullscreen().then(() => {
-                if (screen.orientation?.lock) screen.orientation.lock('landscape').catch(() => { });
+                if (screen.orientation?.lock) Promise.resolve(screen.orientation.lock('landscape')).catch(() => { });
             });
         } else if (container && container.webkitRequestFullscreen) {
             return new Promise((resolve) => {
