@@ -2,7 +2,7 @@
 // Fixes all 10 bugs listed in the requirements
 
 // Usa l'endpoint unico definito in index.html (window.API_BASE).
-const LELEFLIX_API = (typeof window !== 'undefined' && window.API_BASE) || 'https://api.leleflix.store';
+const LELEFLIX_API = (typeof window !== 'undefined' && window.API_BASE) || 'https://vixprx.dpdns.org';
 const PROGRESS_API_URL = `${LELEFLIX_API}/progress/save`;
 
 class VideoPlayer {

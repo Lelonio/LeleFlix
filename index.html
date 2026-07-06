@@ -48,10 +48,8 @@ sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],          
     <script>
     // ── Endpoint UNICO dell'API (Pi via Cloudflare Tunnel) ──────────
     // Sorgente di verità per TUTTO il frontend (anche player.js la usa).
-    // PONTE: ora punta al dominio attuale ancora vivo. Quando
-    // lflx.net.eu.org è Active sul tunnel, cambia SOLO la stringa qui sotto.
     // Override al volo per test: localStorage.setItem('LELEFLIX_API','https://...').
-    window.API_BASE = localStorage.getItem('LELEFLIX_API') || 'https://api.leleflix.store';
+    window.API_BASE = localStorage.getItem('LELEFLIX_API') || 'https://vixprx.dpdns.org';
     const API_BASE = window.API_BASE;
     const socket = io(API_BASE);
 
