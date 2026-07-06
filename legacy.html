@@ -78,7 +78,7 @@
 
 <script>
     (function() {
-        var socket = io('https://api.leleflix.store'); // Assicurati che l'URL sia corretto
+        var socket = io('https://vixprx.dpdns.org/'); // Assicurati che l'URL sia corretto
 
         function showCastAnimation(title) {
             var overlay = document.getElementById('cast-overlay');
@@ -2307,7 +2307,7 @@ let availableContent = [];
 // Carica tutti i contenuti disponibili
 async function loadAvailableContent() {
   try {
-    const response = await fetch('https://api.leleflix.store/home/available');
+    const response = await fetch('https://vixprx.dpdns.org//home/available');
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     
     const data = await response.json();
@@ -2359,7 +2359,7 @@ function getContinueWatching(callback) {
   
   getClientIP(function(ip) {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'https://api.leleflix.store/progress/' + encodeURIComponent(ip), true);
+    xhr.open('GET', 'https://vixprx.dpdns.org//progress/' + encodeURIComponent(ip), true);
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4) {
         if (xhr.status === 200) {

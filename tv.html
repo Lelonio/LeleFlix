@@ -1767,7 +1767,7 @@ function showSettings() {
     // Load trending content
     window.onload = async function() {
       try {
-        const res = await fetch('https://api.leleflix.store/home/trending');
+        const res = await fetch('https://vixprx.dpdns.org//home/trending');
         const data = await res.json();
         displayTrending(data);
       } catch (e) {
@@ -2135,7 +2135,7 @@ if (playerSessionToken !== sessionToken) return;
     subtitleElement.textContent = movieInfo.release_date ? movieInfo.release_date.substring(0, 4) : 'Film';
 
     // Get stream URL
-    const streamRes = await fetch(`https://api.leleflix.store/proxy/movie/${movieId}`);
+    const streamRes = await fetch(`https://vixprx.dpdns.org//proxy/movie/${movieId}`);
     if (playerSessionToken !== sessionToken) return;
 
     const streamData = await streamRes.json();
@@ -2190,7 +2190,7 @@ setupQualityOptions(hls);
       
      else if (playerVideo.canPlayType('application/vnd.apple.mpegurl')) {
       // Fallback for Safari
-      playerVideo.src = `https://api.leleflix.store/stream?url=${encodeURIComponent(streamData.url)}`;
+      playerVideo.src = `https://vixprx.dpdns.org//stream?url=${encodeURIComponent(streamData.url)}`;
       playerVideo.addEventListener('loadedmetadata', () => {
         playerVideo.play().catch(e => {
           console.log("Auto-play prevented:", e);
@@ -2259,7 +2259,7 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
     subtitleElement.textContent = `Stagione ${seasonNumber} • Episodio ${episodeNumber}`;
 
     // Get stream URL
-    const streamRes = await fetch(`https://api.leleflix.store/proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
+    const streamRes = await fetch(`https://vixprx.dpdns.org//proxy/series/${tvId}/${seasonNumber}/${episodeNumber}`);
       if (playerSessionToken !== sessionToken) return;
 
     const streamData = await streamRes.json();
@@ -2312,7 +2312,7 @@ async function playTVEpisode(tvId, seasonNumber, episodeNumber) {
     }
     else if (playerVideo.canPlayType('application/vnd.apple.mpegurl')) {
       // Fallback for Safari
-      playerVideo.src = `https://api.leleflix.store/stream?url=${encodeURIComponent(streamData.url)}`;
+      playerVideo.src = `https://vixprx.dpdns.org//stream?url=${encodeURIComponent(streamData.url)}`;
       playerVideo.addEventListener('loadedmetadata', () => {
         playerVideo.play().catch(e => {
           console.log("Auto-play prevented:", e);

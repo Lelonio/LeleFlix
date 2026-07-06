@@ -383,8 +383,8 @@
         };
     }
     // Variabili globali
-    var PROXY_BASE_URL = 'https://api.leleflix.store/proxy';
-    var PROGRESS_API_URL = 'https://api.leleflix.store/progress/save';
+    var PROXY_BASE_URL = 'https://vixprx.dpdns.org//proxy';
+    var PROGRESS_API_URL = 'https://vixprx.dpdns.org//progress/save';
 
     var video = document.getElementById('videoPlayer');
     var playPauseBtn = document.getElementById('playPauseBtn');
@@ -1380,7 +1380,7 @@
     var lastUpdate = 0;
 
     try {
-        socket = io('https://api.leleflix.store'); // Tuo URL
+        socket = io('https://vixprx.dpdns.org/'); // Tuo URL
     } catch(e) {
         console.error("Errore inizializzazione Socket:", e);
         return;
@@ -1513,7 +1513,7 @@ function sendStatus() {
     var lastUpdate = 0;
 
     try {
-        socket = io('https://api.leleflix.store');
+        socket = io('https://vixprx.dpdns.org/');
         // --- ESPONI IL SOCKET GLOBALMENTE PER closePlayer() ---
         window.appSocket = socket; 
     } catch(e) {
