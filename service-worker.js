@@ -9,8 +9,8 @@
 // Bumpare CACHE_NAME NON è più necessario per vedere le modifiche,
 // serve solo a svuotare la vecchia cache una volta.
 // ============================================================
-const CACHE_NAME = "leleflix-v9";
-const IMAGE_CACHE_NAME = "leleflix-images-v6";
+const CACHE_NAME = "leleflix-v10";
+const IMAGE_CACHE_NAME = "leleflix-images-v7";
 
 // Precache minimo per il funzionamento OFFLINE (fallback).
 const urlsToCache = [
