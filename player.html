@@ -1322,10 +1322,15 @@
         }
         console.log("Closing player...");
         cleanupPlayer();
-        
-        // Torna alla pagina precedente
+
+        // Torna alla pagina di provenienza: se il film è stato avviato da
+        // cast.html (ricevente LeleCast su TV) resta lì, altrimenti legacy.html.
+        var backTarget = 'legacy.html';
+        if (document.referrer && document.referrer.indexOf('cast.html') !== -1) {
+            backTarget = 'cast.html';
+        }
         setTimeout(function() {
-            window.location.href = 'legacy.html';
+            window.location.href = backTarget;
         }, 100);
     }
 
