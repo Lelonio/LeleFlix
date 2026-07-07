@@ -13,14 +13,73 @@
         margin: 0;
         padding: 0;
         height: 100%;
-        background-color: #0a0a0a;
+        background-color: #050507;
         color: #ffffff;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         overflow: hidden;
     }
+
+    /* ── Sfondo: aurora rossa animata (solo CSS, GPU-friendly) ── */
+    .bg-glow {
+        position: fixed;
+        border-radius: 50%;
+        z-index: 0;
+        -webkit-filter: blur(90px);
+        filter: blur(90px);
+    }
+    .bg-glow.g1 {
+        width: 60vw; height: 60vw;
+        left: -20vw; top: -25vw;
+        background: rgba(229, 9, 20, 0.16);
+        -webkit-animation: drift1 18s ease-in-out infinite alternate;
+        animation: drift1 18s ease-in-out infinite alternate;
+    }
+    .bg-glow.g2 {
+        width: 50vw; height: 50vw;
+        right: -18vw; bottom: -20vw;
+        background: rgba(120, 10, 40, 0.22);
+        -webkit-animation: drift2 22s ease-in-out infinite alternate;
+        animation: drift2 22s ease-in-out infinite alternate;
+    }
+    .bg-glow.g3 {
+        width: 34vw; height: 34vw;
+        left: 40vw; top: 55vh;
+        background: rgba(40, 40, 70, 0.35);
+        -webkit-animation: drift1 26s ease-in-out infinite alternate-reverse;
+        animation: drift1 26s ease-in-out infinite alternate-reverse;
+    }
+    @-webkit-keyframes drift1 {
+        0%   { -webkit-transform: translate(0, 0) scale(1); }
+        100% { -webkit-transform: translate(8vw, 6vh) scale(1.15); }
+    }
+    @keyframes drift1 {
+        0%   { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(8vw, 6vh) scale(1.15); }
+    }
+    @-webkit-keyframes drift2 {
+        0%   { -webkit-transform: translate(0, 0) scale(1.1); }
+        100% { -webkit-transform: translate(-7vw, -5vh) scale(0.95); }
+    }
+    @keyframes drift2 {
+        0%   { transform: translate(0, 0) scale(1.1); }
+        100% { transform: translate(-7vw, -5vh) scale(0.95); }
+    }
+
+    /* Vignettatura + grana leggera per look cinematografico */
+    .vignette {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 1;
+        background: -webkit-radial-gradient(center, ellipse cover, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%);
+        background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,0.55) 100%);
+        pointer-events: none;
+    }
+
+    /* ── Layout ── */
     #screen {
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 2;
         display: -webkit-box;
         display: -webkit-flex;
         display: flex;
@@ -35,94 +94,282 @@
         justify-content: center;
         text-align: center;
     }
+
+    /* ── Header: brand + orologio ── */
+    .topbar {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        z-index: 3;
+        padding: 34px 48px 0 48px;
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex;
+        -webkit-box-pack: justify;
+        -webkit-justify-content: space-between;
+        justify-content: space-between;
+        -webkit-box-align: center;
+        -webkit-align-items: center;
+        align-items: center;
+    }
     .brand {
-        font-size: 42px;
+        font-size: 30px;
         font-weight: 800;
         letter-spacing: 1px;
-        margin-bottom: 40px;
+        text-shadow: 0 2px 12px rgba(0,0,0,0.8);
     }
     .brand .flix { color: #e50914; }
-
-    .dish {
-        position: relative;
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        background-color: #e50914;
-        margin-bottom: 40px;
-        -webkit-box-shadow: 0 0 25px rgba(229, 9, 20, 0.5);
-        box-shadow: 0 0 25px rgba(229, 9, 20, 0.5);
+    .brand .cast-tag {
+        font-size: 14px;
+        font-weight: 600;
+        color: #b3b3b3;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        margin-left: 12px;
+        vertical-align: 2px;
     }
-    .dish-icon {
+    .clock {
+        text-align: right;
+        line-height: 1.15;
+    }
+    .clock .time {
+        font-size: 34px;
+        font-weight: 300;
+        letter-spacing: 1px;
+    }
+    .clock .date {
+        font-size: 14px;
+        color: #9a9a9a;
+        text-transform: capitalize;
+    }
+
+    /* ── Icona cast (Chromecast-style) con anelli radar ── */
+    .beacon {
+        position: relative;
+        width: 150px;
+        height: 150px;
+        margin-bottom: 44px;
+    }
+    .beacon-core {
         position: absolute;
-        top: 50%; left: 50%;
-        -webkit-transform: translate(-50%, -50%);
-        transform: translate(-50%, -50%);
-        width: 56px;
-        height: 56px;
-        fill: #ffffff;
+        top: 0; left: 0;
+        width: 150px; height: 150px;
+        border-radius: 50%;
+        background: -webkit-linear-gradient(315deg, #e50914 0%, #8e0710 100%);
+        background: linear-gradient(135deg, #e50914 0%, #8e0710 100%);
+        -webkit-box-shadow: 0 0 45px rgba(229, 9, 20, 0.55), inset 0 2px 10px rgba(255,255,255,0.25);
+        box-shadow: 0 0 45px rgba(229, 9, 20, 0.55), inset 0 2px 10px rgba(255,255,255,0.25);
+        -webkit-animation: breathe 3s ease-in-out infinite;
+        animation: breathe 3s ease-in-out infinite;
         z-index: 2;
     }
-    .ripple {
+    @-webkit-keyframes breathe {
+        0%, 100% { -webkit-transform: scale(1); }
+        50%      { -webkit-transform: scale(1.05); }
+    }
+    @keyframes breathe {
+        0%, 100% { transform: scale(1); }
+        50%      { transform: scale(1.05); }
+    }
+    .beacon-core svg {
         position: absolute;
         top: 50%; left: 50%;
-        width: 120px;
-        height: 120px;
-        margin-left: -60px;
-        margin-top: -60px;
-        border: 3px solid rgba(229, 9, 20, 0.7);
+        width: 72px; height: 72px;
+        margin-left: -36px;
+        margin-top: -36px;
+        fill: #ffffff;
+    }
+    .ring {
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 150px; height: 150px;
+        margin-left: -75px;
+        margin-top: -75px;
+        border: 2px solid rgba(229, 9, 20, 0.65);
         border-radius: 50%;
-        -webkit-animation: ripple 2s linear infinite;
-        animation: ripple 2s linear infinite;
+        opacity: 0;
         z-index: 1;
+        -webkit-animation: ring 2.6s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        animation: ring 2.6s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
     }
-    .ripple.r2 { -webkit-animation-delay: 0.66s; animation-delay: 0.66s; }
-    .ripple.r3 { -webkit-animation-delay: 1.33s; animation-delay: 1.33s; }
-    @-webkit-keyframes ripple {
-        0%   { width:120px; height:120px; margin-left:-60px; margin-top:-60px; opacity:0.8; }
-        100% { width:340px; height:340px; margin-left:-170px; margin-top:-170px; opacity:0; }
+    .ring.k2 { -webkit-animation-delay: 0.85s; animation-delay: 0.85s; }
+    .ring.k3 { -webkit-animation-delay: 1.7s; animation-delay: 1.7s; }
+    @-webkit-keyframes ring {
+        0%   { -webkit-transform: scale(1); opacity: 0.75; }
+        100% { -webkit-transform: scale(2.6); opacity: 0; }
     }
-    @keyframes ripple {
-        0%   { width:120px; height:120px; margin-left:-60px; margin-top:-60px; opacity:0.8; }
-        100% { width:340px; height:340px; margin-left:-170px; margin-top:-170px; opacity:0; }
+    @keyframes ring {
+        0%   { transform: scale(1); opacity: 0.75; }
+        100% { transform: scale(2.6); opacity: 0; }
     }
 
+    /* ── Testi di stato ── */
     .status {
-        font-size: 26px;
-        font-weight: bold;
-        margin-bottom: 12px;
+        font-size: 30px;
+        font-weight: 700;
+        margin-bottom: 14px;
+        text-shadow: 0 2px 14px rgba(0,0,0,0.7);
     }
     .substatus {
         font-size: 18px;
-        color: #9a9a9a;
-        max-width: 80%;
+        color: #a8a8a8;
+        max-width: 620px;
+        line-height: 1.5;
+    }
+    .substatus b { color: #ffffff; }
+
+    /* Puntini di caricamento animati */
+    .dots span {
+        -webkit-animation: blink 1.4s infinite both;
+        animation: blink 1.4s infinite both;
+    }
+    .dots span:nth-child(2) { -webkit-animation-delay: 0.2s; animation-delay: 0.2s; }
+    .dots span:nth-child(3) { -webkit-animation-delay: 0.4s; animation-delay: 0.4s; }
+    @-webkit-keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+    @keyframes blink { 0%, 80%, 100% { opacity: 0.2; } 40% { opacity: 1; } }
+
+    /* ── Pill di stato connessione (in basso) ── */
+    .conn-pill {
+        position: fixed;
+        bottom: 38px;
+        left: 50%;
+        -webkit-transform: translateX(-50%);
+        transform: translateX(-50%);
+        z-index: 3;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 40px;
+        padding: 12px 26px;
+        font-size: 16px;
+        color: #cfcfcf;
+        -webkit-box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.45);
     }
     .dot {
         display: inline-block;
-        width: 12px; height: 12px;
+        width: 11px; height: 11px;
         border-radius: 50%;
-        background-color: #666;
-        margin-right: 10px;
-        vertical-align: middle;
+        background-color: #f5a623;
+        margin-right: 11px;
+        vertical-align: 1px;
+        -webkit-box-shadow: 0 0 8px rgba(245, 166, 35, 0.8);
+        box-shadow: 0 0 8px rgba(245, 166, 35, 0.8);
     }
-    .dot.online { background-color: #46d369; }
+    .dot.online {
+        background-color: #46d369;
+        -webkit-box-shadow: 0 0 10px rgba(70, 211, 105, 0.9);
+        box-shadow: 0 0 10px rgba(70, 211, 105, 0.9);
+    }
+    .dot.offline {
+        background-color: #e50914;
+        -webkit-box-shadow: 0 0 10px rgba(229, 9, 20, 0.9);
+        box-shadow: 0 0 10px rgba(229, 9, 20, 0.9);
+    }
+
+    /* ── Overlay di ricezione (quando arriva un cast) ── */
+    #receive-overlay {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.92);
+        display: none;
+        -webkit-box-orient: vertical;
+        -webkit-flex-direction: column;
+        flex-direction: column;
+        -webkit-box-align: center;
+        -webkit-align-items: center;
+        align-items: center;
+        -webkit-box-pack: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+        text-align: center;
+        opacity: 0;
+        -webkit-transition: opacity 0.5s ease;
+        transition: opacity 0.5s ease;
+    }
+    #receive-overlay.active {
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex;
+        opacity: 1;
+    }
+    #receive-poster {
+        width: 190px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        -webkit-box-shadow: 0 18px 50px rgba(0,0,0,0.85), 0 0 30px rgba(229,9,20,0.35);
+        box-shadow: 0 18px 50px rgba(0,0,0,0.85), 0 0 30px rgba(229,9,20,0.35);
+        display: none;
+    }
+    #receive-title {
+        font-size: 34px;
+        font-weight: 800;
+        margin-bottom: 10px;
+        max-width: 80%;
+    }
+    #receive-sub {
+        font-size: 18px;
+        color: #9a9a9a;
+    }
+    .loader-bar {
+        width: 260px;
+        height: 4px;
+        border-radius: 3px;
+        background: rgba(255,255,255,0.12);
+        margin-top: 30px;
+        overflow: hidden;
+        position: relative;
+    }
+    .loader-bar div {
+        position: absolute;
+        top: 0; left: -40%;
+        width: 40%;
+        height: 100%;
+        border-radius: 3px;
+        background: #e50914;
+        -webkit-animation: slide 1.1s ease-in-out infinite;
+        animation: slide 1.1s ease-in-out infinite;
+    }
+    @-webkit-keyframes slide { 0% { left: -40%; } 100% { left: 100%; } }
+    @keyframes slide { 0% { left: -40%; } 100% { left: 100%; } }
 </style>
 </head>
 <body>
+    <div class="bg-glow g1"></div>
+    <div class="bg-glow g2"></div>
+    <div class="bg-glow g3"></div>
+    <div class="vignette"></div>
+
+    <div class="topbar">
+        <div class="brand">Lele<span class="flix">Flix</span><span class="cast-tag">Cast</span></div>
+        <div class="clock">
+            <div class="time" id="clock-time">--:--</div>
+            <div class="date" id="clock-date"></div>
+        </div>
+    </div>
+
     <div id="screen">
-        <div class="brand">Lele<span class="flix">Flix</span> Cast</div>
-        <div class="dish">
-            <div class="ripple r1"></div>
-            <div class="ripple r2"></div>
-            <div class="ripple r3"></div>
-            <svg class="dish-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 20a1 1 0 0 1-1-1C3 12.373 8.373 7 15 7a1 1 0 1 1 0 2c-5.523 0-10 4.477-10 10a1 1 0 0 1-1 1zm5 0a1 1 0 0 1-1-1c0-3.866 3.134-7 7-7a1 1 0 1 1 0 2 5 5 0 0 0-5 5 1 1 0 0 1-1 1zm-4.5-.5A2.5 2.5 0 1 1 4.5 14a2.5 2.5 0 0 1 0 5.5z"/>
-            </svg>
+        <div class="beacon">
+            <div class="ring k1"></div>
+            <div class="ring k2"></div>
+            <div class="ring k3"></div>
+            <div class="beacon-core">
+                <!-- Icona "cast" standard (Material design): schermo + onde -->
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 3H3c-1.1 0-2 .9-2 2v3h2V5h18v14h-7v2h7c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm0-4v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11z"/>
+                </svg>
+            </div>
         </div>
-        <div class="status" id="status">
-            <span class="dot" id="dot"></span><span id="statusText">Connessione a LeleCast...</span>
-        </div>
-        <div class="substatus" id="substatus">Questo schermo &egrave; pronto a ricevere film e serie da LeleFlix.</div>
+        <div class="status" id="statusText">Connessione a LeleCast<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+        <div class="substatus" id="substatus">Questo schermo sta per collegarsi al tuo LeleFlix.</div>
+    </div>
+
+    <div class="conn-pill"><span class="dot" id="dot"></span><span id="connText">Connessione in corso</span></div>
+
+    <div id="receive-overlay">
+        <img id="receive-poster" alt="">
+        <div id="receive-title"></div>
+        <div id="receive-sub">Avvio della riproduzione</div>
+        <div class="loader-bar"><div></div></div>
     </div>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -131,50 +378,88 @@
         'use strict';
 
         var API_BASE = 'https://vixprx.dpdns.org/';
+        var POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
 
         var statusText = document.getElementById('statusText');
         var substatus = document.getElementById('substatus');
         var dot = document.getElementById('dot');
+        var connText = document.getElementById('connText');
+        var overlay = document.getElementById('receive-overlay');
+        var rcvPoster = document.getElementById('receive-poster');
+        var rcvTitle = document.getElementById('receive-title');
+
+        // ── Orologio ──
+        var DAYS = ['domenica','lunedì','martedì','mercoledì','giovedì','venerdì','sabato'];
+        var MONTHS = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
+                      'luglio','agosto','settembre','ottobre','novembre','dicembre'];
+        function pad(n) { return n < 10 ? '0' + n : '' + n; }
+        function tickClock() {
+            var now = new Date();
+            var t = document.getElementById('clock-time');
+            var d = document.getElementById('clock-date');
+            if (t) { t.innerHTML = pad(now.getHours()) + ':' + pad(now.getMinutes()); }
+            if (d) { d.innerHTML = DAYS[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS[now.getMonth()]; }
+        }
+        tickClock();
+        setInterval(tickClock, 15000);
 
         function setStatus(text, sub) {
             if (statusText) { statusText.innerHTML = text; }
             if (sub != null && substatus) { substatus.innerHTML = sub; }
         }
+        function setConn(state, label) {
+            if (dot) { dot.className = 'dot ' + state; }
+            if (connText) { connText.innerHTML = label; }
+        }
 
         if (typeof io === 'undefined') {
-            setStatus('Errore di rete', 'Impossibile caricare LeleCast. Controlla la connessione.');
+            setStatus('Errore di rete', 'Impossibile caricare LeleCast. Controlla la connessione della TV.');
+            setConn('offline', 'Offline');
             return;
         }
 
         var socket = io(API_BASE, { transports: ['websocket', 'polling'] });
 
         socket.on('connect', function () {
-            if (dot) { dot.className = 'dot online'; }
+            setConn('online', 'Connesso a LeleCast');
             setStatus('In attesa di trasmissione',
-                'Apri LeleFlix sul telefono e premi <b>Trasmetti su altri schermi</b>.');
+                'Apri LeleFlix sul telefono, scegli un titolo e premi <b>Trasmetti su altri schermi</b>.');
         });
 
         socket.on('disconnect', function () {
-            if (dot) { dot.className = 'dot'; }
-            setStatus('Riconnessione in corso...', 'Connessione a LeleCast persa.');
+            setConn('offline', 'Riconnessione...');
+            setStatus('Riconnessione in corso<span class="dots"><span>.</span><span>.</span><span>.</span></span>',
+                'Connessione a LeleCast persa. Riprovo automaticamente.');
         });
 
         socket.on('connect_error', function () {
-            if (dot) { dot.className = 'dot'; }
-            setStatus('Connessione a LeleCast...', null);
+            setConn('', 'Connessione in corso');
         });
 
         socket.on('remote_play_trigger', function (content) {
             if (!content || content.id == null) { return; }
 
-            var title = content.title || content.name || '';
-            setStatus('Ricezione segnale LeleCast...',
-                title ? ('Avvio: <b>' + title + '</b>') : 'Preparazione riproduzione...');
-
+            var title = content.title || content.name || 'Contenuto LeleFlix';
             var type = content.media_type || 'movie';
             var id = content.id;
-            var target;
 
+            // Overlay di ricezione con poster (se disponibile)
+            if (rcvTitle) { rcvTitle.innerHTML = title; }
+            if (content.poster_path && rcvPoster) {
+                rcvPoster.src = POSTER_BASE + content.poster_path;
+                rcvPoster.style.display = 'block';
+            } else if (rcvPoster) {
+                rcvPoster.style.display = 'none';
+            }
+            if (type === 'tv') {
+                var sLbl = content.season_number || 1;
+                var eLbl = content.episode_number || 1;
+                var subEl = document.getElementById('receive-sub');
+                if (subEl) { subEl.innerHTML = 'Stagione ' + sLbl + ' · Episodio ' + eLbl; }
+            }
+            if (overlay) { overlay.className = 'active'; }
+
+            var target;
             if (type === 'tv') {
                 var season = content.season_number || 1;
                 var episode = content.episode_number || 1;
@@ -188,7 +473,7 @@
 
             setTimeout(function () {
                 window.location.href = target;
-            }, 1500);
+            }, 1800);
         });
     })();
     </script>
