@@ -627,6 +627,18 @@ class VideoPlayer {
                 btnExternal.innerHTML = `<i class="fas fa-external-link-alt"></i> ${label}`;
             }
 
+            // --- Web Video Caster Button ---
+            let btnWvc = document.getElementById('btn-wvc');
+            if (!btnWvc) {
+                btnWvc = document.createElement('button');
+                btnWvc.id = 'btn-wvc';
+                btnWvc.className = 'bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2 mt-2';
+                btnWvc.innerHTML = '<i class="fas fa-tv"></i> Web Video Caster';
+                if (btnCast && btnCast.parentNode) {
+                    btnCast.parentNode.insertBefore(btnWvc, btnCast.nextSibling);
+                }
+            }
+
             // --- Copy Link Button ---
             let btnCopy = document.getElementById('btn-copy-link');
             if (!btnCopy) {
@@ -852,6 +864,47 @@ class VideoPlayer {
                     setTimeout(() => btnCopy.innerHTML = originalText, 2000);
                 } catch (err) {
                     window.prompt('Copia manuale:', videoUrl);
+                }
+            };
+
+            // ACTION: Web Video Caster
+            // Usa l'endpoint /nuvio.m3u8 (master playlist con URL diretti al CDN
+            // vixsrc, CORS *, niente Referer). A differenza di /vlc/*, non passa i
+            // segmenti dal proxy → i player esterni tipo Web Video Caster lo
+            // riproducono senza "source error".
+            btnWvc.onclick = () => {
+                this.logView();
+                const baseUrl = getApiBaseUrl();
+                const p = new URLSearchParams();
+                if (this.content.media_type === 'movie') {
+                    p.set('type', 'movie');
+                    p.set('id', this.content.id);
+                } else {
+                    p.set('type', 'series');
+                    p.set('id', this.content.id);
+                    p.set('season', this.content.season_number);
+                    p.set('episode', this.content.episode_number);
+                }
+                const streamUrl = `${baseUrl}/nuvio.m3u8?${p.toString()}`;
+                const title = encodeURIComponent(this.content.title || this.content.name || 'LeleFlix');
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                if (isAndroid) {
+                    // Intent diretto verso Web Video Caster (apre l'app col link)
+                    const noScheme = streamUrl.replace(/^https?:\/\//, '');
+                    const intentUrl = `intent://${noScheme}#Intent;scheme=https;` +
+                        `package=com.instantbits.cast.webvideo;` +
+                        `S.title=${title};end`;
+                    window.location.href = intentUrl;
+                    // Fallback: se l'app non è installata, copia il link
+                    setTimeout(() => {
+                        navigator.clipboard?.writeText(streamUrl).catch(() => {});
+                    }, 1500);
+                } else {
+                    navigator.clipboard.writeText(streamUrl).then(() => {
+                        const orig = btnWvc.innerHTML;
+                        btnWvc.innerHTML = '<i class="fas fa-check"></i> Link copiato per Web Video Caster';
+                        setTimeout(() => btnWvc.innerHTML = orig, 2500);
+                    }).catch(() => window.prompt('Copia in Web Video Caster:', streamUrl));
                 }
             };
 
