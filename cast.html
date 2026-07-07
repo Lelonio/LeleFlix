@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#e50914">
+<title>LeleFlix Cast</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<!-- Pagina volutamente leggera per TV/dispositivi datati:
+     solo ricevente LeleCast, niente framework, ES5 puro, CSS inline. -->
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background-color: #0a0a0a;
+        color: #ffffff;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        overflow: hidden;
+    }
+    #screen {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        display: -webkit-box;
+        display: -webkit-flex;
+        display: flex;
+        -webkit-box-orient: vertical;
+        -webkit-flex-direction: column;
+        flex-direction: column;
+        -webkit-box-align: center;
+        -webkit-align-items: center;
+        align-items: center;
+        -webkit-box-pack: center;
+        -webkit-justify-content: center;
+        justify-content: center;
+        text-align: center;
+    }
+    .brand {
+        font-size: 42px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        margin-bottom: 40px;
+    }
+    .brand .flix { color: #e50914; }
+
+    .dish {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background-color: #e50914;
+        margin-bottom: 40px;
+        -webkit-box-shadow: 0 0 25px rgba(229, 9, 20, 0.5);
+        box-shadow: 0 0 25px rgba(229, 9, 20, 0.5);
+    }
+    .dish-icon {
+        position: absolute;
+        top: 50%; left: 50%;
+        -webkit-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+        width: 56px;
+        height: 56px;
+        fill: #ffffff;
+        z-index: 2;
+    }
+    .ripple {
+        position: absolute;
+        top: 50%; left: 50%;
+        width: 120px;
+        height: 120px;
+        margin-left: -60px;
+        margin-top: -60px;
+        border: 3px solid rgba(229, 9, 20, 0.7);
+        border-radius: 50%;
+        -webkit-animation: ripple 2s linear infinite;
+        animation: ripple 2s linear infinite;
+        z-index: 1;
+    }
+    .ripple.r2 { -webkit-animation-delay: 0.66s; animation-delay: 0.66s; }
+    .ripple.r3 { -webkit-animation-delay: 1.33s; animation-delay: 1.33s; }
+    @-webkit-keyframes ripple {
+        0%   { width:120px; height:120px; margin-left:-60px; margin-top:-60px; opacity:0.8; }
+        100% { width:340px; height:340px; margin-left:-170px; margin-top:-170px; opacity:0; }
+    }
+    @keyframes ripple {
+        0%   { width:120px; height:120px; margin-left:-60px; margin-top:-60px; opacity:0.8; }
+        100% { width:340px; height:340px; margin-left:-170px; margin-top:-170px; opacity:0; }
+    }
+
+    .status {
+        font-size: 26px;
+        font-weight: bold;
+        margin-bottom: 12px;
+    }
+    .substatus {
+        font-size: 18px;
+        color: #9a9a9a;
+        max-width: 80%;
+    }
+    .dot {
+        display: inline-block;
+        width: 12px; height: 12px;
+        border-radius: 50%;
+        background-color: #666;
+        margin-right: 10px;
+        vertical-align: middle;
+    }
+    .dot.online { background-color: #46d369; }
+</style>
+</head>
+<body>
+    <div id="screen">
+        <div class="brand">Lele<span class="flix">Flix</span> Cast</div>
+        <div class="dish">
+            <div class="ripple r1"></div>
+            <div class="ripple r2"></div>
+            <div class="ripple r3"></div>
+            <svg class="dish-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 20a1 1 0 0 1-1-1C3 12.373 8.373 7 15 7a1 1 0 1 1 0 2c-5.523 0-10 4.477-10 10a1 1 0 0 1-1 1zm5 0a1 1 0 0 1-1-1c0-3.866 3.134-7 7-7a1 1 0 1 1 0 2 5 5 0 0 0-5 5 1 1 0 0 1-1 1zm-4.5-.5A2.5 2.5 0 1 1 4.5 14a2.5 2.5 0 0 1 0 5.5z"/>
+            </svg>
+        </div>
+        <div class="status" id="status">
+            <span class="dot" id="dot"></span><span id="statusText">Connessione a LeleCast...</span>
+        </div>
+        <div class="substatus" id="substatus">Questo schermo &egrave; pronto a ricevere film e serie da LeleFlix.</div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        var API_BASE = 'https://vixprx.dpdns.org/';
+
+        var statusText = document.getElementById('statusText');
+        var substatus = document.getElementById('substatus');
+        var dot = document.getElementById('dot');
+
+        function setStatus(text, sub) {
+            if (statusText) { statusText.innerHTML = text; }
+            if (sub != null && substatus) { substatus.innerHTML = sub; }
+        }
+
+        if (typeof io === 'undefined') {
+            setStatus('Errore di rete', 'Impossibile caricare LeleCast. Controlla la connessione.');
+            return;
+        }
+
+        var socket = io(API_BASE, { transports: ['websocket', 'polling'] });
+
+        socket.on('connect', function () {
+            if (dot) { dot.className = 'dot online'; }
+            setStatus('In attesa di trasmissione',
+                'Apri LeleFlix sul telefono e premi <b>Trasmetti su altri schermi</b>.');
+        });
+
+        socket.on('disconnect', function () {
+            if (dot) { dot.className = 'dot'; }
+            setStatus('Riconnessione in corso...', 'Connessione a LeleCast persa.');
+        });
+
+        socket.on('connect_error', function () {
+            if (dot) { dot.className = 'dot'; }
+            setStatus('Connessione a LeleCast...', null);
+        });
+
+        socket.on('remote_play_trigger', function (content) {
+            if (!content || content.id == null) { return; }
+
+            var title = content.title || content.name || '';
+            setStatus('Ricezione segnale LeleCast...',
+                title ? ('Avvio: <b>' + title + '</b>') : 'Preparazione riproduzione...');
+
+            var type = content.media_type || 'movie';
+            var id = content.id;
+            var target;
+
+            if (type === 'tv') {
+                var season = content.season_number || 1;
+                var episode = content.episode_number || 1;
+                target = 'player.html?tvId=' + encodeURIComponent(id) +
+                         '&season=' + encodeURIComponent(season) +
+                         '&episode=' + encodeURIComponent(episode) +
+                         '&type=tv';
+            } else {
+                target = 'player.html?movieId=' + encodeURIComponent(id) + '&type=movie';
+            }
+
+            setTimeout(function () {
+                window.location.href = target;
+            }, 1500);
+        });
+    })();
+    </script>
+</body>
+</html>
