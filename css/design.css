@@ -303,11 +303,6 @@ body.lf .lf-eyebrow {
     letter-spacing: 0.18em; text-transform: uppercase;
     color: var(--ink-2);
 }
-body.lf .lf-eyebrow-dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 0 4px rgba(229, 56, 59, 0.18);
-}
 
 body.lf .lf-hero-titlebox { display: flex; align-items: flex-end; min-height: 64px; margin-bottom: 18px; }
 body.lf #hero-logo {
@@ -1032,3 +1027,570 @@ body.lf #vlc-prompt #btn-cancel-prompt {
     font: 500 14px/1 var(--font-ui) !important;
 }
 body.lf #vlc-prompt #btn-cancel-prompt:hover { color: var(--ink) !important; }
+
+/* ============================================================
+   RICERCA — campo desktop, campo mobile, cronologia, risultati
+   ============================================================ */
+/* desktop: pillola con icona, scorciatoia "/" e tasto cancella */
+body.lf .lf-search { position: relative; }
+body.lf .lf-search #search-input {
+    height: 40px;
+    padding: 0 64px 0 40px !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    font-size: 14px !important;
+}
+body.lf .lf-nav.scrolled .lf-search #search-input { background: rgba(255, 255, 255, 0.07) !important; }
+body.lf .lf-search #search-input:hover { border-color: rgba(255, 255, 255, 0.2) !important; }
+body.lf .lf-search #search-input:focus {
+    width: 320px;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06) !important;
+}
+body.lf .lf-search-btn { color: var(--ink-2); }
+body.lf .lf-search:focus-within .lf-search-btn { color: var(--ink); }
+body.lf .lf-search-kbd {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    min-width: 22px; height: 22px; padding: 0 6px;
+    display: grid; place-items: center;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    font: 500 12px/1 var(--font-ui);
+    color: var(--ink-3);
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+body.lf .lf-search:focus-within .lf-search-kbd,
+body.lf #search-input:not(:placeholder-shown) ~ .lf-search-kbd { opacity: 0; }
+body.lf .lf-search-clear {
+    position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+    width: 26px; height: 26px; border-radius: 50%;
+    display: none; place-items: center;
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--ink); font-size: 12px;
+    transition: background-color 0.15s ease;
+}
+body.lf .lf-search-clear:hover { background: rgba(255, 255, 255, 0.2); }
+body.lf #search-input:not(:placeholder-shown) ~ .lf-search-clear,
+body.lf #mobile-search-input:not(:placeholder-shown) ~ .lf-search-clear { display: grid; }
+
+/* cronologia: pannello opaco allineato al campo */
+body.lf .lf-search .search-history-dropdown {
+    position: absolute !important;
+    top: calc(100% + 8px) !important; left: 0 !important; right: 0 !important;
+    width: auto !important;
+    margin: 0 !important;
+    z-index: 60;
+}
+body.lf .search-history-dropdown {
+    padding: 6px !important;
+    background: rgba(18, 18, 22, 0.97) !important;
+    border-radius: 16px !important;
+}
+body.lf .search-history-dropdown > div:first-child {
+    background: none !important;
+    padding: 8px 10px 6px !important;
+    font: 600 11px/1 var(--font-ui) !important;
+    letter-spacing: 0.16em !important;
+    color: var(--ink-3) !important;
+}
+body.lf .history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 9px 10px !important;
+    border-radius: 10px;
+    border: 0 !important;
+    cursor: pointer;
+}
+body.lf .history-text { display: flex; align-items: center; gap: 12px; min-width: 0; font: 500 14px/1.2 var(--font-ui); }
+body.lf .history-text span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.lf .history-text i { color: var(--ink-3) !important; font-size: 12px; }
+body.lf .history-delete {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink-3) !important; background: none !important;
+    opacity: 0; transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+body.lf .history-item:hover .history-delete { opacity: 1; }
+body.lf .history-delete:hover { background: rgba(255, 255, 255, 0.1) !important; color: var(--ink) !important; }
+@media (hover: none) { body.lf .history-delete { opacity: 1; } }
+
+/* mobile: campo stile iOS dentro la capsula */
+body.lf #mobile-search-box { padding: 2px 12px 12px !important; }
+body.lf .lf-mobile-search { display: flex; align-items: center; gap: 8px; }
+body.lf .lf-mobile-search-icon {
+    position: absolute; left: 14px; top: 22px; transform: translateY(-50%);
+    color: var(--ink-3); font-size: 14px; pointer-events: none; z-index: 1;
+}
+body.lf #mobile-search-box #mobile-search-input {
+    flex: 1;
+    height: 44px;
+    padding: 0 40px 0 40px !important;
+    border-radius: 12px !important;
+    border: 0 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+body.lf #mobile-search-box #mobile-search-input:focus { background: rgba(255, 255, 255, 0.14) !important; }
+body.lf .lf-mobile-search .lf-search-clear { right: 60px; top: 22px; }
+body.lf #mobile-search-button {
+    position: static !important;
+    flex: 0 0 auto;
+    width: 44px; height: 44px; border-radius: 12px;
+    background: var(--ink); color: var(--bg);
+    font-size: 15px;
+}
+body.lf #mobile-search-box .search-history-dropdown {
+    position: absolute !important;
+    top: calc(100% + 8px) !important; left: 0 !important; right: 0 !important;
+    width: auto !important; margin: 0 !important;
+}
+
+/* pagina risultati */
+body.lf .lf-results-head {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 16px 24px;
+    flex-wrap: wrap;
+    margin-bottom: clamp(20px, 3vw, 36px);
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+}
+body.lf .lf-results-head .lf-eyebrow { margin-bottom: 8px; color: var(--ink-3); }
+body.lf #search-results-section .lf-results-title {
+    font-size: clamp(2.2rem, 1.4rem + 3vw, 4rem) !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+}
+body.lf #search-query-text { font-style: italic; color: var(--ink) !important; }
+body.lf .lf-results-side { display: flex; align-items: center; gap: 16px; }
+body.lf .lf-results-count { font: 500 14px/1 var(--font-ui); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+body.lf .lf-results-close {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 38px; padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    color: var(--ink-2);
+    font: 500 14px/1 var(--font-ui);
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+body.lf .lf-results-close:hover { color: var(--ink); background: var(--surface-hover); }
+body.lf .lf-results-close i { font-size: 12px; }
+
+body.lf .lf-poster--skeleton { pointer-events: none; }
+body.lf .lf-poster--skeleton .lf-poster-media,
+body.lf .lf-poster--skeleton span {
+    background: linear-gradient(100deg, rgba(255, 255, 255, 0.035) 30%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.035) 70%);
+    background-size: 200% 100%;
+    animation: iosShimmer 1.25s ease-in-out infinite;
+}
+body.lf .lf-poster--skeleton span { display: block; height: 12px; border-radius: 6px; margin-top: 12px; width: 75%; }
+body.lf .lf-poster--skeleton span + span { width: 40%; margin-top: 8px; }
+
+body.lf .lf-empty {
+    grid-column: 1 / -1;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding: clamp(40px, 8vw, 96px) 16px;
+    color: var(--ink-2);
+}
+body.lf .lf-empty > i {
+    width: 64px; height: 64px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+    font-size: 22px; color: var(--ink-3);
+    margin-bottom: 20px;
+}
+body.lf .lf-empty h3 {
+    font: 400 clamp(1.6rem, 1.2rem + 1.4vw, 2.3rem)/1.1 var(--font-display);
+    color: var(--ink);
+    margin: 0 0 8px;
+}
+body.lf .lf-empty h3 em { font-style: italic; }
+body.lf .lf-empty p { margin: 0 0 24px; font-size: 15px; color: var(--ink-3); }
+
+/* ============================================================
+   PLAYER — niente backdrop-filter sopra al video:
+   ogni blur andrebbe ricalcolato a ogni fotogramma. Si usano
+   sfumature (scrim) sopra e sotto, come le app TV moderne.
+   ============================================================ */
+body.lf #player-modal { background: #050506 !important; }
+body.lf #videoContainer { background: #000; font-family: var(--font-ui); }
+
+/* annulla i blur storici su tutto ciò che sta sopra al video */
+body.lf #player-modal .controls-container,
+body.lf #player-modal .center-control-btn,
+body.lf #player-modal .settings-menu,
+body.lf #player-modal .seek-tooltip,
+body.lf #player-modal #close-player,
+body.lf #player-modal #fullscreenBtn {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* barra superiore */
+body.lf #backButtonContainer {
+    gap: 12px;
+    padding: clamp(12px, 2vw, 22px) clamp(14px, 2.4vw, 30px) 56px !important;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.32) 55%, rgba(0, 0, 0, 0) 100%) !important;
+}
+body.lf #backButtonContainer > * + * { margin-left: 0 !important; }
+body.lf #close-player {
+    flex: 0 0 auto;
+    width: 40px !important; height: 40px !important;
+    margin: 0 !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow: none !important;
+    color: var(--ink) !important;
+    transition: background-color 0.2s ease !important;
+}
+body.lf #close-player:hover { background: rgba(255, 255, 255, 0.22) !important; }
+body.lf #close-player i { font-size: 16px !important; }
+body.lf #player-title {
+    font: 600 15px/1.3 var(--font-ui) !important;
+    letter-spacing: -0.005em;
+    color: var(--ink) !important;
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5) !important;
+    max-width: 80% !important;
+}
+
+/* controlli in basso: scrim a tutta larghezza */
+body.lf #controlsContainer {
+    position: absolute !important;
+    left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important;
+    width: 100% !important; max-width: none !important;
+    transform: none !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 64px clamp(14px, 2.4vw, 30px) clamp(10px, 1.8vw, 20px) !important;
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.5) 50%, rgba(0, 0, 0, 0) 100%) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+body.lf #controlsContainer > div.flex.items-center.justify-between { order: 2; padding: 0 !important; }
+body.lf #controlsContainer > div.flex.items-center.justify-between > div { margin: 0 !important; }
+
+/* barra di avanzamento */
+body.lf #progressContainer {
+    order: 1;
+    position: relative;
+    height: 4px !important;
+    margin: 0 0 6px !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.24) !important;
+    transition: height 0.15s ease;
+}
+body.lf #progressContainer:hover { height: 6px !important; }
+body.lf #progressBar {
+    background: var(--accent) !important;
+    border-radius: inherit !important;
+    box-shadow: none !important;
+}
+body.lf #progressBar::after {
+    width: 14px !important; height: 14px !important; right: -7px !important;
+    background: var(--ink) !important;
+    box-shadow: 0 0 0 4px rgba(229, 56, 59, 0.28), 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+    opacity: 1 !important;
+    transform: translateY(-50%) scale(0) !important;
+    transition: transform 0.15s ease !important;
+}
+body.lf #controlsContainer.visible #progressBar::after { transform: translateY(-50%) scale(0.75) !important; }
+body.lf #progressContainer:hover #progressBar::after { transform: translateY(-50%) scale(1) !important; }
+body.lf .seek-tooltip {
+    bottom: 18px !important;
+    padding: 5px 9px !important;
+    border-radius: 8px !important;
+    background: rgba(18, 18, 22, 0.94) !important;
+    border: 1px solid var(--line) !important;
+    font: 600 12px/1 var(--font-ui) !important;
+    font-variant-numeric: tabular-nums;
+}
+
+/* riga pulsanti */
+body.lf #controlsContainer .space-x-4,
+body.lf #controlsContainer .space-x-3 { gap: 4px; }
+body.lf #controlsContainer .space-x-4 > *,
+body.lf #controlsContainer .space-x-3 > * { margin-left: 0 !important; }
+body.lf #controlsContainer .flex.items-center.justify-between button:not(#nextEpisodeBtn) {
+    width: 40px; height: 40px;
+    display: inline-grid; place-items: center;
+    margin: 0 !important;
+    border-radius: 50%;
+    color: var(--ink) !important;
+    background: transparent;
+    transition: background-color 0.2s ease, color 0.2s ease !important;
+}
+body.lf #controlsContainer .flex.items-center.justify-between button:not(#nextEpisodeBtn):hover { background: rgba(255, 255, 255, 0.12); }
+body.lf #controlsContainer .flex.items-center.justify-between button i { font-size: 17px !important; }
+body.lf #controlsContainer .text-sm.text-gray-300 {
+    margin-left: 8px;
+    font: 500 13px/1 var(--font-ui) !important;
+    color: var(--ink-2) !important;
+    font-variant-numeric: tabular-nums;
+}
+body.lf #duration { color: var(--ink-3); }
+body.lf #volumeSlider { accent-color: var(--ink); }
+body.lf #captionsBadge, body.lf #playerChatBadge { background: var(--accent) !important; font: 700 8px/1 var(--font-ui) !important; }
+body.lf #fullscreenBtn {
+    position: static !important;
+    width: 40px !important; height: 40px !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    box-shadow: none !important;
+    display: inline-grid !important;
+}
+
+/* prossimo episodio: pillola avorio */
+body.lf #nextEpisodeBtn {
+    height: 36px;
+    padding: 0 14px !important;
+    gap: 8px;
+    border-radius: 999px !important;
+    background: var(--ink) !important;
+    color: #0b0b0d !important;
+    font: 600 13px/1 var(--font-ui) !important;
+}
+body.lf #nextEpisodeBtn:hover { background: #fff !important; }
+body.lf #nextEpisodeBtn i { font-size: 12px !important; }
+
+/* menu impostazioni / audio / sottotitoli: pannello opaco */
+body.lf #player-modal .settings-menu {
+    bottom: 52px !important; right: -4px !important;
+    min-width: 220px !important;
+    padding: 6px !important;
+    background: rgba(18, 18, 22, 0.97) !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6) !important;
+}
+body.lf #player-modal .settings-menu > div:first-child {
+    border: 0 !important;
+    padding: 8px 12px 6px !important;
+}
+body.lf #player-modal .settings-menu > div:first-child span {
+    font: 600 11px/1 var(--font-ui) !important;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3) !important;
+}
+body.lf #player-modal .quality-option,
+body.lf #player-modal .subtitle-option,
+body.lf #player-modal .audio-option {
+    padding: 10px 12px !important;
+    border-radius: 10px;
+    font: 500 14px/1.2 var(--font-ui);
+    color: var(--ink);
+    transition: background-color 0.15s ease;
+}
+body.lf #player-modal .quality-option:hover,
+body.lf #player-modal .subtitle-option:hover,
+body.lf #player-modal .audio-option:hover { background: rgba(255, 255, 255, 0.08) !important; }
+body.lf #player-modal .settings-menu .text-primary { color: var(--ink) !important; }
+
+/* controlli centrali: play avorio, skip discreti */
+body.lf #centerControls { gap: clamp(28px, 6vw, 72px) !important; }
+body.lf #centerControls .center-control-btn {
+    width: 56px !important; height: 56px !important;
+    background: rgba(0, 0, 0, 0.34) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: none !important;
+    color: var(--ink) !important;
+    transition: transform 0.25s var(--ease), background-color 0.2s ease !important;
+}
+body.lf #centerControls .center-control-btn::before,
+body.lf #centerControls .center-control-btn::after { display: none !important; }
+body.lf #centerControls .center-control-btn i { font-size: 18px !important; filter: none !important; margin: 0 !important; }
+body.lf #centerControls .center-control-btn.play-btn {
+    width: 76px !important; height: 76px !important;
+    background: rgba(243, 239, 232, 0.94) !important;
+    border: 0 !important;
+    color: #0b0b0d !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45) !important;
+}
+body.lf #centerControls .center-control-btn.play-btn i { font-size: 24px !important; }
+body.lf #centerControls .center-control-btn.play-btn .fa-play { margin-left: 4px !important; }
+body.lf #centerControls .center-control-btn:hover { transform: scale(1.06); background: rgba(0, 0, 0, 0.5) !important; }
+body.lf #centerControls .center-control-btn.play-btn:hover { background: #fff !important; }
+body.lf #centerControls .center-control-btn:active { transform: scale(0.95); }
+
+/* animazione +10s / -10s */
+body.lf .skip-animation {
+    font: 400 2.6rem/1 var(--font-display) !important;
+    color: var(--ink);
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
+}
+
+/* caricamento */
+body.lf .lf-player-loading { background: rgba(0, 0, 0, 0.3); z-index: 15; }
+body.lf .lf-spinner {
+    width: 46px; height: 46px; border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.16);
+    border-top-color: var(--ink);
+    animation: lfSpin 0.85s linear infinite;
+}
+@keyframes lfSpin { to { transform: rotate(360deg); } }
+
+/* errore */
+body.lf .lf-player-error { background: rgba(9, 9, 11, 0.9); z-index: 30; }
+body.lf .lf-player-error .error-message {
+    max-width: 380px; padding: 24px;
+    text-align: center;
+    background: none !important;
+    display: flex; flex-direction: column; align-items: center;
+}
+body.lf .lf-player-error-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(229, 56, 59, 0.12);
+    color: var(--accent); font-size: 20px;
+    margin-bottom: 16px;
+}
+body.lf .lf-player-error h3 { font: 400 clamp(1.6rem, 1.2rem + 1.2vw, 2.2rem)/1.1 var(--font-display); color: var(--ink); margin: 0 0 8px; }
+body.lf .lf-player-error p { margin: 0 0 22px; font-size: 14.5px; line-height: 1.55; color: var(--ink-2); }
+
+/* toast */
+body.lf #player-toast {
+    padding: 10px 18px !important;
+    border-radius: 999px !important;
+    background: rgba(18, 18, 22, 0.95) !important;
+    border: 1px solid var(--line) !important;
+    font: 500 14px/1.2 var(--font-ui) !important;
+    color: var(--ink) !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+/* popup "Riprendi" e "Prossimo episodio" */
+body.lf .lf-prompt {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    width: min(360px, calc(100% - 32px));
+    padding: 22px;
+    border-radius: 20px;
+    background: rgba(18, 18, 22, 0.96);
+    border: 1px solid var(--line);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+    color: var(--ink);
+    font-family: var(--font-ui);
+}
+body.lf .lf-prompt .prompt-content { text-align: left !important; }
+body.lf .lf-prompt-eyebrow {
+    display: block;
+    font: 600 11px/1 var(--font-ui);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 10px;
+}
+body.lf .lf-prompt .prompt-content p {
+    font: 400 1.65rem/1.15 var(--font-display) !important;
+    margin: 0 0 20px !important;
+    color: var(--ink);
+}
+body.lf .lf-prompt .prompt-content p strong { font-weight: 400; font-style: italic; }
+body.lf .lf-prompt .prompt-buttons { display: flex; gap: 10px; justify-content: stretch !important; }
+body.lf .lf-prompt .prompt-buttons button {
+    flex: 1;
+    height: 44px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 0 14px !important;
+    border-radius: 999px !important;
+    border: 1px solid var(--line-strong) !important;
+    background: transparent !important;
+    color: var(--ink) !important;
+    font: 600 14px/1 var(--font-ui) !important;
+    transition: background-color 0.2s ease !important;
+}
+body.lf .lf-prompt .prompt-buttons button:hover { background: rgba(255, 255, 255, 0.08) !important; }
+body.lf .lf-prompt .prompt-buttons button.lf-prompt-primary {
+    background: var(--ink) !important;
+    border-color: transparent !important;
+    color: #0b0b0d !important;
+}
+body.lf .lf-prompt .prompt-buttons button.lf-prompt-primary:hover { background: #fff !important; }
+body.lf .lf-prompt .prompt-buttons button i { font-size: 12px; }
+
+/* pannello informazioni (destra su desktop, sotto il video su mobile) */
+body.lf #player-info { font-family: var(--font-ui); background: var(--bg) !important; }
+body.lf #player-info-title {
+    font: 400 clamp(1.6rem, 1.3rem + 0.8vw, 2rem)/1.05 var(--font-display) !important;
+    letter-spacing: -0.005em !important;
+    color: var(--ink);
+    margin-bottom: 8px !important;
+}
+body.lf #player-info-meta { font-size: 13px !important; color: var(--ink-3) !important; margin-bottom: 16px !important; font-variant-numeric: tabular-nums; }
+body.lf #player-info-overview { font-size: 14.5px !important; line-height: 1.6 !important; color: var(--ink-2) !important; }
+body.lf #player-info .pi-label {
+    font: 600 11px/1 var(--font-ui) !important;
+    letter-spacing: 0.16em !important;
+    color: var(--ink-3) !important;
+    margin-bottom: 10px !important;
+}
+body.lf #player-info-cast { font-size: 14px !important; color: var(--ink-2) !important; }
+body.lf #player-info-cast-wrap, body.lf #player-info-episodes, body.lf #player-info-similar {
+    margin-top: 22px !important;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+}
+body.lf .pi-ep {
+    background: var(--surface) !important;
+    border: 1px solid transparent !important;
+    border-radius: 12px !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease !important;
+}
+body.lf .pi-ep:hover { background: var(--surface-hover) !important; }
+body.lf .pi-ep-current { border-color: rgba(229, 56, 59, 0.5) !important; background: rgba(229, 56, 59, 0.08) !important; }
+body.lf .pi-ep-thumb { border-radius: 8px !important; background: var(--bg-raised) !important; }
+body.lf .pi-ep-title { color: var(--ink); font-weight: 500 !important; }
+body.lf .pi-ep-dur { color: var(--ink-3) !important; }
+body.lf .pi-sim img { border-radius: 10px !important; box-shadow: inset 0 0 0 1px var(--line); }
+
+@media (min-width: 769px) {
+    body.lf #player-modal > div > div {
+        border-radius: 18px !important;
+        box-shadow: 0 0 0 1px var(--line), 0 40px 120px rgba(0, 0, 0, 0.6) !important;
+    }
+    body.lf #player-info {
+        background: var(--bg-raised) !important;
+        border-left: 1px solid var(--line) !important;
+        padding: 28px 24px !important;
+    }
+}
+
+/* mobile verticale: video piccolo, controlli compatti */
+@media (max-width: 768px) and (orientation: portrait) {
+    body.lf #controlsContainer {
+        padding: 28px 10px 4px !important;
+        gap: 2px !important;
+    }
+    body.lf #progressContainer { margin: 0 4px 2px !important; }
+    body.lf #controlsContainer .text-sm.text-gray-300 { margin-left: 6px; font-size: 12px !important; }
+    body.lf #controlsContainer .flex.items-center.justify-between button:not(#nextEpisodeBtn) { width: 36px; height: 36px; }
+    body.lf #controlsContainer .flex.items-center.justify-between button i { font-size: 15px !important; }
+    body.lf #backButtonContainer { padding: 10px 12px 36px !important; }
+    body.lf #close-player { width: 34px !important; height: 34px !important; }
+    body.lf #player-title { font-size: 13.5px !important; }
+    body.lf #centerControls .center-control-btn { width: 44px !important; height: 44px !important; }
+    body.lf #centerControls .center-control-btn.play-btn { width: 58px !important; height: 58px !important; }
+    body.lf #centerControls .center-control-btn i { font-size: 15px !important; }
+    body.lf #centerControls .center-control-btn.play-btn i { font-size: 19px !important; }
+    body.lf .lf-prompt { padding: 14px 16px; border-radius: 16px; }
+    body.lf .lf-prompt-eyebrow { margin-bottom: 6px; }
+    body.lf .lf-prompt .prompt-content p { font-size: 1.2rem !important; margin-bottom: 12px !important; }
+    body.lf .lf-prompt .prompt-buttons button { height: 38px; font-size: 13px !important; }
+    body.lf #player-info { padding: 20px 16px calc(28px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+
+/* misure compatte (annullano i minimi touch globali di style.css) */
+body.lf .lf-search-clear { width: 26px !important; height: 26px !important; min-width: 0 !important; min-height: 0 !important; padding: 0 !important; }
+body.lf .history-item { min-height: 0 !important; }
+body.lf .history-delete { min-width: 0 !important; min-height: 0 !important; padding: 0 !important; }
+body.lf .lf-results-close { min-height: 0 !important; }
+@media (max-width: 767px) {
+    body.lf .lf-results-head { align-items: flex-start; }
+    body.lf .lf-results-side { width: 100%; justify-content: space-between; }
+    body.lf .lf-results-close { height: 34px; padding: 0 14px; font-size: 13px; }
+    body.lf .history-item { padding: 11px 10px !important; }
+}

@@ -1837,10 +1837,12 @@ main .max-w-7xl {
         </nav>
 
         <div class="lf-nav-actions">
-            <div class="lf-search">
+            <div class="lf-search" role="search">
                 <button id="search-button" class="lf-search-btn" aria-label="Cerca"><i class="fas fa-magnifying-glass"></i></button>
                 <input id="search-input" type="text" placeholder="Cerca film o serie"
-                       autocomplete="off" aria-label="Cerca film e serie TV">
+                       autocomplete="off" spellcheck="false" enterkeyhint="search" aria-label="Cerca film e serie TV">
+                <kbd class="lf-search-kbd" aria-hidden="true">/</kbd>
+                <button type="button" class="lf-search-clear" data-clear="search-input" aria-label="Cancella ricerca"><i class="fas fa-xmark"></i></button>
                 <div id="search-history-desktop" class="search-history-dropdown"></div>
             </div>
             <button type="button" class="lf-party-btn" onclick="openPartyMenu()">
@@ -1853,9 +1855,11 @@ main .max-w-7xl {
     </div>
 
     <div id="mobile-search-box">
-        <div class="lf-mobile-search">
+        <div class="lf-mobile-search" role="search">
+            <i class="fas fa-magnifying-glass lf-mobile-search-icon" aria-hidden="true"></i>
             <input id="mobile-search-input" type="text" placeholder="Cerca film o serie"
-                   autocomplete="off" aria-label="Cerca film e serie TV">
+                   autocomplete="off" spellcheck="false" enterkeyhint="search" aria-label="Cerca film e serie TV">
+            <button type="button" class="lf-search-clear" data-clear="mobile-search-input" aria-label="Cancella ricerca"><i class="fas fa-xmark"></i></button>
             <button id="mobile-search-button" aria-label="Cerca"><i class="fas fa-arrow-right"></i></button>
             <div id="search-history-mobile" class="search-history-dropdown"></div>
         </div>
@@ -1935,8 +1939,8 @@ function renderHistory(containerId) {
         div.className = 'history-item';
         div.innerHTML = `
             <div class="history-text">
-                <i class="fas fa-history text-gray-500"></i>
-                <span>${term}</span>
+                <i class="fas fa-clock-rotate-left"></i>
+                <span>${escapeHtml(term)}</span>
             </div>
             <button class="history-delete" onclick="deleteHistoryItem('${term.replace(/'/g, "\\'")}', event)">
                 <i class="fas fa-times"></i>
@@ -2261,7 +2265,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     <div class="lf-hero-shade" aria-hidden="true"></div>
     <div class="lf-hero-inner">
         <div class="lf-hero-copy">
-            <p class="lf-eyebrow"><span class="lf-eyebrow-dot" aria-hidden="true"></span><span id="hero-kind">In evidenza</span></p>
+            <p class="lf-eyebrow"><span id="hero-kind">In evidenza</span></p>
             <div class="lf-hero-titlebox">
                 <img id="hero-logo" src="" alt="" class="hidden">
                 <h1 id="hero-title" class="lf-hero-title"></h1>
@@ -2471,9 +2475,18 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 
 </div>
 
-    <section id="search-results-section" class="hidden px-4 sm:px-6 lg:px-8 py-8">
-  <h2 class="text-xl font-bold mb-4 mt-10">Risultati per: <span id="search-query-text" class="text-primary"></span></h2>
-  <div id="search-results-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+    <section id="search-results-section" class="hidden">
+  <header class="lf-results-head">
+    <div>
+      <p class="lf-eyebrow">Risultati della ricerca</p>
+      <h2 class="lf-results-title"><span id="search-query-text"></span></h2>
+    </div>
+    <div class="lf-results-side">
+      <span id="search-count" class="lf-results-count"></span>
+      <button type="button" class="lf-results-close" onclick="clearSearch()"><i class="fas fa-arrow-left"></i><span>Torna alla home</span></button>
+    </div>
+  </header>
+  <div id="search-results-grid"></div>
 </section>
 
 
@@ -2574,10 +2587,8 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
                 <div id="flying-reactions-container" class="flying-reactions-container"></div>
 
                 <!-- Loading overlay -->
-                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden" id="loadingOverlay">
-                    <div class="loading-spinner text-4xl">
-                        <i class="fas fa-circle-notch"></i>
-                    </div>
+                <div class="absolute inset-0 flex items-center justify-center hidden lf-player-loading" id="loadingOverlay">
+                    <div class="lf-spinner" role="status" aria-label="Caricamento"></div>
                 </div>
 
                 <!-- Skip animations -->
@@ -2589,15 +2600,13 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
                 </div>
 
                 <!-- Error overlay -->
-                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 hidden" id="errorOverlay">
-                    <div class="error-message p-6 rounded-lg text-center max-w-md">
-                        <div class="text-red-500 text-4xl mb-3">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <h3 class="text-xl font-bold mb-2">Playback Error</h3>
-                        <p class="text-gray-300 mb-4" id="errorText">Failed to load video stream. Please try again later.</p>
-                        <button class="bg-primary hover:bg-red-700 px-4 py-2 rounded" id="retryButton">
-                            <i class="fas fa-redo mr-2"></i> Retry
+                <div class="absolute inset-0 flex items-center justify-center hidden lf-player-error" id="errorOverlay">
+                    <div class="error-message">
+                        <span class="lf-player-error-icon"><i class="fas fa-triangle-exclamation"></i></span>
+                        <h3>Riproduzione non riuscita</h3>
+                        <p id="errorText">Impossibile caricare il video. Riprova più tardi.</p>
+                        <button class="lf-btn lf-btn--primary" id="retryButton">
+                            <i class="fas fa-rotate-right"></i> Riprova
                         </button>
                     </div>
                 </div>
@@ -3184,14 +3193,14 @@ async function searchMedia(query) {
   saveSearchToHistory(actualQuery);
 
   document.body.classList.add('show-search-results');
-  document.getElementById("search-query-text").textContent = `"${query}"`;
+  document.getElementById("search-query-text").textContent = query;
+  const searchCountEl = document.getElementById("search-count");
+  if (searchCountEl) searchCountEl.textContent = '';
   const resultsGrid = document.getElementById("search-results-grid");
-  resultsGrid.innerHTML = `
-    <div style="grid-column:1/-1; text-align:center; padding:40px;">
-      <i class="fas fa-spinner fa-spin" style="font-size:2rem;"></i>
-      <p>Ricerca in corso...</p>
-    </div>
-  `;
+  // Skeleton nella stessa griglia dei risultati
+  resultsGrid.innerHTML = Array.from({ length: 12 }, () =>
+    '<div class="lf-poster lf-poster--skeleton"><div class="lf-poster-media"></div><span></span><span></span></div>').join('');
+  window.scrollTo(0, 0);
   document.getElementById("search-results-section").classList.remove("hidden");
 
 try {
@@ -3259,20 +3268,20 @@ try {
         filteredResults.sort((a, b) => relevance(b) - relevance(a));
 
     if (filteredResults.length === 0) {
+      if (searchCountEl) searchCountEl.textContent = 'Nessun titolo';
       resultsGrid.innerHTML = `
-        <div style="grid-column:1/-1; text-align:center; padding:40px;">
-          <i class="far fa-sad-tear" style="font-size:2rem;"></i>
-          <p>Nessun risultato per "${query}"</p>
-          <button onclick="clearSearch()"
-            style="margin-top:15px; background:#E50914; color:white; border:none; padding:10px 20px; border-radius:5px; cursor:pointer;">
-            Torna alla home
-          </button>
+        <div class="lf-empty">
+          <i class="fas fa-film" aria-hidden="true"></i>
+          <h3>Nessun risultato per <em>${escapeHtml(query)}</em></h3>
+          <p>Controlla l'ortografia o prova con il titolo originale.</p>
+          <button type="button" class="lf-btn lf-btn--primary" onclick="clearSearch()">Torna alla home</button>
         </div>
       `;
       return;
     }
 
 
+        if (searchCountEl) searchCountEl.textContent = filteredResults.length === 1 ? '1 titolo' : `${filteredResults.length} titoli`;
         resultsGrid.innerHTML = filteredResults.map(item => {
             const isTV = item.media_type === 'tv';
             const title = isTV ? item.name : item.title;
@@ -3300,7 +3309,12 @@ try {
 
   } catch (err) {
     console.error("Search error:", err);
-    resultsGrid.innerHTML = `<p style="color:white;text-align:center;">Errore nella ricerca</p>`;
+    resultsGrid.innerHTML = `
+        <div class="lf-empty">
+          <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+          <h3>Ricerca non riuscita</h3>
+          <p>Controlla la connessione e riprova.</p>
+        </div>`;
   }
 }
 
@@ -3346,6 +3360,30 @@ function clearSearch() {
   document.body.classList.remove('show-search-results');
   document.getElementById("search-results-section").classList.add("hidden");
 }
+
+// Campo di ricerca: pulsante "cancella" e scorciatoia "/" (desktop)
+(function setupSearchFieldUX() {
+  document.querySelectorAll('.lf-search-clear').forEach(btn => {
+    btn.addEventListener('mousedown', e => e.preventDefault()); // non perdere il focus
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.clear);
+      if (!input) return;
+      input.value = '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    const input = document.getElementById('search-input');
+    if (!input || input.offsetParent === null) return;
+    e.preventDefault();
+    input.focus();
+    input.select();
+  });
+})();
 
 // --- GESTIONE VISTE ---
 
