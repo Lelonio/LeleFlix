@@ -286,9 +286,12 @@ body.lf #hero-backdrop {
 }
 body.lf .lf-hero-shade {
     position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    /* Sfumature con curva "smoothstep" (generate a molti stop): l'immagine si
+       dissolve nello sfondo senza la linea visibile delle sfumature lineari.
+       In basso il colore è già quello della pagina (--bg) per il 6%. */
     background:
-        linear-gradient(180deg, rgba(9, 9, 11, 0.55) 0%, rgba(9, 9, 11, 0) 22%),
-        linear-gradient(0deg, var(--bg) 0%, rgba(9, 9, 11, 0.88) 26%, rgba(9, 9, 11, 0.35) 55%, rgba(9, 9, 11, 0) 75%);
+        linear-gradient(180deg, rgba(9, 9, 11, 0.550) 0.0%, rgba(9, 9, 11, 0.509) 4.0%, rgba(9, 9, 11, 0.407) 8.0%, rgba(9, 9, 11, 0.275) 12.0%, rgba(9, 9, 11, 0.143) 16.0%, rgba(9, 9, 11, 0.041) 20.0%, rgba(9, 9, 11, 0.000) 24.0%),
+        linear-gradient(0deg, rgba(9, 9, 11, 1) 0%, rgba(9, 9, 11, 1.000) 6.0%, rgba(9, 9, 11, 0.980) 11.5%, rgba(9, 9, 11, 0.926) 17.0%, rgba(9, 9, 11, 0.844) 22.5%, rgba(9, 9, 11, 0.741) 28.0%, rgba(9, 9, 11, 0.624) 33.5%, rgba(9, 9, 11, 0.500) 39.0%, rgba(9, 9, 11, 0.376) 44.5%, rgba(9, 9, 11, 0.259) 50.0%, rgba(9, 9, 11, 0.156) 55.5%, rgba(9, 9, 11, 0.074) 61.0%, rgba(9, 9, 11, 0.020) 66.5%, rgba(9, 9, 11, 0.000) 72.0%);
 }
 body.lf .lf-hero-inner {
     position: absolute; inset: auto 0 0 0; z-index: 2;
@@ -395,9 +398,9 @@ body.lf .lf-btn--glass:hover { background: linear-gradient(180deg, rgba(255, 255
     body.lf #hero-section { height: clamp(620px, 90vh, 940px) !important; }
     body.lf .lf-hero-shade {
         background:
-            linear-gradient(180deg, rgba(9, 9, 11, 0.6) 0%, rgba(9, 9, 11, 0) 20%),
-            linear-gradient(90deg, rgba(9, 9, 11, 0.9) 0%, rgba(9, 9, 11, 0.55) 32%, rgba(9, 9, 11, 0) 62%),
-            linear-gradient(0deg, var(--bg) 0%, rgba(9, 9, 11, 0.6) 18%, rgba(9, 9, 11, 0) 45%);
+            linear-gradient(180deg, rgba(9, 9, 11, 0.600) 0.0%, rgba(9, 9, 11, 0.556) 3.7%, rgba(9, 9, 11, 0.444) 7.3%, rgba(9, 9, 11, 0.300) 11.0%, rgba(9, 9, 11, 0.156) 14.7%, rgba(9, 9, 11, 0.044) 18.3%, rgba(9, 9, 11, 0.000) 22.0%),
+            linear-gradient(90deg, rgba(9, 9, 11, 0.880) 0.0%, rgba(9, 9, 11, 0.855) 6.6%, rgba(9, 9, 11, 0.788) 13.2%, rgba(9, 9, 11, 0.690) 19.8%, rgba(9, 9, 11, 0.570) 26.4%, rgba(9, 9, 11, 0.440) 33.0%, rgba(9, 9, 11, 0.310) 39.6%, rgba(9, 9, 11, 0.190) 46.2%, rgba(9, 9, 11, 0.092) 52.8%, rgba(9, 9, 11, 0.025) 59.4%, rgba(9, 9, 11, 0.000) 66.0%),
+            linear-gradient(0deg, rgba(9, 9, 11, 1) 0%, rgba(9, 9, 11, 1.000) 5.0%, rgba(9, 9, 11, 0.980) 9.4%, rgba(9, 9, 11, 0.926) 13.8%, rgba(9, 9, 11, 0.844) 18.2%, rgba(9, 9, 11, 0.741) 22.7%, rgba(9, 9, 11, 0.624) 27.1%, rgba(9, 9, 11, 0.500) 31.5%, rgba(9, 9, 11, 0.376) 35.9%, rgba(9, 9, 11, 0.259) 40.3%, rgba(9, 9, 11, 0.156) 44.8%, rgba(9, 9, 11, 0.074) 49.2%, rgba(9, 9, 11, 0.020) 53.6%, rgba(9, 9, 11, 0.000) 58.0%);
     }
 }
 @media (max-width: 767px) {
