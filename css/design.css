@@ -1880,3 +1880,34 @@ body.lf .lf-results-close { min-height: 0 !important; }
     body.lf .lf-results-close { height: 34px; padding: 0 14px; font-size: 13px; }
     body.lf .history-item { padding: 11px 10px !important; }
 }
+
+/* ============================================================
+   LINK A ROTTEN TOMATOES
+   ============================================================ */
+body.lf .lf-score--link {
+    text-decoration: none;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+body.lf .lf-score--link:hover { background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); }
+body.lf .lf-score-ext { font-size: 9px; margin-left: 3px; opacity: 0.7; }
+body.lf .lf-rt-link {
+    display: inline-flex; align-items: center; gap: 12px;
+    color: inherit; text-decoration: none;
+    padding: 4px 8px; margin: -4px -8px;
+    border-radius: 999px;
+    transition: background-color 0.2s ease;
+}
+body.lf .lf-rt-link:hover { background: rgba(255, 255, 255, 0.1); }
+body.lf .rt-badge[data-rt-url] { cursor: pointer; }
+body.lf .rt-badge[data-rt-url]:hover { background: rgba(9, 9, 11, 0.9); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24); }
+
+/* ============================================================
+   BARRA DI STATO TRASPARENTE (iOS black-translucent)
+   Il contenuto passa sotto l'orologio: il player in verticale
+   parte sotto la safe area, così il video non finisce dietro.
+   ============================================================ */
+@media (max-width: 768px) and (orientation: portrait) {
+    body.lf #player-modal { padding-top: env(safe-area-inset-top, 0px); }
+    body.lf #player-modal > div { min-height: calc(100dvh - env(safe-area-inset-top, 0px)) !important; }
+    body.lf #player-modal > div > div { height: calc(100dvh - env(safe-area-inset-top, 0px)) !important; }
+}
