@@ -87,7 +87,8 @@ class VideoPlayer {
             document.head.appendChild(appleMeta);
         }
         // Tutti i colori dell'app sono scuri: barra iOS nera (mai quella bianca "default")
-        appleMeta.setAttribute('content', (color === '#000000' || color === '#000') ? 'black-translucent' : 'black');
+        // Barra di stato iOS trasparente: il contenuto passa sotto (safe area gestita nel CSS)
+        appleMeta.setAttribute('content', 'black-translucent');
     }
 
     // ── Player Full-Screen Background (PWA gap fix) ─────────
@@ -1928,7 +1929,9 @@ class VideoPlayer {
         this.currentStreamId = null;
         this.abortController = null;
         this.playerModal.classList.add('hidden');
-        document.body.classList.remove('overlay-active');
+        // se sotto c'è la scheda dettaglio, la tab bar deve restare nascosta
+        const detailOpen = document.getElementById('detail-view') && !document.getElementById('detail-view').classList.contains('hidden');
+        if (!detailOpen) document.body.classList.remove('overlay-active');
         // Restore PWA status bar color and body background when player closes
         this.restoreThemeColor();
         this.setPlayerBackground(false);

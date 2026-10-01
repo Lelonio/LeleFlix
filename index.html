@@ -7,7 +7,7 @@
   <title>LeleFlix</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#09090b">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <!-- Preconnect: avvia DNS/TLS verso API e TMDB mentre la pagina si carica -->
   <link rel="preconnect" href="https://vixprx.dpdns.org" crossorigin>
@@ -3377,9 +3377,11 @@ async function getFullDetails(id, type = 'movie') {
     return { ...data, media_type: type };
 }
 
-async function openDetailView(contentOrId, type = 'movie') {
-    // 1. Salva posizione scroll
-    scrollPositionBeforeDetail = window.scrollY;
+async function openDetailView(contentOrId, type = 'movie', opts = {}) {
+    const dvNow = document.getElementById('detail-view');
+    const alreadyOpen = !dvNow.classList.contains('hidden') && !dvNow.classList.contains('detail-view-exit');
+    // 1. Salva posizione scroll della home (solo se si arriva dalla home)
+    if (!alreadyOpen) scrollPositionBeforeDetail = window.scrollY;
     const token = ++detailToken;
 
     // 2. Recupera i dati completi (anche se arriva un oggetto parziale da una card)
@@ -3388,12 +3390,19 @@ async function openDetailView(contentOrId, type = 'movie') {
     const mediaType = (base && base.media_type) || type;
     let content;
     try {
-        content = await getFullDetails(id, mediaType);
+        content = (base && base.credits && base.images) ? base : await getFullDetails(id, mediaType);
     } catch (e) {
         console.error('Errore dettagli:', e);
         content = base ? { ...base, media_type: mediaType } : await getMovieDetails(id, mediaType);
     }
     if (token !== detailToken) return;
+
+    // Se una scheda è già aperta (es. "Potrebbe piacerti anche"), il gesto
+    // indietro deve tornare al titolo precedente, non alla home.
+    const previous = window.currentDetailContent;
+    if (alreadyOpen && previous && !opts.fromHistory && window.LeleNav) {
+        window.LeleNav.opened('detail-' + token, () => openDetailView(previous, previous.media_type, { fromHistory: true }));
+    }
 
     // 3. Popola i dati
     populateDetailView(content, token);
@@ -3484,6 +3493,18 @@ function pickTrailer(c) {
     const vids = (c.videos?.results || []).filter(v => v.site === 'YouTube' && v.key);
     const score = v => (v.type === 'Trailer' ? 4 : v.type === 'Teaser' ? 2 : 0) + (v.iso_639_1 === 'it' ? 2 : 0) + (v.official ? 1 : 0);
     return vids.sort((a, b) => score(b) - score(a))[0] || null;
+}
+
+// Link alla pagina Rotten Tomatoes: usa l'URL del proxy se c'è, altrimenti la ricerca per titolo
+function rtPageUrl(rt, title) {
+    const cand = rt && (rt.url || rt.rtUrl || rt.link || rt.href);
+    if (typeof cand === 'string' && cand) {
+        try {
+            const u = new URL(cand, 'https://www.rottentomatoes.com');
+            if (/(^|\.)rottentomatoes\.com$/.test(u.hostname)) return u.href;
+        } catch (e) { /* URL non valido: si usa la ricerca */ }
+    }
+    return `https://www.rottentomatoes.com/search?search=${encodeURIComponent(title || '')}`;
 }
 
 // RT: prima la cache del proxy, poi lo scraping forzato
@@ -3622,19 +3643,21 @@ function populateDetailView(content, token = detailToken) {
     loadRTScoresFor(rtTitle, isTV ? 'tv' : 'movie', year).then(rt => {
         if (token !== detailToken) return;
         let rtHtml = '';
+        const rtHref = escapeHtml(rtPageUrl(rt, rtTitle));
+        const ext = '<i class="fas fa-arrow-up-right-from-square lf-score-ext" aria-hidden="true"></i>';
         if (rt && rt.criticsScore !== null) {
             rtHtml += `
-                <div class="lf-score" title="Tomatometer (critica)">
+                <a class="lf-score lf-score--link" href="${rtHref}" target="_blank" rel="noopener noreferrer" title="Apri su Rotten Tomatoes">
                     <span class="lf-score-value"><img src="./icons/${rt.criticsScore >= 60 ? 'tomato' : 'splat'}.svg" alt="">${rt.criticsScore}%</span>
-                    <span class="lf-score-label">Critica</span>
-                </div>`;
+                    <span class="lf-score-label">Critica ${ext}</span>
+                </a>`;
         }
         if (rt && rt.audienceScore !== null) {
             rtHtml += `
-                <div class="lf-score" title="Popcornmeter (pubblico)">
+                <a class="lf-score lf-score--link" href="${rtHref}" target="_blank" rel="noopener noreferrer" title="Apri su Rotten Tomatoes">
                     <span class="lf-score-value"><img src="./icons/${rt.audienceScore >= 60 ? 'popcorn-full' : 'popcorn-spilled'}.svg" alt="">${rt.audienceScore}%</span>
-                    <span class="lf-score-label">Pubblico</span>
-                </div>`;
+                    <span class="lf-score-label">Pubblico ${ext}</span>
+                </a>`;
         }
         scoresEl.innerHTML = tmdbHtml + rtHtml;
     });
@@ -4232,7 +4255,7 @@ closePlayer.addEventListener('click', () => {
     }
 
     document.getElementById('player-modal').classList.add('hidden');
-    document.body.classList.remove('overlay-active');
+    if (document.getElementById('detail-view').classList.contains('hidden')) document.body.classList.remove('overlay-active');
 
     // Rimuovi blocco landscape se attivo
 // Esci dal fullscreen se attivo
@@ -4516,16 +4539,18 @@ async function displayHeroMovie(content) {
                 const rtIcon = isRtFresh ? './icons/tomato.svg' : './icons/splat.svg';
                 const liveBadge = '<span class="text-[8px] text-green-400 font-bold ml-0.5">LIVE</span>';
                 heroScoresContainer.innerHTML = `
-                    <div class="flex items-center gap-1.5">
-                        <img src="${rtIcon}" class="w-4 h-4 object-contain" alt="RT">
-                        <span class="text-white text-xs font-bold">${rtData.criticsScore}%</span>
-                    </div>
-                    ${rtData.audienceScore !== null ? `
-                    <div class="flex items-center gap-1.5">
-                        <img src="${rtData.audienceScore >= 60 ? './icons/popcorn-full.svg' : './icons/popcorn-spilled.svg'}" class="w-4 h-4 object-contain" alt="Audience">
-                        <span class="text-gray-200 text-xs font-bold">${rtData.audienceScore}%</span>
-                    </div>
-                    ` : ''}
+                    <a class="lf-rt-link" href="${escapeHtml(rtPageUrl(rtData, heroTitle))}" target="_blank" rel="noopener noreferrer" title="Apri su Rotten Tomatoes">
+                        <span class="flex items-center gap-1.5">
+                            <img src="${rtIcon}" class="w-4 h-4 object-contain" alt="Critica">
+                            <span class="text-white text-xs font-bold">${rtData.criticsScore}%</span>
+                        </span>
+                        ${rtData.audienceScore !== null ? `
+                        <span class="flex items-center gap-1.5">
+                            <img src="${rtData.audienceScore >= 60 ? './icons/popcorn-full.svg' : './icons/popcorn-spilled.svg'}" class="w-4 h-4 object-contain" alt="Pubblico">
+                            <span class="text-gray-200 text-xs font-bold">${rtData.audienceScore}%</span>
+                        </span>
+                        ` : ''}
+                    </a>
                 `;
             } else {
                 renderHeroTMDBFallback();
@@ -4738,7 +4763,7 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
         const audienceIcon = aScore !== null ? (aScore >= 60 ? pathPopcornFull : pathPopcornSpilled) : pathPopcornFull;
 
         rtBadge = `
-        <div class="rt-badge absolute top-2 right-2 z-20 flex flex-col gap-1 items-end" data-card-id="${item.id}">
+        <div class="rt-badge absolute top-2 right-2 z-20 flex flex-col gap-1 items-end" data-card-id="${item.id}" data-rt-url="${escapeHtml(rtPageUrl(rtData, rtTitle))}" role="link" title="Apri su Rotten Tomatoes">
             ${cScore !== null ? `
             <div class="liquid-glass" style="border-radius:4px;">
                 <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
@@ -4828,6 +4853,15 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
     return card;
 }
 
+// Click sul badge RT di una card: apre Rotten Tomatoes invece della scheda
+document.addEventListener('click', (e) => {
+    const badge = e.target.closest && e.target.closest('.rt-badge[data-rt-url]');
+    if (!badge) return;
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(badge.dataset.rtUrl, '_blank', 'noopener');
+}, true);
+
 // === RT CACHED POLLING SYSTEM ===
 // Polls /rt-cached for cards still missing RT scores (background scraper fills cache)
 function pollRTScores() {
@@ -4900,6 +4934,9 @@ function pollRTScores() {
                     </div>`;
                 }
                 badge.innerHTML = badgeHTML;
+                badge.dataset.rtUrl = rtPageUrl(result, card.dataset.rtTitle);
+                badge.setAttribute('role', 'link');
+                badge.title = 'Apri su Rotten Tomatoes';
 
                 // Add LIVE dot
                 if (!badge.querySelector('.rt-live-dot')) {
@@ -6449,6 +6486,7 @@ window.setupPartyListeners = function setupPartyListeners() {
 
 </script>
 <script src="liquid-glass.js"></script>
+<script src="js/nav-history.js" defer></script>
 
 <!-- ============================================================
      HERO — animazioni GSAP (Ken Burns + entrata con stagger).
