@@ -53,6 +53,11 @@ function applyGlassEffect(glassEl) {
         }
     }
 
+    // Badge RT delle card: ce ne sono centinaia nei caroselli e ogni
+    // backdrop-filter va ricalcolato a ogni frame di scroll. Su un fondo
+    // nero al 60% il blur quasi non si vede: lo saltiamo (bordo/ombra restano).
+    if (glassEl.closest('.rt-badge')) skipBlur = true;
+
     if (supportsBackdropFilter && !skipBlur) {
         // Stile iOS 26: frost luminoso. NIENTE url(#liquid-glass-filter) qui:
         // questi elementi includono backdrop a tutto schermo (modali) dove la

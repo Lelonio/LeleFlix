@@ -1,15 +1,16 @@
 // ============================================================
 // LeleFlix Service Worker
 // Strategia:
-//  - App shell (HTML/CSS/JS same-origin) → NETWORK-FIRST con bypass
-//    della cache HTTP (cache:'reload'): ogni deploy si vede SUBITO
-//    quando sei online; la cache è solo fallback offline.
+//  - App shell (HTML/CSS/JS same-origin) → NETWORK-FIRST con
+//    rivalidazione (cache:'no-cache'): ogni deploy si vede SUBITO
+//    quando sei online, ma se il file non è cambiato il server
+//    risponde 304 e non si riscarica tutto. La cache è il fallback offline.
 //  - Immagini TMDB → CACHE-FIRST (veloci, non cambiano).
 //  - API JSON → NETWORK-ONLY (dati sempre freschi).
 // Bumpare CACHE_NAME NON è più necessario per vedere le modifiche,
 // serve solo a svuotare la vecchia cache una volta.
 // ============================================================
-const CACHE_NAME = "leleflix-v10";
+const CACHE_NAME = "leleflix-v11";
 const IMAGE_CACHE_NAME = "leleflix-images-v7";
 
 // Precache minimo per il funzionamento OFFLINE (fallback).
@@ -19,6 +20,7 @@ const urlsToCache = [
   "./manifest.json",
   "./css/style.css",
   "./css/ios26.css",
+  "./css/tailwind.css",
   "./liquid-glass.js",
   "./js/player.js",
   "./icon-192.png",
@@ -85,8 +87,10 @@ self.addEventListener("fetch", event => {
   );
   if (isShell) {
     event.respondWith(
-      // cache:'reload' → bypassa anche la cache HTTP del browser/CDN
-      fetch(req, { cache: "reload" })
+      // cache:'no-cache' → chiede sempre al server se il file è cambiato
+      // (ETag/Last-Modified): 304 se uguale, file nuovo se c'è un deploy.
+      // Prima era 'reload', che riscaricava tutto (index.html ~270KB) a ogni visita.
+      fetch(req, { cache: "no-cache" })
         .then(res => {
           const copy = res.clone();
           caches.open(CACHE_NAME).then(c => c.put(req, copy));

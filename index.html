@@ -7,44 +7,18 @@
   <title>LeleFlix</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Preconnect: avvia DNS/TLS verso API e TMDB mentre la pagina si carica -->
+  <link rel="preconnect" href="https://vixprx.dpdns.org" crossorigin>
+  <link rel="preconnect" href="https://api.themoviedb.org" crossorigin>
+  <link rel="preconnect" href="https://image.tmdb.org">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <!-- hls.js serve solo quando parte il player: defer per non bloccare il render -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.7.3/dist/hls.min.js" defer></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
         <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/ios26.css">
-    <script>
-        tailwind.config = {
-            important: true,
-            corePlugins: {
-                backdropFilter: true,
-            },
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#E50914',
-                        secondary: '#221F1F',
-                        accent: '#F5F5F1',
-                        dark: '#141414',
-                    },
-                    fontFamily: {
-sans: ['Inter', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],                    },
-                    backdropBlur: {
-                        glass: '16px',
-                    },
-                    boxShadow: {
-                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.36)',
-                    },
-                    borderColor: {
-                        'glass': 'rgba(255, 255, 255, 0.18)',
-                    },
-                }
-            }
-        }
-    </script>
-
     <script>
     // ── Endpoint UNICO dell'API (Pi via Cloudflare Tunnel) ──────────
     // Sorgente di verità per TUTTO il frontend (anche player.js la usa).
@@ -1831,6 +1805,11 @@ main .max-w-7xl {
         z-index: 20; /* Sopra alle card che si ingrandiscono */
     }
 </style>
+<!-- Tailwind precompilato (prima era il Play CDN che compilava nel browser).
+     Va in fondo all'head: è la stessa posizione in cui il CDN iniettava il suo <style>,
+     così la cascata con style.css / ios26.css resta identica.
+     Rigenerare con: npm run build:css -->
+<link rel="stylesheet" href="css/tailwind.css">
 </head>
 <body class="bg-dark text-accent " >
     <div id="hr-keeper"></div>
@@ -3331,7 +3310,6 @@ try {
         ]);
 
         // Set per lookup O(1) degli id disponibili
-        const availableIds = new Set(availableContent.map(ac => ac.tmdb_id));
 
         // Filtra (solo contenuti disponibili con poster) e deduplica
         const seen = new Set();
@@ -3902,7 +3880,7 @@ async function loadSimilar(id, type) {
 
         // Filtra solo quelli disponibili (se usi availableContent)
         const availableSimilar = data.results.filter(item =>
-             availableContent.some(ac => ac.tmdb_id === item.id)
+             isAvailable(item.id)
         ).slice(0, 10);
 
         if(availableSimilar.length === 0) {
@@ -4103,6 +4081,10 @@ function playTVEpisode(uniqueId) {
 
 const episodeMap = new Map(); // archivio centrale degli episodi
 let availableContent = [];
+// Set degli tmdb_id disponibili: lookup O(1) invece di availableContent.some(...)
+// (la lista ha migliaia di elementi e veniva scansionata per ogni card).
+let availableIds = new Set();
+const isAvailable = (id) => availableIds.has(id);
 
 // Funzione specifica per caricare la Top 10
 async function getTop10() {
@@ -4122,7 +4104,7 @@ async function getTop10() {
         container.innerHTML = '';
 
         const topItems = uniqueItems.filter(item =>
-            availableContent.some(ac => ac.tmdb_id === item.id)
+            isAvailable(item.id)
         ).slice(0, 10);
 
         if (topItems.length === 0) {
@@ -4205,6 +4187,7 @@ async function loadAvailableContent() {
 
     const data = await response.json();
     availableContent = [...data.movies, ...data.tv];
+    availableIds = new Set(availableContent.map(ac => ac.tmdb_id));
     console.log('Loaded available content:', availableContent.length);
 
     // Aggiorna UI se necessario
@@ -4249,58 +4232,63 @@ document.addEventListener('DOMContentLoaded', async () => {
         return [...movies.results.map(i=>({...i, media_type:'movie'})), ...tv.results.map(i=>({...i, media_type:'tv'}))];
     });
 
-    // Attendiamo che entrambi siano pronti (sarà molto più veloce della sequenza)
-    const [_, heroCandidates] = await Promise.all([availablePromise, heroCandidatesPromise]);
+    // --- 2. CAROSELLI ---
+    // Partono appena c'è la lista dei disponibili, in parallelo all'hero:
+    // prima aspettavano che l'hero finisse (dettagli + cast + immagini in serie).
+    availablePromise.then(() => {
+        getTrendingMovies();
+        getTop10();
+        getPopularTv();
+        getTopRatedMovies();
+        getUpcomingMovies();
 
-    // --- 2. RENDER HERO IMMEDIATO ---
-    // Filtriamo e mostriamo l'Hero PRIMA di caricare qualsiasi carosello
-    const availableHeroItems = heroCandidates.filter(item =>
-        availableContent.some(avail => avail.tmdb_id === item.id)
-    );
+        // Generi (meno prioritari)
+        getMoviesByGenre(28, 'genre-action');
+        getMoviesByGenre(35, 'genre-comedy');
+        getMoviesByGenre(27, 'genre-horror');
+        getMoviesByGenre(16, 'genre-animation');
+    });
 
-    if (availableHeroItems.length > 0) {
-        const randomItem = availableHeroItems[Math.floor(Math.random() * availableHeroItems.length)];
+    // --- 3. HERO ---
+    // Non blocca il resto dell'init: i listener sotto vengono registrati subito.
+    (async () => {
+        try {
+            const [_, heroCandidates] = await Promise.all([availablePromise, heroCandidatesPromise]);
 
-        // Fetch dettagli rapidissimo per l'Hero
-        const details = await getMovieDetails(randomItem.id, randomItem.media_type);
+            const availableHeroItems = heroCandidates.filter(item => isAvailable(item.id));
 
-        // --- PRELOAD IMMAGINE (LCP Optimization) ---
-        // Diciamo al browser di scaricare lo sfondo con priorità massima
-        // FIX: Remove any previous preload link before adding new one
-        const oldPreload = document.querySelector('link[rel="preload"][as="image"]');
-        if (oldPreload) oldPreload.remove();
+            if (availableHeroItems.length > 0) {
+                const randomItem = availableHeroItems[Math.floor(Math.random() * availableHeroItems.length)];
 
-        const backdropUrl = `${IMG_PATH}${details.backdrop_path}`;
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.as = 'image';
-        link.href = backdropUrl;
-        link.setAttribute('fetchpriority', 'high');
-        document.head.appendChild(link);
+                // Fetch dettagli rapidissimo per l'Hero
+                const details = await getMovieDetails(randomItem.id, randomItem.media_type);
 
-        currentHeroMovie = { ...details, media_type: randomItem.media_type };
+                // --- PRELOAD IMMAGINE (LCP Optimization) ---
+                // FIX: Remove any previous preload link before adding new one
+                const oldPreload = document.querySelector('link[rel="preload"][as="image"]');
+                if (oldPreload) oldPreload.remove();
 
-        // Mostra a schermo!
-        displayHeroMovie(currentHeroMovie);
-        console.timeEnd("HeroLoad");
-    } else {
-        // Fallback se nessun popolare è disponibile
-        getRandomHeroContent();
-    }
+                const backdropUrl = `${IMG_PATH}${details.backdrop_path}`;
+                const link = document.createElement('link');
+                link.rel = 'preload';
+                link.as = 'image';
+                link.href = backdropUrl;
+                link.setAttribute('fetchpriority', 'high');
+                document.head.appendChild(link);
 
-    // --- 3. CARICAMENTO RESTO DELLA PAGINA (LAZY) ---
-    // Ora che l'utente vede l'Hero e il titolo, carichiamo con calma i caroselli sotto
-    getTrendingMovies();
-    getTop10(); // Top 10 subito dopo
-    getPopularTv();
-    getTopRatedMovies();
-    getUpcomingMovies();
+                currentHeroMovie = { ...details, media_type: randomItem.media_type };
 
-    // Generi (meno prioritari)
-    getMoviesByGenre(28, 'genre-action');
-    getMoviesByGenre(35, 'genre-comedy');
-    getMoviesByGenre(27, 'genre-horror');
-    getMoviesByGenre(16, 'genre-animation');
+                // Mostra a schermo!
+                displayHeroMovie(currentHeroMovie);
+                console.timeEnd("HeroLoad");
+            } else {
+                // Fallback se nessun popolare è disponibile
+                getRandomHeroContent();
+            }
+        } catch (e) {
+            console.error('Errore caricamento hero:', e);
+        }
+    })();
 
     // Listener Eventi (Search, Bottoni, ecc.)
     // FIX: Added debounce to search to prevent rapid API calls
@@ -4484,7 +4472,7 @@ async function fetchAndRenderRT(tmdbPath, containerEl, mediaType, emptyMsg) {
         containerEl.innerHTML = '';
 
         const filteredItems = uniqueItems.filter(item =>
-            availableContent.some(ac => ac.tmdb_id === item.id)
+            isAvailable(item.id)
         );
 
         filteredItems.slice(0, 30).forEach(item => {
@@ -4549,7 +4537,7 @@ async function getRandomHeroContent() {
     ];
 
     const availablePopularContent = allContent.filter(item =>
-        availableContent.some(avail => avail.tmdb_id === item.id)
+        isAvailable(item.id)
     );
 
     if (availablePopularContent.length === 0) {
@@ -4803,16 +4791,13 @@ async function displayHeroMovie(content) {
 async function getMovieDetails(id, type = 'movie') {
     try {
         // Get basic details
-        const detailsRes = await fetch(`${API_URL}/${type}/${id}?api_key=${API_KEY}&language=it-IT`);
+        // Dettagli + cast in una sola richiesta (append_to_response) invece di due in serie
+        const detailsRes = await fetch(`${API_URL}/${type}/${id}?api_key=${API_KEY}&language=it-IT&append_to_response=credits`);
         const details = await detailsRes.json();
-
-        // Get credits (cast)
-        const creditsRes = await fetch(`${API_URL}/${type}/${id}/credits?api_key=${API_KEY}&language=it-IT`);
-        const credits = await creditsRes.json();
 
         return {
             ...details,
-            credits,
+            credits: details.credits || { cast: [] },
             media_type: type
         };
     } catch (error) {
@@ -6599,7 +6584,8 @@ window.setupPartyListeners = function setupPartyListeners() {
      Rispetta prefers-reduced-motion via gsap.matchMedia().
      ============================================================ -->
 <script>
-(function () {
+// GSAP è caricato con defer: si avvia a DOMContentLoaded (dopo gli script defer).
+document.addEventListener('DOMContentLoaded', function () {
     if (typeof gsap === 'undefined') return;
     if (typeof ScrollTrigger !== 'undefined') gsap.registerPlugin(ScrollTrigger);
     const mm = gsap.matchMedia();
@@ -6637,7 +6623,7 @@ window.setupPartyListeners = function setupPartyListeners() {
         }
         return () => {};
     });
-})();
+});
 </script>
 
 <!-- ============================================================
@@ -6647,7 +6633,7 @@ window.setupPartyListeners = function setupPartyListeners() {
      Rispetta prefers-reduced-motion via gsap.matchMedia().
      ============================================================ -->
 <script>
-(function () {
+document.addEventListener('DOMContentLoaded', function () {
     if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') return;
     gsap.registerPlugin(ScrollTrigger);
 
@@ -6699,7 +6685,7 @@ window.setupPartyListeners = function setupPartyListeners() {
         ScrollTrigger.refresh();
         return () => {};
     });
-})();
+});
 </script>
 
 <!-- ============================================================

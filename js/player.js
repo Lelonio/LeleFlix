@@ -527,7 +527,8 @@ class VideoPlayer {
             .then(d => {
                 let items = (d && d.results) ? d.results.filter(i => i.poster_path) : [];
                 const avail = (typeof availableContent !== 'undefined' && availableContent) ? availableContent : null;
-                if (avail) items = items.filter(i => avail.some(a => a.tmdb_id === i.id));
+                if (typeof isAvailable === 'function') items = items.filter(i => isAvailable(i.id));
+                else if (avail) items = items.filter(i => avail.some(a => a.tmdb_id === i.id));
                 items = items.slice(0, 12);
                 if (!items.length) { wrap.classList.add('hidden'); return; }
                 row.innerHTML = '';
