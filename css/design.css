@@ -1371,7 +1371,7 @@ body.lf .lf-search .search-history-dropdown {
 }
 body.lf .search-history-dropdown {
     padding: 6px !important;
-    background: rgba(18, 18, 22, 0.97) !important;
+    background: var(--bg-raised) !important;
     border-radius: 16px !important;
 }
 body.lf .search-history-dropdown > div:first-child {
@@ -1911,3 +1911,472 @@ body.lf .rt-badge[data-rt-url]:hover { background: rgba(9, 9, 11, 0.9); box-shad
     body.lf #player-modal > div { min-height: calc(100dvh - env(safe-area-inset-top, 0px)) !important; }
     body.lf #player-modal > div > div { height: calc(100dvh - env(safe-area-inset-top, 0px)) !important; }
 }
+
+/* ============================================================
+   PARTY — modale, lobby, chat, notifiche
+   Accento viola (--violet) solo come segno distintivo del Party;
+   azioni principali avorio come nel resto dell'app.
+   Nessun backdrop-filter: la chat può stare sopra al video.
+   ============================================================ */
+body.lf .lf-field-label {
+    display: block;
+    margin: 0 0 8px;
+    font: 600 11px/1 var(--font-ui);
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--ink-3);
+}
+body.lf .lf-field {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    border-radius: 14px;
+    border: 1px solid var(--line-strong);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--ink);
+    font: 500 16px/1 var(--font-ui);
+    outline: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+body.lf .lf-field::placeholder { color: var(--ink-3); }
+body.lf .lf-field:focus {
+    border-color: rgba(196, 181, 253, 0.55);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(196, 181, 253, 0.12);
+}
+body.lf .lf-field.is-invalid { border-color: rgba(229, 56, 59, 0.7); box-shadow: 0 0 0 4px rgba(229, 56, 59, 0.12); }
+body.lf .lf-field--code {
+    text-align: center;
+    font: 600 22px/1 var(--font-ui);
+    letter-spacing: 0.32em;
+    font-variant-numeric: tabular-nums;
+    padding-left: calc(16px + 0.32em);
+}
+body.lf .lf-field--code::placeholder { letter-spacing: 0.32em; color: rgba(243, 239, 232, 0.22); }
+
+/* modale */
+body.lf #party-menu-modal.lf-party {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+}
+body.lf #party-menu-modal.lf-party.hidden { display: none !important; }
+body.lf .lf-party-scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.72); animation: lfFadeIn 0.25s ease both; }
+body.lf .lf-party-card {
+    position: relative;
+    width: min(440px, 100%);
+    max-height: min(92dvh, 760px);
+    overflow-y: auto; overscroll-behavior: contain;
+    border-radius: var(--radius-lg);
+    background: var(--bg-raised);
+    box-shadow: inset 0 0 0 1px var(--line), 0 40px 100px rgba(0, 0, 0, 0.6);
+    animation: lfPartyIn 0.35s var(--ease) both;
+    scrollbar-width: none;
+}
+body.lf .lf-party-card::-webkit-scrollbar { display: none; }
+@keyframes lfPartyIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+body.lf .lf-party-head {
+    display: flex; align-items: center; gap: 14px;
+    padding: 22px 22px 18px;
+    border-bottom: 1px solid var(--line);
+}
+body.lf .lf-party-mark {
+    flex: 0 0 auto;
+    width: 46px; height: 46px; border-radius: 14px;
+    display: grid; place-items: center;
+    background: rgba(196, 181, 253, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(196, 181, 253, 0.2);
+    color: var(--violet); font-size: 18px;
+}
+body.lf .lf-party-titles { flex: 1; min-width: 0; }
+body.lf .lf-party-title {
+    margin: 0;
+    font: 400 1.9rem/1 var(--font-display) !important;
+    letter-spacing: -0.005em !important;
+    color: var(--ink);
+}
+body.lf .lf-party-title em { font-style: italic; color: var(--violet); }
+body.lf .lf-party-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-3); }
+body.lf .lf-party-close {
+    flex: 0 0 auto;
+    width: 36px; height: 36px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--surface); box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--ink-2); font-size: 14px;
+    min-width: 0 !important; min-height: 0 !important; padding: 0 !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+body.lf .lf-party-close:hover { background: var(--surface-hover); color: var(--ink); }
+
+body.lf .lf-party-body { padding: 20px 22px 22px; }
+body.lf .lf-party-body.hidden { display: none !important; }
+body.lf .lf-party-body > .lf-field-label:not(:first-child) { margin-top: 20px; }
+
+body.lf .lf-party-create {
+    display: flex; align-items: center; gap: 14px;
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: var(--ink); color: #0b0b0d;
+    text-align: left;
+    box-shadow: 0 12px 30px -12px rgba(243, 239, 232, 0.45);
+    transition: background-color 0.2s ease, transform 0.25s var(--ease);
+}
+body.lf .lf-party-create:hover { background: #fff; }
+body.lf .lf-party-create:active { transform: scale(0.98); }
+body.lf .lf-party-create-icon {
+    flex: 0 0 auto;
+    width: 40px; height: 40px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: rgba(11, 11, 13, 0.08); font-size: 15px;
+}
+body.lf .lf-party-create-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+body.lf .lf-party-create-text strong { font: 600 15px/1.2 var(--font-ui); }
+body.lf .lf-party-create-text small { font-size: 12.5px; color: rgba(11, 11, 13, 0.6); }
+body.lf .lf-party-create-arrow { font-size: 13px; opacity: 0.6; }
+
+body.lf .lf-party-divider {
+    display: flex; align-items: center; gap: 14px;
+    margin: 22px 0 18px;
+    font: 400 italic 1.05rem/1 var(--font-display);
+    color: var(--ink-3);
+}
+body.lf .lf-party-divider::before, body.lf .lf-party-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+body.lf .lf-party-body > .lf-party-divider + .lf-field-label { margin-top: 0; }
+
+body.lf .lf-party-row { display: flex; gap: 10px; }
+body.lf .lf-party-row .lf-field { flex: 1; min-width: 0; }
+body.lf .lf-party-join-btn {
+    flex: 0 0 auto;
+    height: 48px; padding: 0 20px;
+    border-radius: 14px;
+    background: var(--surface-hover);
+    box-shadow: inset 0 0 0 1px var(--line-strong);
+    color: var(--ink);
+    font: 600 15px/1 var(--font-ui);
+    transition: background-color 0.2s ease;
+}
+body.lf .lf-party-join-btn:hover { background: rgba(255, 255, 255, 0.14); }
+body.lf .lf-party-icon-btn { width: 48px; padding: 0; display: grid; place-items: center; }
+body.lf .lf-party-icon-btn.is-saved { background: rgba(125, 211, 168, 0.18); box-shadow: inset 0 0 0 1px rgba(125, 211, 168, 0.5); color: #7dd3a8; }
+
+/* lobby */
+body.lf .lf-party-code {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px 16px 18px;
+    margin-bottom: 22px;
+    border-radius: 18px;
+    background: rgba(196, 181, 253, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(196, 181, 253, 0.16);
+}
+body.lf .lf-party-code-value {
+    font: 600 clamp(2.1rem, 1.6rem + 2vw, 2.7rem)/1.1 var(--font-ui);
+    letter-spacing: 0.22em; padding-left: 0.22em;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    cursor: pointer; user-select: all;
+    margin: 4px 0 14px;
+}
+body.lf .lf-party-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 34px; padding: 0 14px;
+    border-radius: 999px;
+    background: rgba(196, 181, 253, 0.12);
+    color: var(--violet);
+    font: 600 13px/1 var(--font-ui);
+    transition: background-color 0.2s ease;
+}
+body.lf .lf-party-pill:hover { background: rgba(196, 181, 253, 0.2); }
+
+body.lf .lf-party-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+body.lf .lf-party-section-head .lf-field-label { margin: 0; }
+body.lf .lf-party-count {
+    min-width: 24px; height: 22px; padding: 0 8px;
+    display: inline-grid; place-items: center;
+    border-radius: 999px;
+    background: var(--surface-hover);
+    font: 600 12px/1 var(--font-ui); color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+}
+body.lf .lf-party-people { display: flex; flex-direction: column; gap: 6px; max-height: 210px; overflow-y: auto; margin-bottom: 22px; }
+body.lf .party-participant {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    background: var(--surface) !important;
+    animation: lfFadeIn 0.3s ease both !important;
+}
+body.lf .party-participant-avatar {
+    width: 36px !important; height: 36px !important; border-radius: 50% !important;
+    display: grid !important; place-items: center;
+    font: 600 13px/1 var(--font-ui) !important;
+    box-shadow: none !important;
+}
+body.lf .party-participant-avatar.member-avatar { background: rgba(196, 181, 253, 0.14) !important; color: var(--violet) !important; }
+body.lf .party-participant-avatar.host-avatar { background: rgba(231, 194, 125, 0.16) !important; color: var(--gold) !important; }
+body.lf .party-participant-name { font: 500 14.5px/1.25 var(--font-ui) !important; color: var(--ink) !important; }
+body.lf .party-participant-role { font-size: 12px !important; color: var(--ink-3) !important; font-weight: 500 !important; }
+body.lf .party-participant-role.host-role { color: var(--gold) !important; }
+
+body.lf .lf-party-status {
+    display: flex; align-items: flex-start; gap: 12px;
+    margin: 20px 0;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--surface);
+    font-size: 14px; line-height: 1.5;
+    color: var(--ink-2);
+}
+body.lf .lf-party-status strong { display: block; color: var(--ink); font-weight: 600; margin-bottom: 2px; }
+body.lf .lf-party-status span { color: var(--ink-3); font-size: 13.5px; }
+body.lf .lf-party-status-icon { flex: 0 0 auto; margin-top: 3px; color: var(--violet); }
+body.lf .lf-party-status-icon.is-host { color: var(--gold); }
+
+body.lf .lf-party-actions { display: flex; gap: 10px; }
+body.lf .lf-party-secondary, body.lf .lf-party-danger {
+    flex: 1;
+    height: 46px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border-radius: 999px;
+    font: 600 14px/1 var(--font-ui);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+body.lf .lf-party-secondary { background: var(--surface-hover); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+body.lf .lf-party-secondary:hover { background: rgba(255, 255, 255, 0.14); }
+body.lf .lf-party-danger { background: transparent; color: #f0a3a4; box-shadow: inset 0 0 0 1px rgba(229, 56, 59, 0.35); }
+body.lf .lf-party-danger:hover { background: rgba(229, 56, 59, 0.12); color: #ffc2c3; }
+
+/* mobile: pannello dal basso */
+@media (max-width: 600px) {
+    body.lf #party-menu-modal.lf-party { align-items: flex-end; padding: 0; }
+    body.lf .lf-party-card {
+        width: 100%;
+        max-height: 92dvh;
+        border-radius: 26px 26px 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        animation-name: lfSheetIn;
+    }
+    body.lf .lf-party-card::before {
+        content: ""; display: block;
+        width: 38px; height: 5px; border-radius: 999px;
+        background: rgba(255, 255, 255, 0.22);
+        margin: 9px auto 0;
+    }
+    body.lf .lf-party-head { padding-top: 14px; }
+}
+@keyframes lfSheetIn { from { transform: translateY(100%); } to { transform: none; } }
+
+/* ---------- chat ---------- */
+body.lf #party-chat-widget {
+    right: clamp(14px, 2.4vw, 32px) !important;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
+    font-family: var(--font-ui) !important;
+}
+@media (max-width: 899px) {
+    body.lf #party-chat-widget { bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+body.lf #party-chat-fab {
+    width: 54px !important; height: 54px !important;
+    background: var(--violet) !important;
+    color: #0b0b0d !important;
+    font-size: 19px !important;
+    box-shadow: 0 14px 34px -10px rgba(196, 181, 253, 0.55), 0 6px 18px rgba(0, 0, 0, 0.4) !important;
+    transition: transform 0.25s var(--ease) !important;
+}
+body.lf #party-chat-fab:hover { transform: translateY(-2px) !important; }
+body.lf #party-chat-fab:active { transform: scale(0.95) !important; }
+body.lf .party-chat-badge {
+    background: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--bg) !important;
+    animation: none !important;
+    font: 700 11px/1 var(--font-ui) !important;
+}
+
+body.lf .party-chat-panel {
+    background: var(--bg-raised) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border: 0 !important;
+    border-radius: 22px !important;
+    box-shadow: inset 0 0 0 1px var(--line), 0 30px 80px rgba(0, 0, 0, 0.6) !important;
+    transition: opacity 0.25s ease, transform 0.3s var(--ease) !important;
+    transform: translateY(12px) !important;
+}
+body.lf .party-chat-panel.party-chat-panel-open { transform: none !important; }
+body.lf .party-chat-header {
+    padding: 14px 14px 12px 18px !important;
+    background: transparent !important;
+    border-bottom: 1px solid var(--line) !important;
+    gap: 10px;
+}
+body.lf .lf-chat-title { font: 400 1.45rem/1 var(--font-display); color: var(--ink); white-space: nowrap; }
+body.lf .lf-chat-title em { font-style: italic; color: var(--violet); }
+body.lf .lf-chat-head-actions { display: flex; align-items: center; gap: 6px; min-width: 0; }
+body.lf .lf-chat-nick-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    max-width: 150px;
+    height: 30px; padding: 0 12px;
+    border-radius: 999px;
+    background: var(--surface-hover);
+    color: var(--ink-2);
+    font: 500 12.5px/1 var(--font-ui);
+    min-width: 0 !important; min-height: 0 !important;
+}
+body.lf .lf-chat-nick-btn i { font-size: 10px; }
+body.lf #chatNicknameLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.lf .lf-chat-close {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: grid; place-items: center;
+    color: var(--ink-2); font-size: 13px;
+    min-width: 0 !important; min-height: 0 !important; padding: 0 !important;
+}
+body.lf .lf-chat-close:hover { background: var(--surface-hover); color: var(--ink); }
+body.lf .lf-chat-nick-edit { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+body.lf .lf-chat-nick-edit input {
+    flex: 1; min-width: 0; height: 30px; padding: 0 10px;
+    border-radius: 999px; border: 1px solid rgba(196, 181, 253, 0.5);
+    background: rgba(255, 255, 255, 0.07); color: var(--ink);
+    font: 500 13px/1 var(--font-ui); outline: none;
+}
+body.lf .lf-chat-nick-ok, body.lf .lf-chat-nick-cancel {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 11px;
+    min-width: 0 !important; min-height: 0 !important; padding: 0 !important;
+}
+body.lf .lf-chat-nick-ok { background: var(--violet); color: #0b0b0d; }
+body.lf .lf-chat-nick-cancel { background: var(--surface-hover); color: var(--ink-2); }
+
+body.lf .party-chat-messages { padding: 14px 14px 10px !important; gap: 10px !important; }
+body.lf .party-chat-empty {
+    margin: auto 0;
+    padding: 24px 12px !important;
+    text-align: center;
+    color: var(--ink-3) !important;
+    font-size: 13.5px !important; line-height: 1.55 !important;
+}
+body.lf .party-chat-empty i {
+    display: grid; place-items: center;
+    width: 52px; height: 52px; margin: 0 auto 12px;
+    border-radius: 50%;
+    background: rgba(196, 181, 253, 0.1); color: var(--violet);
+    font-size: 18px;
+}
+body.lf .party-chat-empty p { margin: 0; }
+body.lf .party-chat-msg { animation: lfFadeIn 0.25s ease both !important; max-width: 82% !important; }
+body.lf .party-chat-nick { font: 600 12px/1.2 var(--font-ui) !important; }
+body.lf .party-chat-mine .party-chat-nick { color: var(--violet) !important; }
+body.lf .party-chat-other .party-chat-nick { color: var(--ink-2) !important; }
+body.lf .party-chat-time { font-size: 11px !important; color: var(--ink-3) !important; font-variant-numeric: tabular-nums; }
+body.lf .party-chat-bubble {
+    margin-top: 3px;
+    padding: 9px 14px !important;
+    border: 0 !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: var(--ink) !important;
+    font: 400 14px/1.45 var(--font-ui) !important;
+}
+body.lf .party-chat-mine .party-chat-bubble { background: rgba(196, 181, 253, 0.16) !important; border-bottom-right-radius: 6px !important; }
+body.lf .party-chat-other .party-chat-bubble { border-bottom-left-radius: 6px !important; }
+body.lf .party-chat-system {
+    display: inline-block; align-self: center;
+    margin: 2px auto;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--surface);
+    font-style: normal !important;
+    font-size: 12px !important; color: var(--ink-3) !important;
+}
+body.lf .party-chat-msg:has(> .party-chat-system) { align-self: center; max-width: 100% !important; }
+body.lf .party-chat-reaction { animation: lfFadeIn 0.25s ease both !important; }
+
+body.lf .party-chat-reactions-bar {
+    gap: 4px !important;
+    padding: 8px 12px !important;
+    background: transparent !important;
+    border-top: 1px solid var(--line) !important;
+}
+body.lf .reaction-btn {
+    width: 38px; height: 38px;
+    padding: 0 !important;
+    display: grid; place-items: center;
+    border-radius: 12px !important;
+    border: 0 !important;
+    background: transparent !important;
+    font-size: 20px !important;
+    min-width: 0 !important; min-height: 0 !important;
+    transition: background-color 0.15s ease, transform 0.2s var(--ease) !important;
+}
+body.lf .reaction-btn:hover { background: var(--surface-hover) !important; transform: translateY(-2px) !important; }
+body.lf .reaction-btn:active { transform: scale(0.9) !important; }
+
+body.lf .party-chat-input-bar {
+    gap: 8px !important;
+    padding: 10px 12px 12px !important;
+    background: transparent !important;
+    border-top: 1px solid var(--line) !important;
+}
+body.lf .party-chat-input-bar input {
+    height: 42px;
+    padding: 0 16px !important;
+    border-radius: 999px !important;
+    border: 1px solid var(--line-strong) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--ink) !important;
+    font: 400 15px/1 var(--font-ui) !important;
+}
+body.lf .party-chat-input-bar input:focus { border-color: rgba(196, 181, 253, 0.55) !important; background: rgba(255, 255, 255, 0.08) !important; }
+body.lf .party-chat-send-btn {
+    width: 42px !important; height: 42px !important; min-width: 42px !important;
+    background: var(--violet) !important;
+    color: #0b0b0d !important;
+    font-size: 15px !important;
+    box-shadow: none !important;
+}
+body.lf .party-chat-send-btn:hover { transform: none !important; background: #d6cbfe !important; }
+
+/* chat dentro il player: opaca, senza blur sopra al video */
+body.lf .party-chat-panel.party-chat-in-player { background: #0e0e11 !important; }
+
+/* reazioni volanti: niente filtri/alone animati (costano a ogni fotogramma) */
+body.lf .flying-reaction { filter: none !important; text-shadow: 0 4px 16px rgba(0, 0, 0, 0.45); }
+body.lf .flying-reaction::after { display: none !important; }
+
+/* notifica (toast) del Party */
+body.lf .lf-toast {
+    position: fixed; z-index: 10000;
+    top: calc(84px + env(safe-area-inset-top, 0px)); left: 50%;
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 10px;
+    max-width: calc(100vw - 32px);
+    padding: 11px 18px 11px 14px;
+    border-radius: 999px;
+    background: rgba(18, 18, 22, 0.97);
+    box-shadow: inset 0 0 0 1px var(--line-strong), 0 20px 50px rgba(0, 0, 0, 0.5);
+    color: var(--ink);
+    font: 500 14px/1.3 var(--font-ui);
+    animation: lfToastIn 0.4s var(--ease) both;
+}
+body.lf .lf-toast i {
+    flex: 0 0 auto;
+    width: 26px; height: 26px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: rgba(196, 181, 253, 0.14); color: var(--violet);
+    font-size: 11px;
+}
+body.lf .lf-toast.is-leaving { animation: lfToastOut 0.35s ease both; }
+@keyframes lfToastIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes lfToastOut { to { opacity: 0; transform: translate(-50%, -8px); } }
+
+/* chat: nome e ora sulla stessa riga; il proprio nome non serve */
+body.lf .party-chat-msg { flex-direction: row !important; flex-wrap: wrap; align-items: baseline; column-gap: 8px; row-gap: 0 !important; }
+body.lf .party-chat-msg.party-chat-mine { justify-content: flex-end; }
+body.lf .party-chat-mine .party-chat-nick { display: none; }
+body.lf .party-chat-bubble, body.lf .party-chat-reaction-emoji { flex-basis: 100%; }
+body.lf .party-chat-mine .party-chat-bubble, body.lf .party-chat-mine .party-chat-reaction-emoji { text-align: left; }
+body.lf .party-chat-mine .party-chat-reaction-emoji { text-align: right; }
+body.lf .party-chat-reaction-emoji { margin-top: 2px; font-size: 1.7rem !important; word-break: break-word; }
+
+/* i campi di testo hanno già il loro stile di focus: niente contorno bianco */
+body.lf input:focus-visible, body.lf select:focus-visible { outline: none; }

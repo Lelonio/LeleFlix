@@ -64,15 +64,17 @@
 
         function showPartyToast(msg) {
         const toast = document.createElement('div');
-        toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-6 py-3 rounded-full z-[10000] shadow-2xl font-bold flex items-center gap-3 animate-bounce';
+        toast.className = 'lf-toast';
+        toast.setAttribute('role', 'status');
         // Use textContent instead of innerHTML for safety
         const icon = document.createElement('i');
-        icon.className = 'fas fa-users';
+        icon.className = 'fas fa-couch';
         const textSpan = document.createElement('span');
         textSpan.textContent = msg;
         toast.appendChild(icon);
         toast.appendChild(textSpan);
         document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('is-leaving'), 3600);
         setTimeout(() => toast.remove(), 4000);
     }
 
@@ -5417,109 +5419,75 @@ clearTimeout(remoteTimeout);
         return m + ":" + (s < 10 ? "0" : "") + s;
     }
 </script>
-<div id="party-menu-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center">
-    <div class="liquid-glass" style="position:absolute;inset:0;border-radius:0;">
-        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);"></div>
-        <div class="lg-content" style="position:relative;z-index:3;"></div>
-    </div>
-    <div class="party-modal-card liquid-glass lg-active">
-        <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(22,22,28,0.92);border-radius:20px;"></div>
-        <div class="lg-content" style="position:relative;z-index:3;padding:0;">
+<div id="party-menu-modal" class="lf-party hidden" role="dialog" aria-modal="true" aria-labelledby="party-title">
+    <div class="lf-party-scrim" onclick="closePartyMenu()"></div>
+    <div class="lf-party-card">
+        <header class="lf-party-head">
+            <span class="lf-party-mark" aria-hidden="true"><i class="fas fa-couch"></i></span>
+            <div class="lf-party-titles">
+                <h3 id="party-title" class="lf-party-title">Lele<em>Party</em></h3>
+                <p class="lf-party-sub">Guardate insieme, in perfetta sincronia</p>
+            </div>
+            <button type="button" onclick="closePartyMenu()" class="lf-party-close" aria-label="Chiudi"><i class="fas fa-xmark"></i></button>
+        </header>
 
-            <!-- Header -->
-            <div class="party-modal-header">
-                <div class="party-modal-logo">
-                    <i class="fas fa-couch"></i>
-                </div>
-                <div>
-                    <h3 class="party-modal-title">LeleParty</h3>
-                    <p class="party-modal-subtitle">Guarda film in sincrono con gli amici</p>
-                </div>
-                <button onclick="closePartyMenu()" class="party-modal-close" title="Chiudi">
-                    <i class="fas fa-times"></i>
+        <!-- ═══ START VIEW: Crea / Unisciti ═══ -->
+        <div id="party-start-view" class="lf-party-body">
+            <label class="lf-field-label" for="party-nickname-input">Nickname</label>
+            <input id="party-nickname-input" type="text" maxlength="20" placeholder="Come ti chiamano gli amici?" class="lf-field" autocomplete="nickname">
+
+            <button type="button" onclick="createParty()" class="lf-party-create">
+                <span class="lf-party-create-icon" aria-hidden="true"><i class="fas fa-plus"></i></span>
+                <span class="lf-party-create-text">
+                    <strong>Crea una stanza</strong>
+                    <small>Ricevi un codice da condividere</small>
+                </span>
+                <i class="fas fa-arrow-right lf-party-create-arrow" aria-hidden="true"></i>
+            </button>
+
+            <div class="lf-party-divider"><span>oppure</span></div>
+
+            <label class="lf-field-label" for="party-code-input">Entra con un codice</label>
+            <div class="lf-party-row">
+                <input id="party-code-input" type="text" inputmode="numeric" maxlength="6" placeholder="000000" class="lf-field lf-field--code" autocomplete="off">
+                <button type="button" onclick="joinParty()" class="lf-party-join-btn">Entra</button>
+            </div>
+        </div>
+
+        <!-- ═══ LOBBY VIEW: Stanza attiva ═══ -->
+        <div id="party-lobby-view" class="lf-party-body hidden">
+            <div class="lf-party-code">
+                <span class="lf-field-label">Codice della stanza</span>
+                <div class="lf-party-code-value" id="display-party-code" title="Tocca per copiare" onclick="copyPartyCode()">------</div>
+                <button type="button" class="party-copy-btn lf-party-pill" onclick="copyPartyCode()">
+                    <i class="fas fa-copy"></i> Copia codice
                 </button>
             </div>
 
-            <!-- ═══ START VIEW: Crea / Unisciti ═══ -->
-            <div id="party-start-view" class="party-modal-body">
-                <!-- Nickname -->
-                <div class="party-nickname-row">
-                    <label class="party-nickname-label"><i class="fas fa-user"></i> Il tuo nickname</label>
-                    <div class="party-nickname-input-wrap">
-                        <input id="party-nickname-input" type="text" maxlength="20" placeholder="Scegli un nickname..." class="party-nickname-input">
-                    </div>
-                </div>
+            <div class="lf-party-section-head">
+                <span class="lf-field-label">Partecipanti</span>
+                <span id="party-member-count" class="lf-party-count">0</span>
+            </div>
+            <div id="party-participants" class="party-participants-list lf-party-people"></div>
 
-                <div class="party-divider"><span>OPPURE</span></div>
-
-                <!-- Crea stanza -->
-                <button onclick="createParty()" class="party-btn party-btn-create">
-                    <div class="party-btn-icon"><i class="fas fa-plus"></i></div>
-                    <div class="party-btn-text">
-                        <strong>Crea Nuova Stanza</strong>
-                        <small>Ottieni un codice da condividere</small>
-                    </div>
+            <label class="lf-field-label" for="party-lobby-nickname">Il tuo nickname</label>
+            <div class="lf-party-row">
+                <input id="party-lobby-nickname" type="text" maxlength="20" class="lf-field" placeholder="Il tuo nickname">
+                <button type="button" onclick="changePartyNickname()" class="party-nickname-save-btn lf-party-join-btn lf-party-icon-btn" aria-label="Salva nickname">
+                    <i class="fas fa-check"></i>
                 </button>
-
-                <!-- Unisciti -->
-                <div class="party-join-section">
-                    <label class="party-nickname-label"><i class="fas fa-key"></i> Unisciti con un codice</label>
-                    <div class="party-join-row">
-                        <input id="party-code-input" type="text" maxlength="6" placeholder="123456" class="party-code-input">
-                        <button onclick="joinParty()" class="party-btn-join">Entra</button>
-                    </div>
-                </div>
             </div>
 
-            <!-- ═══ LOBBY VIEW: Stanza attiva ═══ -->
-            <div id="party-lobby-view" class="party-modal-body hidden">
-                <!-- Codice stanza -->
-                <div class="party-code-section">
-                    <span class="party-code-label">Codice Stanza</span>
-                    <div class="party-code-display" id="display-party-code" title="Clicca per copiare" onclick="copyPartyCode()">------</div>
-                    <button class="party-copy-btn" onclick="copyPartyCode()" title="Copia codice">
-                        <i class="fas fa-copy"></i> Copia
-                    </button>
-                </div>
+            <div id="party-status-message" class="lf-party-status">In attesa...</div>
 
-                <!-- Partecipanti -->
-                <div class="party-participants-section">
-                    <div class="party-section-title">
-                        <i class="fas fa-users"></i> Partecipanti
-                        <span id="party-member-count" class="party-member-count">0</span>
-                    </div>
-                    <div id="party-participants" class="party-participants-list">
-                        <!-- Rendered by JS -->
-                    </div>
-                </div>
-
-                <!-- Il tuo nickname (modificabile) -->
-                <div class="party-nickname-section">
-                    <label class="party-nickname-label"><i class="fas fa-user-edit"></i> Il tuo nickname</label>
-                    <div class="party-nickname-edit-row">
-                        <input id="party-lobby-nickname" type="text" maxlength="20" class="party-nickname-input" placeholder="Il tuo nickname...">
-                        <button onclick="changePartyNickname()" class="party-nickname-save-btn" title="Salva">
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Stato / Messaggio -->
-                <div id="party-status-message" class="party-status-message">
-                    In attesa...
-                </div>
-
-                <!-- Azioni -->
-                <div class="party-lobby-actions">
-                    <button onclick="closePartyMenu()" class="party-btn party-btn-minimize">
-                        <i class="fas fa-compress-alt"></i> Riduci a icona
-                    </button>
-                    <button onclick="leaveParty()" class="party-btn party-btn-leave">
-                        <i class="fas fa-sign-out-alt"></i> Abbandona
-                    </button>
-                </div>
+            <div class="lf-party-actions">
+                <button type="button" onclick="closePartyMenu()" class="lf-party-secondary">
+                    <i class="fas fa-down-left-and-up-right-to-center"></i> Riduci
+                </button>
+                <button type="button" onclick="leaveParty()" class="lf-party-danger">
+                    <i class="fas fa-right-from-bracket"></i> Esci dal Party
+                </button>
             </div>
-
         </div>
     </div>
 </div>
@@ -5529,7 +5497,7 @@ clearTimeout(remoteTimeout);
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="party-chat-widget" class="party-chat-hidden">
     <!-- Pulsante Toggle (FAB) -->
-    <button id="party-chat-fab" onclick="togglePartyChat()" title="Chat Party">
+    <button id="party-chat-fab" onclick="togglePartyChat()" title="Chat del Party" aria-label="Chat del Party">
         <i class="fas fa-comment-dots"></i>
         <span id="party-chat-badge" class="party-chat-badge" style="display:none;">0</span>
     </button>
@@ -5537,21 +5505,21 @@ clearTimeout(remoteTimeout);
     <!-- Pannello Chat -->
     <div id="party-chat-panel" class="party-chat-panel">
         <div class="party-chat-header">
-            <span><i class="fas fa-comments" style="margin-right:6px;color:#c084fc;"></i>Chat Party</span>
-            <div style="display:flex;align-items:center;gap:8px;">
-                <button id="chatNicknameBtn" title="Cambia nickname" style="background:none;border:none;color:rgba(255,255,255,0.5);cursor:pointer;font-size:0.85rem;display:flex;align-items:center;gap:4px;transition:color 0.2s;">
-                    <i class="fas fa-user-edit"></i>
-                    <span id="chatNicknameLabel" style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+            <span class="lf-chat-title">Chat <em>Party</em></span>
+            <div class="lf-chat-head-actions">
+                <button id="chatNicknameBtn" type="button" class="lf-chat-nick-btn" title="Cambia nickname">
+                    <i class="fas fa-pen"></i>
+                    <span id="chatNicknameLabel"></span>
                 </button>
-                <button onclick="togglePartyChat()" style="background:none;border:none;color:white;cursor:pointer;font-size:1.1rem;">
+                <button type="button" onclick="togglePartyChat()" class="lf-chat-close" aria-label="Chiudi chat">
                     <i class="fas fa-chevron-down"></i>
                 </button>
             </div>
         </div>
         <div id="party-chat-messages" class="party-chat-messages">
             <div class="party-chat-empty">
-                <i class="fas fa-users" style="font-size:2rem;color:#c084fc;margin-bottom:8px;display:block;"></i>
-                Scrivi un messaggio per chattare con gli altri spettatori del Party!
+                <i class="fas fa-couch" aria-hidden="true"></i>
+                <p>Nessun messaggio, per ora.<br>Scrivi qualcosa agli altri spettatori.</p>
             </div>
         </div>
         <!-- Barra reazioni rapide -->
@@ -5567,8 +5535,8 @@ clearTimeout(remoteTimeout);
             <button class="reaction-btn" data-reaction="💀" title="Skull">💀</button>
         </div>
         <form id="party-chat-form" class="party-chat-input-bar" onsubmit="sendPartyChat(event)">
-            <input id="party-chat-input" type="text" placeholder="Scrivi un messaggio..." autocomplete="off" maxlength="500" />
-            <button type="submit" class="party-chat-send-btn"><i class="fas fa-paper-plane"></i></button>
+            <input id="party-chat-input" type="text" placeholder="Scrivi un messaggio" autocomplete="off" maxlength="500" enterkeyhint="send" />
+            <button type="submit" class="party-chat-send-btn" aria-label="Invia"><i class="fas fa-arrow-up"></i></button>
         </form>
     </div>
 </div>
@@ -5739,8 +5707,8 @@ window.leaveParty = function leaveParty() {
         if (!input) return;
         const newNick = input.value.trim();
         if (!newNick || newNick.length < 2) {
-            input.style.borderColor = 'rgba(239, 68, 68, 0.6)';
-            setTimeout(() => { input.style.borderColor = ''; }, 1500);
+            input.classList.add('is-invalid');
+            setTimeout(() => { input.classList.remove('is-invalid'); }, 1500);
             return;
         }
         if (newNick === partyChatNickname) return;
@@ -5759,8 +5727,8 @@ window.leaveParty = function leaveParty() {
 
         const btn = document.querySelector('.party-nickname-save-btn');
         if (btn) {
-            btn.style.background = 'linear-gradient(135deg, #16a34a, #22c55e)';
-            setTimeout(() => { btn.style.background = ''; }, 1200);
+            btn.classList.add('is-saved');
+            setTimeout(() => { btn.classList.remove('is-saved'); }, 1200);
         }
     }
 
@@ -5813,22 +5781,22 @@ socket.on('party_created', (code) => {
         if (isPartyHost) {
             if (count <= 1) {
                 statusMsg.innerHTML = `
-                    <div style="font-size:1.3rem;margin-bottom:6px;">👑</div>
-                    Sei l'<strong>Host</strong>.<br>
-                    <span style="font-size:0.8rem;opacity:0.6;">Condividi il codice con i tuoi amici. Quando sono pronti, avvia un film.</span>
+                    <i class="fas fa-crown lf-party-status-icon is-host" aria-hidden="true"></i>
+                    <div><strong>Sei l'host.</strong>
+                    <span>Condividi il codice con gli amici. Quando sono pronti, avvia un film.</span></div>
                 `;
             } else {
                 statusMsg.innerHTML = `
-                    <div style="font-size:1.3rem;margin-bottom:6px;">🎬</div>
-                    <strong>${count} spettatori</strong> collegati!<br>
-                    <span style="font-size:0.8rem;opacity:0.6;">Chiudi qui e avvia un film per iniziare la visione di gruppo.</span>
+                    <i class="fas fa-clapperboard lf-party-status-icon" aria-hidden="true"></i>
+                    <div><strong>${count} spettatori collegati.</strong>
+                    <span>Chiudi qui e avvia un film: partirà per tutti.</span></div>
                 `;
             }
         } else {
             statusMsg.innerHTML = `
-                <div style="font-size:1.3rem;margin-bottom:6px;">🍿</div>
-                Sei dentro!<br>
-                <span style="font-size:0.8rem;opacity:0.6;">Rilassati, il film partirà automaticamente quando l'host lo avvia.</span>
+                <i class="fas fa-champagne-glasses lf-party-status-icon" aria-hidden="true"></i>
+                <div><strong>Sei dentro.</strong>
+                <span>Rilassati: il film partirà da solo quando l'host lo avvia.</span></div>
             `;
         }
     }
@@ -6065,16 +6033,11 @@ window.setupPartyListeners = function setupPartyListeners() {
 
         const editSpan = document.createElement('div');
         editSpan.id = 'nickname-edit-container';
-        editSpan.style.cssText = 'display:flex;align-items:center;gap:4px;flex:1;margin-right:4px;';
+        editSpan.className = 'lf-chat-nick-edit';
         editSpan.innerHTML = `
-            <input id="nickname-edit-input" type="text" value="${current}" maxlength="20"
-                style="flex:1;background:rgba(255,255,255,0.12);border:1px solid rgba(168,85,247,0.5);border-radius:8px;padding:4px 8px;color:white;font-size:0.8rem;outline:none;font-family:inherit;min-width:0;" />
-            <button id="nickname-edit-ok" style="background:#7c3aed;border:none;color:white;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.75rem;">
-                <i class="fas fa-check"></i>
-            </button>
-            <button id="nickname-edit-cancel" style="background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.5);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:0.75rem;">
-                <i class="fas fa-times"></i>
-            </button>
+            <input id="nickname-edit-input" type="text" value="${escapeHtml(current || '')}" maxlength="20" aria-label="Nuovo nickname" />
+            <button id="nickname-edit-ok" type="button" class="lf-chat-nick-ok" aria-label="Conferma"><i class="fas fa-check"></i></button>
+            <button id="nickname-edit-cancel" type="button" class="lf-chat-nick-cancel" aria-label="Annulla"><i class="fas fa-xmark"></i></button>
         `;
 
         // Nascondi il bottone nickname e inserisci l'input
@@ -6218,14 +6181,14 @@ window.setupPartyListeners = function setupPartyListeners() {
                     msgEl.classList.add(isMine ? 'party-chat-mine' : 'party-chat-other');
                     msgEl.classList.add('party-chat-reaction');
                     msgEl.innerHTML = `
-                        <span class="party-chat-nick" style="${isMine ? 'color:#c084fc;' : 'color:#60a5fa;'}">${escapeHtml(msg.nickname)}</span>
+                        <span class="party-chat-nick">${escapeHtml(msg.nickname)}</span>
                         <span class="party-chat-time">${time}</span>
-                        <span class="party-chat-reaction-emoji">${msg.text}</span>
+                        <span class="party-chat-reaction-emoji">${escapeHtml(msg.text)}</span>
                     `;
                 } else {
                     msgEl.classList.add(isMine ? 'party-chat-mine' : 'party-chat-other');
                     msgEl.innerHTML = `
-                        <span class="party-chat-nick" style="${isMine ? 'color:#c084fc;' : 'color:#60a5fa;'}">${escapeHtml(msg.nickname)}</span>
+                        <span class="party-chat-nick">${escapeHtml(msg.nickname)}</span>
                         <span class="party-chat-time">${time}</span>
                         <div class="party-chat-bubble">${escapeHtml(msg.text)}</div>
                     `;
@@ -6331,16 +6294,16 @@ window.setupPartyListeners = function setupPartyListeners() {
             msgEl.classList.add('party-chat-reaction');
             const time = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
             msgEl.innerHTML = `
-                <span class="party-chat-nick" style="${isMine ? 'color:#c084fc;' : 'color:#60a5fa;'}">${escapeHtml(nickname)}</span>
+                <span class="party-chat-nick">${escapeHtml(nickname)}</span>
                 <span class="party-chat-time">${time}</span>
-                <span class="party-chat-reaction-emoji">${text}</span>
+                <span class="party-chat-reaction-emoji">${escapeHtml(text)}</span>
             `;
         } else {
             const isMine = nickname === partyChatNickname;
             msgEl.classList.add(isMine ? 'party-chat-mine' : 'party-chat-other');
             const time = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
             msgEl.innerHTML = `
-                <span class="party-chat-nick" style="${isMine ? 'color:#c084fc;' : 'color:#60a5fa;'}">${escapeHtml(nickname)}</span>
+                <span class="party-chat-nick">${escapeHtml(nickname)}</span>
                 <span class="party-chat-time">${time}</span>
                 <div class="party-chat-bubble">${escapeHtml(text)}</div>
             `;
