@@ -6,6 +6,8 @@
 
   <title>LeleFlix</title>
   <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#09090b">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <!-- Preconnect: avvia DNS/TLS verso API e TMDB mentre la pagina si carica -->
   <link rel="preconnect" href="https://vixprx.dpdns.org" crossorigin>
@@ -2401,77 +2403,80 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 </main>
     </div>
 
-<div id="detail-view" class="hidden fixed inset-0 z-[60] bg-[#141414] overflow-y-auto custom-scrollbar">
-<button onclick="closeDetailView()" class="fixed top-4 left-4 z-50 glass-button liquid-glass lg-button rounded-full" style="width:48px;height:48px;border-radius:50%;" aria-label="Indietro">
-    <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.5);border-radius:50%;"></div>
-    <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:white;">
-        <i class="fas fa-arrow-left text-xl"></i>
-    </div>
-</button>
+<div id="detail-view" class="hidden lf-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <div class="lf-detail-topbar" aria-hidden="true"><span id="detail-topbar-title"></span></div>
+    <button type="button" class="lf-detail-back" onclick="closeDetailView()" aria-label="Indietro">
+        <i class="fas fa-arrow-left"></i>
+    </button>
 
-<div class="relative w-full min-h-[90vh] md:min-h-[85vh] flex items-end pt-24">
-                <div id="detail-backdrop" class="absolute inset-0 bg-cover bg-center bg-no-repeat"></div>
-            <div class="absolute inset-0 bg-gradient-to-t from-[#141414] via-[#141414]/60 to-transparent"></div>
-            <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-transparent to-transparent h-40"></div>
-
-            <div class="relative w-full p-6 md:p-12 lg:p-16 z-10 pb-12">
-                <div class="flex flex-col items-start mb-4 md:mb-6">
-<img id="detail-logo"
-     src=""
-     alt="Logo"
-     class="hidden max-w-[200px] max-h-32 md:max-w-[400px] md:max-h-64 w-full h-auto object-contain mb-6 drop-shadow-xl origin-bottom-left" />                     <h1 id="detail-title" class="text-3xl md:text-6xl font-extrabold text-white mb-2 drop-shadow-lg leading-tight"></h1>
-                </div>
-
-                <div class="flex flex-wrap items-center gap-3 text-sm md:text-base text-gray-300 mb-6 font-medium">
-                    <span id="detail-match" class="text-[#46d369] font-bold">Gratis</span>
-                    <span id="detail-year" class="text-white"></span>
-                    <span id="detail-rating" class="bg-[#333]/80 backdrop-blur-sm px-2 py-0.5 rounded text-xs text-white border border-gray-600">TV-MA</span>
-                    <span id="detail-runtime" class="text-gray-300"></span>
-                    <span class="border border-gray-500 px-1.5 rounded text-[0.65rem] text-gray-400 font-bold tracking-wider">HD</span>
-                </div>
-
-                <div class="flex flex-col md:flex-row gap-3 mb-8 w-full md:w-auto">
-                    <button id="detail-play-btn" class="w-full md:w-auto bg-white text-black px-8 py-3.5 rounded-md font-bold hover:bg-white/90 transition flex items-center justify-center gap-3 text-lg shadow-lg active:scale-95 duration-200">
-                        <i class="fas fa-play text-xl"></i> Riproduci
-                    </button>
-
-                    <div id="season-selector-container" class="hidden relative w-full md:w-auto group">
-                         <select id="season-select" class="w-full md:w-auto appearance-none bg-[#2a2a2a]/80 text-white border border-gray-600 px-5 py-3.5 pr-12 rounded-md font-bold cursor-pointer focus:outline-none focus:border-white focus:bg-[#2a2a2a] transition-colors">
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-white group-hover:text-primary transition-colors">
-                            <i class="fas fa-chevron-down text-sm"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-                    <div class="md:col-span-2">
-                        <p id="detail-overview" class="text-white/90 text-sm md:text-lg leading-relaxed font-normal drop-shadow-md"></p>
-                    </div>
-                    <div class="text-xs md:text-sm text-gray-400 flex flex-col gap-3">
-                        <p class="leading-relaxed"><span class="text-gray-500 font-semibold block mb-1">Cast:</span> <span id="detail-cast" class="text-gray-200"></span></p>
-                        <p class="leading-relaxed"><span class="text-gray-500 font-semibold block mb-1">Generi:</span> <span id="detail-genres" class="text-gray-200"></span></p>
-                    </div>
-                </div>
+    <header class="lf-detail-hero">
+        <div id="detail-backdrop" class="lf-detail-backdrop"></div>
+        <div class="lf-detail-shade" aria-hidden="true"></div>
+        <div class="lf-detail-intro">
+            <div class="lf-detail-titlebox">
+                <img id="detail-logo" class="hidden" src="" alt="">
+                <h1 id="detail-title" class="lf-detail-title"></h1>
             </div>
+            <div id="detail-meta" class="lf-detail-meta"></div>
+            <p id="detail-genres-line" class="lf-detail-genres"></p>
+            <p id="detail-tagline" class="lf-detail-tagline hidden"></p>
+            <p id="detail-overview" class="lf-detail-overview"></p>
+            <div class="lf-detail-actions">
+                <button id="detail-play-btn" type="button" class="lf-btn lf-btn--primary">
+                    <i class="fas fa-play"></i><span id="detail-play-label">Riproduci</span>
+                </button>
+                <button id="detail-trailer-btn" type="button" class="lf-btn lf-btn--glass hidden">
+                    <i class="fas fa-clapperboard"></i><span>Trailer</span>
+                </button>
+            </div>
+            <div id="detail-scores" class="lf-scores" aria-label="Valutazioni"></div>
         </div>
+    </header>
 
-        <div class="px-5 md:px-12 lg:px-16 pb-24 max-w-7xl mx-auto -mt-6 relative z-20">
-            <div id="episodes-section" class="hidden mb-12">
-                <div class="flex justify-between items-end mb-6 border-b border-gray-800 pb-3 sticky top-0 bg-[#141414] z-30 pt-4">
-                    <h3 class="text-xl md:text-2xl font-bold text-white">Episodi</h3>
-                    <span id="episode-count" class="text-gray-400 text-sm font-medium"></span>
+    <div class="lf-detail-body">
+        <section id="episodes-section" class="lf-detail-section hidden" aria-labelledby="episodes-heading">
+            <header class="lf-detail-section-head">
+                <h2 id="episodes-heading" class="lf-detail-h">Episodi</h2>
+                <div class="lf-detail-season">
+                    <span id="episode-count" class="lf-detail-count"></span>
+                    <div id="season-selector-container" class="lf-select">
+                        <select id="season-select" aria-label="Stagione"></select>
+                        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                    </div>
                 </div>
-                <div id="episodes-list" class="flex flex-col gap-4"></div>
-            </div>
+            </header>
+            <div id="episodes-list" class="lf-episodes"></div>
+        </section>
 
-            <div id="similar-section">
-                <h3 class="text-xl md:text-2xl font-bold text-white mb-6">Potrebbe piacerti anche</h3>
-                <div id="similar-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
-            </div>
-        </div>
+        <section id="cast-section" class="lf-detail-section hidden" aria-labelledby="cast-heading">
+            <header class="lf-detail-section-head">
+                <h2 id="cast-heading" class="lf-detail-h">Cast</h2>
+            </header>
+            <div id="detail-cast-row" class="lf-cast-row"></div>
+        </section>
+
+        <section id="similar-section" class="lf-detail-section" aria-labelledby="similar-heading">
+            <header class="lf-detail-section-head">
+                <h2 id="similar-heading" class="lf-detail-h">Potrebbe piacerti <em>anche</em></h2>
+            </header>
+            <div id="similar-grid" class="lf-similar-track"></div>
+        </section>
+
+        <section id="facts-section" class="lf-detail-section" aria-labelledby="facts-heading">
+            <header class="lf-detail-section-head">
+                <h2 id="facts-heading" class="lf-detail-h">Dettagli</h2>
+            </header>
+            <dl id="detail-facts" class="lf-facts"></dl>
+        </section>
     </div>
+</div>
 
+<div id="trailer-modal" class="lf-trailer hidden" role="dialog" aria-modal="true" aria-label="Trailer">
+    <button type="button" class="lf-trailer-close" aria-label="Chiudi trailer"><i class="fas fa-xmark"></i></button>
+    <div class="lf-trailer-frame">
+        <iframe id="trailer-iframe" title="Trailer" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>
+    </div>
+</div>
 </div>
 
     <section id="search-results-section" class="hidden">
@@ -3319,39 +3324,8 @@ try {
 
 // Gestione clic su risultato
 async function handleResultClick(id, type, itemData = null) {
-    try {
-        // Usa i dati preliminari se disponibili, altrimenti fetch completo
-        const detail = itemData ? {
-            ...itemData,
-            media_type: type,
-            id: id
-        } : await getMovieDetails(id, type);
-
-        // Aggiungi dati mancanti per la riproduzione
-        if (!detail.title) detail.title = detail.name || 'Senza Titolo';
-        if (!detail.backdrop_path) detail.backdrop_path = detail.poster_path;
-
-        // SE È UNA SERIE TV, CARICA I DATI COMPLETI DELLA SERIE
-        if (type === 'tv') {
-            try {
-                const tvResponse = await fetch(`${API_URL}/tv/${id}?api_key=${API_KEY}&language=it-IT`);
-                const tvData = await tvResponse.json();
-                detail.tv_data = tvData; // Aggiungi i dati completi della serie
-            } catch (tvError) {
-                console.error('Errore nel caricamento dati serie TV:', tvError);
-            }
-        }
-
-        if (type === 'tv') {
-openDetailView(id, type);
-        } else {
-openDetailView(id, type);
-
-        }
-    } catch (error) {
-        console.error("Error handling result click:", error);
-        alert("Si è verificato un errore durante l'avvio della riproduzione");
-    }
+    // La scheda dettaglio scarica da sola i dati completi
+    openDetailView(itemData ? { ...itemData, id, media_type: type } : id, type);
 }
 
 // Reset ricerca
@@ -3390,48 +3364,58 @@ function clearSearch() {
 // --- GESTIONE VISTE CON ANIMAZIONE ---
 
 let scrollPositionBeforeDetail = 0;
+let detailToken = 0;   // evita che una scheda aperta prima sovrascriva quella attuale
+
+// Dettagli completi in UNA richiesta: cast, trailer, loghi e classificazione
+async function getFullDetails(id, type = 'movie') {
+    const extra = type === 'tv'
+        ? 'credits,videos,images,content_ratings'
+        : 'credits,videos,images,release_dates';
+    const res = await fetch(`${API_URL}/${type}/${id}?api_key=${API_KEY}&language=it-IT&append_to_response=${extra}&include_image_language=it,en,null&include_video_language=it,en`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return { ...data, media_type: type };
+}
 
 async function openDetailView(contentOrId, type = 'movie') {
     // 1. Salva posizione scroll
     scrollPositionBeforeDetail = window.scrollY;
+    const token = ++detailToken;
 
-    // 2. Recupera dati (logica invariata)
+    // 2. Recupera i dati completi (anche se arriva un oggetto parziale da una card)
+    const base = typeof contentOrId === 'object' ? contentOrId : null;
+    const id = base ? base.id : contentOrId;
+    const mediaType = (base && base.media_type) || type;
     let content;
-    if (typeof contentOrId === 'object') {
-        content = contentOrId;
-    } else {
-        content = await getMovieDetails(contentOrId, type);
+    try {
+        content = await getFullDetails(id, mediaType);
+    } catch (e) {
+        console.error('Errore dettagli:', e);
+        content = base ? { ...base, media_type: mediaType } : await getMovieDetails(id, mediaType);
     }
-
-    if (content.media_type === 'tv' && !content.seasons) {
-         const tvRes = await fetch(`${API_URL}/tv/${content.id}?api_key=${API_KEY}&language=it-IT`);
-         const tvData = await tvRes.json();
-         content = { ...content, ...tvData };
-    }
+    if (token !== detailToken) return;
 
     // 3. Popola i dati
-    populateDetailView(content);
+    populateDetailView(content, token);
 
     // 4. GESTIONE ANIMAZIONE APERTURA
     const homeView = document.getElementById('home-view');
     const detailView = document.getElementById('detail-view');
 
-    // Assicurati che non ci siano classi vecchie
     detailView.classList.remove('hidden', 'detail-view-exit');
     detailView.classList.add('detail-view-enter');
     detailView.scrollTop = 0;
+    detailView.classList.remove('is-scrolled');
 
-    // Nascondi Navbar + mobile pill nav
+    // Nascondi Navbar + tab bar
     const navbar = document.getElementById('lf-nav');
-    if(navbar) navbar.style.display = 'none';
+    if (navbar) navbar.style.display = 'none';
     document.body.classList.add('overlay-active');
 
-    // Opzionale: Nascondi la home DOPO che l'animazione è finita per evitare "buchi" neri durante la transizione
-    // Se preferisci le performance, puoi nasconderla subito commentando l'event listener qui sotto e usando homeView.classList.add('hidden') subito.
     detailView.addEventListener('animationend', () => {
-        if(detailView.classList.contains('detail-view-enter')) {
+        if (detailView.classList.contains('detail-view-enter')) {
             homeView.classList.add('hidden');
-            detailView.classList.remove('detail-view-enter'); // Pulizia classe
+            detailView.classList.remove('detail-view-enter');
         }
     }, { once: true });
 
@@ -3439,362 +3423,341 @@ async function openDetailView(contentOrId, type = 'movie') {
 }
 
 function closeDetailView() {
-const homeView = document.getElementById('home-view');
+    const homeView = document.getElementById('home-view');
     const detailView = document.getElementById('detail-view');
+    if (detailView.classList.contains('hidden')) return;
+    detailToken++;
+    closeTrailer();
 
-    // --- AGGIUNTA: Pulisci il video player ---
-    // Nascondi il container video per la prossima volta
     // 1. Mostra SUBITO la home sotto (così si vede mentre il dettaglio scompare)
     homeView.classList.remove('hidden');
-    window.scrollTo(0, scrollPositionBeforeDetail); // Ripristina scroll home
+    window.scrollTo(0, scrollPositionBeforeDetail);
 
-    // 2. Ripristina Navbar + mobile pill nav
+    // 2. Ripristina Navbar + tab bar
     const navbar = document.getElementById('lf-nav');
-    if(navbar) navbar.style.display = '';
+    if (navbar) navbar.style.display = '';
     document.body.classList.remove('overlay-active');
 
     // 3. AVVIA ANIMAZIONE USCITA
-    detailView.classList.remove('detail-view-enter'); // Sicurezza
+    detailView.classList.remove('detail-view-enter');
     detailView.classList.add('detail-view-exit');
 
     // 4. Nascondi effettivamente il div solo quando l'animazione è finita
     detailView.addEventListener('animationend', () => {
-        if(detailView.classList.contains('detail-view-exit')) {
+        if (detailView.classList.contains('detail-view-exit')) {
             detailView.classList.add('hidden');
-            detailView.classList.remove('detail-view-exit'); // Pulizia classe
-
-            // Pulisci contenuto pesante
+            detailView.classList.remove('detail-view-exit');
             document.getElementById('episodes-list').innerHTML = '';
         }
     }, { once: true });
 }
 
+// --- Helper di formattazione ---
+const _itLanguageNames = (() => { try { return new Intl.DisplayNames(['it'], { type: 'language' }); } catch (e) { return null; } })();
+const _itRegionNames = (() => { try { return new Intl.DisplayNames(['it'], { type: 'region' }); } catch (e) { return null; } })();
+const capitalizeIt = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+
+function formatRuntime(min) {
+    if (!min) return '';
+    const h = Math.floor(min / 60), m = min % 60;
+    return h ? `${h} h${m ? ` ${m} min` : ''}` : `${m} min`;
+}
+function formatDateIt(d) {
+    if (!d) return '';
+    const date = new Date(d);
+    return isNaN(date) ? d : date.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function getCertification(c) {
+    if (c.media_type === 'tv') {
+        const r = c.content_ratings?.results || [];
+        const e = r.find(x => x.iso_3166_1 === 'IT') || r.find(x => x.iso_3166_1 === 'US');
+        return e?.rating || '';
+    }
+    const r = c.release_dates?.results || [];
+    for (const cc of ['IT', 'US']) {
+        const cert = r.find(x => x.iso_3166_1 === cc)?.release_dates?.find(d => d.certification)?.certification;
+        if (cert) return cert;
+    }
+    return '';
+}
+function pickTrailer(c) {
+    const vids = (c.videos?.results || []).filter(v => v.site === 'YouTube' && v.key);
+    const score = v => (v.type === 'Trailer' ? 4 : v.type === 'Teaser' ? 2 : 0) + (v.iso_639_1 === 'it' ? 2 : 0) + (v.official ? 1 : 0);
+    return vids.sort((a, b) => score(b) - score(a))[0] || null;
+}
+
+// RT: prima la cache del proxy, poi lo scraping forzato
+async function loadRTScoresFor(title, type, year) {
+    let d = await fetchRTScores(title, type, year, false).catch(() => null);
+    if (!(d && d.criticsScore !== null)) d = await fetchRTScores(title, type, year, true).catch(() => null);
+    return d && (d.criticsScore !== null || d.audienceScore !== null) ? d : null;
+}
+
+// --- Trailer (YouTube senza cookie, in un modale) ---
+function openTrailer(key) {
+    const modal = document.getElementById('trailer-modal');
+    document.getElementById('trailer-iframe').src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(key)}?autoplay=1&rel=0&modestbranding=1&playsinline=1`;
+    modal.classList.remove('hidden');
+}
+function closeTrailer() {
+    const modal = document.getElementById('trailer-modal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    document.getElementById('trailer-iframe').src = 'about:blank';
+    modal.classList.add('hidden');
+}
+// Barra superiore della scheda: compare quando l'hero è uscito dallo schermo
+document.addEventListener('DOMContentLoaded', () => {
+    const dv = document.getElementById('detail-view');
+    if (!dv) return;
+    let ticking = false;
+    dv.addEventListener('scroll', () => {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(() => {
+            ticking = false;
+            const hero = dv.querySelector('.lf-detail-hero');
+            const limit = hero ? hero.offsetHeight - 120 : 400;
+            dv.classList.toggle('is-scrolled', dv.scrollTop > limit);
+        });
+    }, { passive: true });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('trailer-modal');
+    if (!modal) return;
+    modal.querySelector('.lf-trailer-close').addEventListener('click', closeTrailer);
+    modal.addEventListener('click', e => { if (e.target === modal) closeTrailer(); });
+    document.addEventListener('keydown', e => {
+        if (e.key !== 'Escape') return;
+        if (!modal.classList.contains('hidden')) { closeTrailer(); return; }
+        const dv = document.getElementById('detail-view');
+        if (dv && !dv.classList.contains('hidden') && document.getElementById('player-modal').classList.contains('hidden')) closeDetailView();
+    });
+});
+
 // --- POPOLAMENTO DATI ---
-
-async function populateDetailView(content) {
+function populateDetailView(content, token = detailToken) {
     const isTV = content.media_type === 'tv';
+    const title = content.title || content.name || '';
+    const year = (content.release_date || content.first_air_date || '').split('-')[0];
 
-    // --- 1. Gestione Sfondo e Info Base ---
-    const backdropUrl = content.backdrop_path
-        ? `${IMG_PATH}${content.backdrop_path}`
-        : (content.poster_path ? `${IMG_PATH}${content.poster_path}` : '');
+    // Sfondo
+    const backdropPath = content.backdrop_path || content.poster_path;
+    document.getElementById('detail-backdrop').style.backgroundImage = backdropPath ? `url(${IMG_PATH}${backdropPath})` : 'none';
 
-    document.getElementById('detail-backdrop').style.backgroundImage = `url(${backdropUrl})`;
-
+    // Logo (se c'è) o titolo testuale. Il titolo resta nel DOM per gli screen reader.
     const titleEl = document.getElementById('detail-title');
     const logoEl = document.getElementById('detail-logo');
-
-    titleEl.textContent = content.title || content.name;
-    titleEl.classList.add('hidden');
+    titleEl.textContent = title;
+    titleEl.classList.remove('lf-visually-hidden');
     logoEl.classList.add('hidden');
-
-    document.getElementById('detail-year').textContent = (content.release_date || content.first_air_date || '').split('-')[0];
-    document.getElementById('detail-runtime').textContent = isTV
-        ? `${content.number_of_seasons} Stagioni`
-        : `${content.runtime || 'N/A'} min`;
-    document.getElementById('detail-overview').textContent = content.overview;
-
-    // --- PUNTEGGI MULTI-PIATTAFORMA (Spinner + RT reali) ---
-    const tmdbScore = content.vote_average || 0;
-    const rtTitle = content.original_title || content.original_name || content.title || content.name || '';
-    const rtYear = (content.release_date || content.first_air_date || '').split('-')[0];
-
-    // Icone
-    const pathTomato = './icons/tomato.svg';
-    const pathSplat = './icons/splat.svg';
-    const pathPopcornFull = './icons/popcorn-full.svg';
-    const pathPopcornSpilled = './icons/popcorn-spilled.svg';
-    const pathImdb = './icons/imdb.svg';
-
-    function renderDetailScores(cScore, aScore, iScore, mScore, live) {
-        const isFresh = cScore >= 60;
-        const isPopcornFresh = aScore >= 60;
-        const criticIcon = isFresh ? pathTomato : pathSplat;
-        const audienceIcon = isPopcornFresh ? pathPopcornFull : pathPopcornSpilled;
-        const metaColor = mScore >= 60 ? '#66CC33' : (mScore >= 40 ? '#FFCC33' : '#FF0000');
-        const globalAverage = Math.round(
-            ((tmdbScore * 10) + cScore + aScore + (parseFloat(iScore) * 10) + mScore) / 5
-        );
-        const liveBadge = live ? '<span class="text-[9px] text-green-400 font-bold ml-1">LIVE</span>' : '';
-
-        // Usa direttamente la variabile scoreContainer (closure) invece di getElementById
-        const container = document.getElementById('dynamic-rt-scores') || scoreContainer;
-        if (!container) return;
-        container.innerHTML = `
-            <div class="flex items-center gap-3 pr-6 border-r border-white/10">
-                <div class="flex flex-col items-center">
-                    <span class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">${globalAverage}</span>
-                    <span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Media</span>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2" title="Tomatometer">
-
-                    <img src="${criticIcon}" class="w-6 h-6 object-contain">
-                    <span class="text-white font-bold">${cScore}%</span>
-                </div>
-                <div class="flex items-center gap-2" title="Audience Score">
-                    <img src="${audienceIcon}" class="w-6 h-6 object-contain">
-                    <span class="text-gray-200 font-bold">${aScore}%</span>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2" title="IMDb Rating">
-                <img src="${pathImdb}" class="w-8 h-auto object-contain" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden')">
-                <span class="hidden text-[#F5C518] font-black text-xl">IMDb</span>
-                <span class="text-white font-bold text-lg">${iScore}</span>
-            </div>
-
-            <div class="flex items-center gap-2" title="Metascore">
-                <div class="w-7 h-7 flex items-center justify-center text-white font-bold text-xs rounded" style="background-color: ${metaColor};">
-                    ${mScore}
-                </div>
-                <span class="text-gray-400 text-xs font-semibold uppercase">Metascore</span>
-            </div>
-        `;
+    logoEl.removeAttribute('src');
+    const logos = content.images?.logos || [];
+    const logo = logos.find(l => l.iso_639_1 === 'it') || logos.find(l => l.iso_639_1 === 'en') || logos[0];
+    if (logo) {
+        logoEl.onload = () => { if (token !== detailToken) return; logoEl.classList.remove('hidden'); titleEl.classList.add('lf-visually-hidden'); };
+        logoEl.onerror = () => { logoEl.classList.add('hidden'); titleEl.classList.remove('lf-visually-hidden'); };
+        logoEl.alt = title;
+        logoEl.src = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
     }
 
-    function renderDetailLoading() {
-        const container = document.getElementById('dynamic-rt-scores') || scoreContainer;
-        if (!container) return;
-        container.innerHTML = `
-            <div class="flex items-center gap-3 w-full justify-center py-2">
-                <div class="score-spinner score-spinner-lg"></div>
-                <span class="text-gray-400 text-sm font-medium">Caricamento punteggi...</span>
-            </div>
-        `;
+    // Riga meta: anno · durata/stagioni · generi · classificazione
+    const metaEl = document.getElementById('detail-meta');
+    const parts = [];
+    if (year) parts.push(year);
+    if (isTV) {
+        const n = content.number_of_seasons;
+        if (n) parts.push(`${n} ${n === 1 ? 'stagione' : 'stagioni'}`);
+    } else if (content.runtime) {
+        parts.push(formatRuntime(content.runtime));
     }
+    const genres = (content.genres || []).map(g => g.name);
+    document.getElementById('detail-genres-line').textContent = genres.slice(0, 4).join(' · ');
+    document.getElementById('detail-topbar-title').textContent = title;
+    const cert = getCertification(content);
+    metaEl.innerHTML = parts.map(p => `<span>${escapeHtml(String(p))}</span>`).join('') +
+        (cert ? `<span class="lf-cert" title="Classificazione">${escapeHtml(cert)}</span>` : '');
 
-    function renderDetailTMDBFallback() {
-        const tmdbPct = Math.round(tmdbScore * 10);
-        const container = document.getElementById('dynamic-rt-scores') || scoreContainer;
-        if (!container) return;
-        container.innerHTML = `
-            <div class="flex items-center gap-3 pr-6 border-r border-white/10">
-                <div class="flex flex-col items-center">
-                    <span class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-500">${tmdbPct}</span>
-                    <span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">TMDB</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-2 opacity-70">
-                <img src="${tmdbPct >= 60 ? pathTomato : pathSplat}" class="w-6 h-6 object-contain">
-                <span class="text-gray-300 font-bold">${tmdbPct}%</span>
-                <span class="text-[9px] text-gray-500 font-medium">TMDB</span>
-            </div>
-        `;
+    // Tagline e trama
+    const taglineEl = document.getElementById('detail-tagline');
+    taglineEl.textContent = content.tagline || '';
+    taglineEl.classList.toggle('hidden', !content.tagline);
+    document.getElementById('detail-overview').textContent = content.overview || 'Trama non disponibile.';
+
+    // Play
+    let startSeason = 1;
+    if (isTV && content.seasons && content.seasons.length) {
+        const firstRegular = content.seasons.find(s => s.season_number >= 1);
+        if (firstRegular) startSeason = firstRegular.season_number;
     }
-
-    // Rimuovi vecchio contenitore
-    const oldScores = document.getElementById('dynamic-rt-scores');
-    if (oldScores) oldScores.remove();
-
-    const scoreContainer = document.createElement('div');
-    scoreContainer.id = 'dynamic-rt-scores';
-    scoreContainer.className = 'flex flex-wrap items-center gap-x-6 gap-y-3 mb-6 mt-4 p-4 rounded-xl';
-    scoreContainer.style.background = 'rgba(20, 20, 20, 0.35)';
-    scoreContainer.style.backdropFilter = 'blur(12px) saturate(180%)';
-    scoreContainer.style.webkitBackdropFilter = 'blur(12px) saturate(180%)';
-    scoreContainer.style.border = '1px solid rgba(255, 255, 255, 0.12)';
-    scoreContainer.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.4)';
-
-    // Inserisci il contenitore nel DOM PRIMA di renderizzare
-    const metadataRow = document.getElementById('detail-year').parentElement;
-    metadataRow.insertAdjacentElement('afterend', scoreContainer);
-
-    // Mostra subito lo spinner di caricamento (sarà rimpiazzato se c'è cache)
-    renderDetailLoading();
-
-    // 1) Prima prova a leggere dalla cache (senza force) - risposta istantanea
-    const rtContainerId = 'dynamic-rt-scores';
-    const rtMediaType = isTV ? 'tv' : 'movie';
-
-    fetchRTScores(rtTitle, rtMediaType, rtYear, false).then(cachedData => {
-        const currentContainer = document.getElementById(rtContainerId);
-        if (!currentContainer) return;
-
-        if (cachedData && cachedData.criticsScore !== null) {
-            // Cache hit: mostra subito i punteggi
-            const criticScore = cachedData.criticsScore;
-            const audienceScore = cachedData.audienceScore !== null ? cachedData.audienceScore : Math.round(tmdbScore * 10);
-            const imdbScore = tmdbScore.toFixed(1);
-            const metaScore = Math.round(tmdbScore * 10);
-            console.log('[RT] Detail cache hit:', criticScore + '%', '/', audienceScore + '%');
-            renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, true);
-        } else {
-            // 2) Cache miss: forza scraping e mostra spinner nel frattempo
-            console.log('[RT] Detail cache miss, forcing scrape...');
-            fetchRTScores(rtTitle, rtMediaType, rtYear, true).then(rtData => {
-                const container2 = document.getElementById(rtContainerId);
-                if (!container2) return;
-                if (rtData && rtData.criticsScore !== null) {
-                    const criticScore = rtData.criticsScore;
-                    const audienceScore = rtData.audienceScore !== null ? rtData.audienceScore : Math.round(tmdbScore * 10);
-                    const imdbScore = tmdbScore.toFixed(1);
-                    const metaScore = Math.round(tmdbScore * 10);
-                    console.log('[RT] Detail scrape result:', criticScore + '%', '/', audienceScore + '%');
-                    renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, true);
-                } else {
-                    renderDetailTMDBFallback();
-                }
-            }).catch(() => {
-                const container2 = document.getElementById(rtContainerId);
-                if (container2) renderDetailTMDBFallback();
-            });
-        }
-    }).catch(() => {
-        // Anche la cache fetch fallita: prova force scrape
-        fetchRTScores(rtTitle, rtMediaType, rtYear, true).then(rtData => {
-            const container2 = document.getElementById(rtContainerId);
-            if (!container2) return;
-            if (rtData && rtData.criticsScore !== null) {
-                const criticScore = rtData.criticsScore;
-                const audienceScore = rtData.audienceScore !== null ? rtData.audienceScore : Math.round(tmdbScore * 10);
-                const imdbScore = tmdbScore.toFixed(1);
-                const metaScore = Math.round(tmdbScore * 10);
-                renderDetailScores(criticScore, audienceScore, imdbScore, metaScore, true);
-            } else {
-                renderDetailTMDBFallback();
-            }
-        }).catch(() => {
-            const container2 = document.getElementById(rtContainerId);
-            if (container2) renderDetailTMDBFallback();
-        });
-    });
-
-    try {
-        // Richiediamo loghi in Italiano (it), Inglese (en) o senza lingua (null)
-        const imagesRes = await fetch(`${API_URL}/${content.media_type}/${content.id}/images?api_key=${API_KEY}&include_image_language=it,en,null`);
-        const imagesData = await imagesRes.json();
-
-        if (imagesData.logos && imagesData.logos.length > 0) {
-            // Cerchiamo preferibilmente un logo in italiano, altrimenti il primo disponibile (solitamente inglese/internazionale)
-            const logo = imagesData.logos.find(l => l.iso_639_1 === 'it') || imagesData.logos[0];
-
-            if (logo) {
-                logoEl.src = `https://image.tmdb.org/t/p/w500${logo.file_path}`;
-                logoEl.classList.remove('hidden'); // Mostra il logo
-                   // Nascondi il titolo testuale
-            }
-
-            else{
-                titleEl.classList.remove('hidden');
-            }
-        } else {
-            // Nessun logo su TMDB: mostra il titolo testuale
-            titleEl.classList.remove('hidden');
-        }
-    } catch (error) {
-        console.error("Errore recupero logo:", error);
-        titleEl.classList.remove('hidden');
-        // In caso di errore, il titolo testuale rimane visibile come fallback
-    }
-
-    // Cast & Generi
-    const cast = content.credits?.cast?.slice(0, 5).map(c => c.name).join(', ') || 'N/A';
-    const genres = content.genres?.map(g => g.name).join(', ') || 'N/A';
-    document.getElementById('detail-cast').textContent = cast;
-    document.getElementById('detail-genres').textContent = genres;
-
-    // Pulsante Play Principale
-    const playBtn = document.getElementById('detail-play-btn');
-    playBtn.onclick = () => {
-        if(isTV) {
-            // Se TV, riproduci il primo episodio della prima stagione regolare
-            let startSeason = 1;
-            if (content.seasons && content.seasons.length > 0) {
-                const firstRegular = content.seasons.find(s => s.season_number >= 1);
-                if (firstRegular) startSeason = firstRegular.season_number;
-            }
-            playMovie({
-                ...content,
-                season_number: startSeason,
-                episode_number: 1,
-                tv_data: content
-            });
+    document.getElementById('detail-play-label').textContent = isTV ? `Riproduci S${startSeason} E1` : 'Riproduci';
+    document.getElementById('detail-play-btn').onclick = () => {
+        if (isTV) {
+            playMovie({ ...content, season_number: startSeason, episode_number: 1, tv_data: content });
         } else {
             playMovie(content);
         }
     };
 
-    // --- SEZIONE EPISODI (SOLO TV) ---
-    const seasonContainer = document.getElementById('season-selector-container');
-    const episodesSection = document.getElementById('episodes-section');
+    // Trailer
+    const trailer = pickTrailer(content);
+    const trailerBtn = document.getElementById('detail-trailer-btn');
+    trailerBtn.classList.toggle('hidden', !trailer);
+    trailerBtn.onclick = trailer ? () => openTrailer(trailer.key) : null;
 
+    // Valutazioni: TMDB subito, Rotten Tomatoes appena arriva (niente punteggi inventati)
+    const scoresEl = document.getElementById('detail-scores');
+    const tmdb = content.vote_average || 0;
+    const votes = content.vote_count || 0;
+    const tmdbHtml = tmdb ? `
+        <div class="lf-score" title="Voto medio degli utenti TMDB">
+            <span class="lf-score-value"><span class="lf-score-star">★</span>${tmdb.toFixed(1)}</span>
+            <span class="lf-score-label">TMDB${votes ? ` · ${votes.toLocaleString('it-IT')} voti` : ''}</span>
+        </div>` : '';
+    scoresEl.innerHTML = tmdbHtml + `
+        <div class="lf-score lf-score--loading" aria-hidden="true">
+            <span class="score-spinner"></span><span class="lf-score-label">Rotten Tomatoes</span>
+        </div>`;
+    const rtTitle = content.original_title || content.original_name || title;
+    loadRTScoresFor(rtTitle, isTV ? 'tv' : 'movie', year).then(rt => {
+        if (token !== detailToken) return;
+        let rtHtml = '';
+        if (rt && rt.criticsScore !== null) {
+            rtHtml += `
+                <div class="lf-score" title="Tomatometer (critica)">
+                    <span class="lf-score-value"><img src="./icons/${rt.criticsScore >= 60 ? 'tomato' : 'splat'}.svg" alt="">${rt.criticsScore}%</span>
+                    <span class="lf-score-label">Critica</span>
+                </div>`;
+        }
+        if (rt && rt.audienceScore !== null) {
+            rtHtml += `
+                <div class="lf-score" title="Popcornmeter (pubblico)">
+                    <span class="lf-score-value"><img src="./icons/${rt.audienceScore >= 60 ? 'popcorn-full' : 'popcorn-spilled'}.svg" alt="">${rt.audienceScore}%</span>
+                    <span class="lf-score-label">Pubblico</span>
+                </div>`;
+        }
+        scoresEl.innerHTML = tmdbHtml + rtHtml;
+    });
+
+    // Cast con foto
+    const cast = (content.credits?.cast || []).slice(0, 16);
+    const castRow = document.getElementById('detail-cast-row');
+    castRow.innerHTML = cast.map(p => {
+        const initials = (p.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('');
+        const photo = p.profile_path
+            ? `<img src="https://image.tmdb.org/t/p/w185${p.profile_path}" alt="" loading="lazy" decoding="async">`
+            : `<span class="lf-cast-initials">${escapeHtml(initials)}</span>`;
+        return `
+            <div class="lf-cast">
+                <div class="lf-cast-photo">${photo}</div>
+                <p class="lf-cast-name">${escapeHtml(p.name || '')}</p>
+                ${p.character ? `<p class="lf-cast-role">${escapeHtml(p.character)}</p>` : ''}
+            </div>`;
+    }).join('');
+    document.getElementById('cast-section').classList.toggle('hidden', cast.length === 0);
+
+    // Scheda informazioni
+    const facts = [];
+    const originalTitle = content.original_title || content.original_name;
+    if (originalTitle && originalTitle !== title) facts.push(['Titolo originale', originalTitle]);
     if (isTV) {
-        seasonContainer.classList.remove('hidden');
-        episodesSection.classList.remove('hidden');
+        if (content.created_by?.length) facts.push(['Ideata da', content.created_by.map(p => p.name).join(', ')]);
+        if (content.first_air_date) facts.push(['Prima messa in onda', formatDateIt(content.first_air_date)]);
+        if (content.number_of_seasons) facts.push(['Stagioni ed episodi',
+            `${content.number_of_seasons} ${content.number_of_seasons === 1 ? 'stagione' : 'stagioni'}` +
+            (content.number_of_episodes ? `, ${content.number_of_episodes} episodi` : '')]);
+        const status = { 'Returning Series': 'In corso', 'Ended': 'Conclusa', 'Canceled': 'Cancellata', 'In Production': 'In produzione' }[content.status];
+        if (status) facts.push(['Stato', status]);
+        if (content.networks?.length) facts.push(['Rete', content.networks.slice(0, 3).map(n => n.name).join(', ')]);
+    } else {
+        const directors = (content.credits?.crew || []).filter(c => c.job === 'Director').map(c => c.name);
+        if (directors.length) facts.push(['Regia', directors.join(', ')]);
+        if (content.release_date) facts.push(['Uscita', formatDateIt(content.release_date)]);
+        if (content.runtime) facts.push(['Durata', formatRuntime(content.runtime)]);
+    }
+    if (genres.length) facts.push(['Generi', genres.join(', ')]);
+    if (content.original_language) facts.push(['Lingua originale', capitalizeIt(_itLanguageNames?.of(content.original_language) || content.original_language)]);
+    const countries = (content.production_countries || []).map(c => _itRegionNames?.of(c.iso_3166_1) || c.name);
+    if (countries.length) facts.push(['Paese', countries.slice(0, 3).join(', ')]);
+    if (content.production_companies?.length) facts.push(['Produzione', content.production_companies.slice(0, 3).map(c => c.name).join(', ')]);
+    if (cert) facts.push(['Classificazione', cert === 'T' ? 'Per tutti (T)' : cert]);
+    document.getElementById('detail-facts').innerHTML = facts.map(([k, v]) =>
+        `<div class="lf-fact"><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(String(v))}</dd></div>`).join('');
+    document.getElementById('facts-section').classList.toggle('hidden', facts.length === 0);
 
-        // Popola select stagioni
+    // Episodi (solo serie)
+    const episodesSection = document.getElementById('episodes-section');
+    if (isTV && content.seasons?.length) {
+        episodesSection.classList.remove('hidden');
         const seasonSelect = document.getElementById('season-select');
         seasonSelect.innerHTML = '';
-
-        content.seasons.forEach(season => {
-            if (season.episode_count > 0) {
-                const option = document.createElement('option');
-                option.value = season.season_number;
-                option.textContent = `Stagione ${season.season_number}`; // (${season.episode_count} ep)`;
-                seasonSelect.appendChild(option);
-            }
+        const seasons = content.seasons
+            .filter(s => s.episode_count > 0)
+            .sort((a, b) => (a.season_number || 999) - (b.season_number || 999));   // "Speciali" in fondo
+        seasons.forEach(season => {
+            const option = document.createElement('option');
+            option.value = season.season_number;
+            option.textContent = season.season_number === 0 ? (season.name || 'Speciali') : `Stagione ${season.season_number}`;
+            seasonSelect.appendChild(option);
         });
-
-        // Listener cambio stagione
         seasonSelect.onchange = (e) => loadEpisodes(content.id, e.target.value, content);
-
-        // Carica la prima stagione disponibile
-        if(content.seasons.length > 0) {
-            const firstSeason = content.seasons.find(s => s.season_number === 1) || content.seasons[0];
-            seasonSelect.value = firstSeason.season_number;
-            loadEpisodes(content.id, firstSeason.season_number, content);
+        const first = seasons.find(s => s.season_number === startSeason) || seasons[0];
+        if (first) {
+            seasonSelect.value = first.season_number;
+            loadEpisodes(content.id, first.season_number, content);
         }
-
+        // un solo valore: niente tendina inutile
+        document.getElementById('season-selector-container').classList.toggle('lf-select--single', seasons.length < 2);
     } else {
-        seasonContainer.classList.add('hidden');
         episodesSection.classList.add('hidden');
     }
 
-    // --- TITOLI SIMILI ---
+    // Titoli consigliati
     loadSimilar(content.id, content.media_type);
-
 }
 
 
 // Caricamento Episodi
 async function loadEpisodes(tvId, seasonNum, tvData) {
     const list = document.getElementById('episodes-list');
-    list.innerHTML = '<div class="text-white text-center py-4"><i class="fas fa-spinner fa-spin"></i> Caricamento...</div>';
+    const countEl = document.getElementById('episode-count');
+    countEl.textContent = '';
+    list.innerHTML = Array.from({ length: 3 }, () =>
+        '<div class="lf-ep lf-ep--skeleton"><div class="lf-ep-thumb"></div><div class="lf-ep-body"><span></span><span></span></div></div>').join('');
 
     try {
         const res = await fetch(`${API_URL}/tv/${tvId}/season/${seasonNum}?api_key=${API_KEY}&language=it-IT`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        const episodes = data.episodes || [];
+        // Se nel frattempo è stata scelta un'altra stagione, ignora questa risposta
+        if (String(document.getElementById('season-select').value) !== String(seasonNum)) return;
 
         list.innerHTML = '';
-
-        data.episodes.forEach(ep => {
-            const stillUrl = ep.still_path ? `https://image.tmdb.org/t/p/w300${ep.still_path}` : 'placeholder.jpg'; // Usa un placeholder reale
-
-            const row = document.createElement('div');
-            row.className = 'episode-row group';
+        episodes.forEach(ep => {
+            const thumb = ep.still_path
+                ? `<img src="https://image.tmdb.org/t/p/w300${ep.still_path}" alt="" loading="lazy" decoding="async">`
+                : '<span class="lf-ep-noimg"><i class="fas fa-film"></i></span>';
+            const row = document.createElement('article');
+            row.className = 'lf-ep';
+            row.tabIndex = 0;
+            row.setAttribute('role', 'button');
+            row.setAttribute('aria-label', `Riproduci episodio ${ep.episode_number}: ${ep.name || ''}`);
             row.innerHTML = `
-                <div class="episode-number text-lg font-bold text-gray-400 group-hover:text-white">${ep.episode_number}</div>
-                <div class="episode-thumbnail-container">
-                    <img src="${stillUrl}" class="episode-thumbnail" alt="${ep.name}">
-                    <div class="episode-play-icon">
-                        <i class="fas fa-play text-white text-xs"></i>
-                    </div>
+                <div class="lf-ep-thumb">
+                    ${thumb}
+                    <span class="lf-ep-play" aria-hidden="true"><i class="fas fa-play"></i></span>
                 </div>
-                <div class="episode-details">
-                    <div class="episode-header flex-col md:flex-row md:items-center gap-1">
-                        <span class="episode-title text-white font-semibold">${ep.name}</span>
-                        <span class="episode-duration text-sm text-gray-400 ml-0 md:ml-auto">${ep.runtime ? ep.runtime + 'm' : ''}</span>
+                <div class="lf-ep-body">
+                    <div class="lf-ep-top">
+                        <h3 class="lf-ep-title"><span class="lf-ep-num">${ep.episode_number}.</span> ${escapeHtml(ep.name || `Episodio ${ep.episode_number}`)}</h3>
+                        ${ep.runtime ? `<span class="lf-ep-dur">${ep.runtime} min</span>` : ''}
                     </div>
-                    <p class="episode-desc text-sm text-gray-400">${ep.overview || 'Nessuna descrizione disponibile.'}</p>
+                    <p class="lf-ep-desc">${escapeHtml(ep.overview || 'Nessuna descrizione disponibile.')}</p>
                 </div>
             `;
 
-            // Gestione Click Episodio
-            row.addEventListener('click', () => {
-                // Costruisci l'oggetto content per il player
+            const play = () => {
                 const episodeContent = {
                     id: tvId,
                     media_type: 'tv',
@@ -3805,48 +3768,47 @@ async function loadEpisodes(tvId, seasonNum, tvData) {
                     episode_data: ep,
                     tv_data: tvData // Passiamo tutti i dati della serie
                 };
-
-                // Mappiamo per il player (se usi episodeMap)
                 const uniqueId = `${tvId}-${seasonNum}-${ep.episode_number}`;
-                // FIX: Use cacheSet to enforce eviction limit
-            cacheSet(episodeMap, uniqueId, { tvData, episodeData: ep });
-
+                cacheSet(episodeMap, uniqueId, { tvData, episodeData: ep });
                 playMovie(episodeContent);
-            });
+            };
+            row.addEventListener('click', play);
+            row.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); play(); } });
 
             list.appendChild(row);
         });
 
-        document.getElementById('episode-count').textContent = `Episodi: ${data.episodes.length}`;
+        countEl.textContent = episodes.length === 1 ? '1 episodio' : `${episodes.length} episodi`;
 
     } catch (e) {
         console.error(e);
-        list.innerHTML = '<p class="text-red-500">Errore caricamento episodi</p>';
+        list.innerHTML = '<p class="lf-detail-error">Impossibile caricare gli episodi. Riprova tra poco.</p>';
     }
 }
 
-// Caricamento Simili
+// Caricamento titoli consigliati (con fallback sui "simili")
 async function loadSimilar(id, type) {
     const grid = document.getElementById('similar-grid');
+    const section = document.getElementById('similar-section');
     grid.innerHTML = '';
+    section.classList.add('hidden');
 
     try {
-        const res = await fetch(`${API_URL}/${type}/${id}/similar?api_key=${API_KEY}&language=it-IT`);
-        const data = await res.json();
-
-        // Filtra solo quelli disponibili (se usi availableContent)
-        const availableSimilar = data.results.filter(item =>
-             isAvailable(item.id)
-        ).slice(0, 10);
-
-        if(availableSimilar.length === 0) {
-            document.getElementById('similar-section').style.display = 'none';
-            return;
+        const fetchList = async (kind) => {
+            const res = await fetch(`${API_URL}/${type}/${id}/${kind}?api_key=${API_KEY}&language=it-IT`);
+            if (!res.ok) return [];
+            const data = await res.json();
+            return (data.results || []).filter(item => item.poster_path && isAvailable(item.id));
+        };
+        let items = await fetchList('recommendations');
+        if (items.length < 4) {
+            const seen = new Set(items.map(i => i.id));
+            items = items.concat((await fetchList('similar')).filter(i => !seen.has(i.id)));
         }
+        items = items.slice(0, 20);
+        if (!items.length) return;
 
-        document.getElementById('similar-section').style.display = 'block';
-
-        availableSimilar.forEach(item => {
+        items.forEach(item => {
             const card = document.createElement('div');
             card.className = 'lf-poster';
             const simTitle = escapeHtml(item.title || item.name || '');
@@ -3856,17 +3818,11 @@ async function loadSimilar(id, type) {
                 <h4 class="lf-card-title">${simTitle}</h4>
                 ${simYear ? `<p class="lf-card-meta">${simYear}</p>` : ''}
             `;
-
-            card.onclick = () => {
-                // Ricarica la vista dettaglio con il nuovo contenuto
-                // Scroll in alto e nuova fetch
-                openDetailView(item.id, type);
-            };
-
+            card.onclick = () => openDetailView(item.id, type);
             grid.appendChild(card);
         });
-
-    } catch(e) {
+        section.classList.remove('hidden');
+    } catch (e) {
         console.error(e);
     }
 }
