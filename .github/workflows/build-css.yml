@@ -1,0 +1,40 @@
+# Rigenera css/tailwind.css quando cambiano i file che usano classi Tailwind.
+# Serve perché i file vengono caricati anche dall'interfaccia web di GitHub:
+# se aggiungi una classe nuova in index.html, questo job ricompila il CSS e
+# fa il commit da solo.
+name: Build Tailwind CSS
+
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'js/player.js'
+      - 'liquid-glass.js'
+      - 'tailwind.config.js'
+      - 'css/tailwind.src.css'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npm run build:css
+      - name: Commit css/tailwind.css se cambiato
+        run: |
+          if git diff --quiet -- css/tailwind.css; then
+            echo "css/tailwind.css già aggiornato"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898732+github-actions[bot]@users.noreply.github.com"
+          git add css/tailwind.css
+          git commit -m "Rebuild css/tailwind.css"
+          git push

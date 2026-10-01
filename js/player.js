@@ -379,28 +379,19 @@ class VideoPlayer {
     showResumePrompt(resumeTime, duration) {
         const formattedTime = this.formatTime(resumeTime);
         const prompt = document.createElement('div');
-        prompt.className = 'resume-prompt';
+        prompt.className = 'resume-prompt lf-prompt';
         prompt.innerHTML = `
             <div class="prompt-content">
-                <p>Vuoi continuare da ${formattedTime} o ricominciare dall'inizio?</p>
+                <span class="lf-prompt-eyebrow">Riprendi la visione</span>
+                <p>Eri arrivato a <strong>${formattedTime}</strong>.</p>
                 <div class="prompt-buttons">
-                    <button class="resume-yes" style="background: #E50914;">Continua</button>
-                    <button class="resume-no">Ricomincia</button>
+                    <button class="resume-yes lf-prompt-primary"><i class="fas fa-play"></i> Continua</button>
+                    <button class="resume-no"><i class="fas fa-rotate-left"></i> Dall'inizio</button>
                 </div>
             </div>
         `;
 
-        prompt.style.position = 'absolute';
-        prompt.style.top = '50%';
-        prompt.style.left = '50%';
-        prompt.style.transform = 'translate(-50%, -50%)';
-        prompt.style.background = 'rgba(15, 15, 20, 0.7)';
-        prompt.style.backdropFilter = 'blur(24px) saturate(180%)';
-        prompt.style.padding = '20px';
-        prompt.style.borderRadius = '16px';
-        prompt.style.zIndex = '1000';
-        prompt.style.color = 'white';
-        prompt.style.border = '1px solid rgba(255,255,255,0.15)';
+        // Stile in css/design.css (.lf-prompt): niente blur sopra al video
 
         const videoContainer = document.getElementById('videoContainer');
         videoContainer.appendChild(prompt);
@@ -527,7 +518,8 @@ class VideoPlayer {
             .then(d => {
                 let items = (d && d.results) ? d.results.filter(i => i.poster_path) : [];
                 const avail = (typeof availableContent !== 'undefined' && availableContent) ? availableContent : null;
-                if (avail) items = items.filter(i => avail.some(a => a.tmdb_id === i.id));
+                if (typeof isAvailable === 'function') items = items.filter(i => isAvailable(i.id));
+                else if (avail) items = items.filter(i => avail.some(a => a.tmdb_id === i.id));
                 items = items.slice(0, 12);
                 if (!items.length) { wrap.classList.add('hidden'); return; }
                 row.innerHTML = '';
@@ -552,28 +544,19 @@ class VideoPlayer {
     // ── Next Episode Prompt ─────────────────────────────────
     showNextEpisodePrompt() {
         const prompt = document.createElement('div');
-        prompt.className = 'next-episode-prompt';
+        prompt.className = 'next-episode-prompt lf-prompt';
         prompt.innerHTML = `
             <div class="prompt-content">
-                <p>Vuoi passare al prossimo episodio?</p>
+                <span class="lf-prompt-eyebrow">Episodio terminato</span>
+                <p>Passare al prossimo episodio?</p>
                 <div class="prompt-buttons">
-                    <button id="confirmNextEpisode">Sì</button>
-                    <button id="cancelNextEpisode">No</button>
+                    <button id="confirmNextEpisode" class="lf-prompt-primary"><i class="fas fa-forward-step"></i> Prossimo</button>
+                    <button id="cancelNextEpisode">Resta qui</button>
                 </div>
             </div>
         `;
 
-        prompt.style.position = 'absolute';
-        prompt.style.top = '50%';
-        prompt.style.left = '50%';
-        prompt.style.transform = 'translate(-50%, -50%)';
-        prompt.style.background = 'rgba(15, 15, 20, 0.7)';
-        prompt.style.backdropFilter = 'blur(24px) saturate(180%)';
-        prompt.style.padding = '20px';
-        prompt.style.borderRadius = '16px';
-        prompt.style.zIndex = '1000';
-        prompt.style.color = 'white';
-        prompt.style.border = '1px solid rgba(255,255,255,0.15)';
+        // Stile in css/design.css (.lf-prompt): niente blur sopra al video
 
         document.getElementById('player-modal').appendChild(prompt);
 
