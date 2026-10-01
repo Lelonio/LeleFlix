@@ -2265,7 +2265,6 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
     <div class="lf-hero-shade" aria-hidden="true"></div>
     <div class="lf-hero-inner">
         <div class="lf-hero-copy">
-            <p class="lf-eyebrow"><span id="hero-kind">In evidenza</span></p>
             <div class="lf-hero-titlebox">
                 <img id="hero-logo" src="" alt="" class="hidden">
                 <h1 id="hero-title" class="lf-hero-title"></h1>
@@ -4529,8 +4528,6 @@ async function displayHeroMovie(content) {
     }, { once: true });
 
     // 2. Info Testuali secondarie
-    const heroKindEl = document.getElementById('hero-kind');
-    if (heroKindEl) heroKindEl.textContent = content.media_type === 'tv' ? 'Serie TV in evidenza' : 'Film in evidenza';
     heroRatingEl.textContent = (content.vote_average || 0).toFixed(1);
     heroOverviewEl.textContent = content.overview;
 
@@ -6530,7 +6527,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const els = [
                 document.getElementById('hero-logo'),
                 document.getElementById('hero-title'),
-                document.querySelector('#hero-section .lf-eyebrow'),
                 document.querySelector('#hero-section .lf-hero-meta'),
                 document.getElementById('hero-overview'),
                 document.querySelector('#hero-section .lf-hero-actions')
