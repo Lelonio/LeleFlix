@@ -10,7 +10,7 @@
 // Bumpare CACHE_NAME NON è più necessario per vedere le modifiche,
 // serve solo a svuotare la vecchia cache una volta.
 // ============================================================
-const CACHE_NAME = "leleflix-v11";
+const CACHE_NAME = "leleflix-v12";
 const IMAGE_CACHE_NAME = "leleflix-images-v7";
 
 // Precache minimo per il funzionamento OFFLINE (fallback).
@@ -21,6 +21,10 @@ const urlsToCache = [
   "./css/style.css",
   "./css/ios26.css",
   "./css/tailwind.css",
+  "./css/design.css",
+  "./fonts/geist-latin-wght.woff2",
+  "./fonts/instrument-serif-latin-400.woff2",
+  "./fonts/instrument-serif-latin-400-italic.woff2",
   "./liquid-glass.js",
   "./js/player.js",
   "./icon-192.png",

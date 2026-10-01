@@ -1810,78 +1810,58 @@ main .max-w-7xl {
      così la cascata con style.css / ios26.css resta identica.
      Rigenerare con: npm run build:css -->
 <link rel="stylesheet" href="css/tailwind.css">
+<!-- Design system "Noir": ultimo layer, sovrascrive il look storico -->
+<link rel="preload" href="fonts/geist-latin-wght.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/instrument-serif-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/design.css">
 </head>
-<body class="bg-dark text-accent " >
+<body class="lf bg-dark text-accent">
     <div id="hr-keeper"></div>
 
     <!-- Lightweight liquid-glass CSS effect (no SVG filters) -->
 
     <!-- Navbar con effetto liquid glass premium -->
-   <div class="glass-nav-container">
-    <nav class="glass-nav">
-        <div class="liquid-glass" id="nav-glass" style="position:absolute;inset:0;border-radius:0;">
-            <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(34,31,31,0.45);"></div>
-            <div class="lg-content" style="position:relative;z-index:3;"></div>
-        </div>
+<header id="lf-nav" class="lf-nav">
+  <div class="lf-nav-shell">
+    <div class="lf-nav-bar">
+        <a href="#hero-section" class="lf-brand" aria-label="LeleFlix, torna all'inizio">
+            <img src="logo.png" alt="LeleFlix" width="120" height="32">
+        </a>
 
-        <div class="nav-content">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                <div class="flex items-center justify-between h-full">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <img class="h-8 w-auto" src="logo.png" alt="LeleFlix">
-                        </div>
-                        <div class="hidden md:block ml-10">
-                            <div class="flex space-x-4">
-                                <a href="#hero-section" class="text-accent hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Home</a>
-                                <a href="#movie-trend" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Film</a>
-                                <a href="#tv-popular" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Serie TV</a>
-                                <a href="#critics" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Più votati</a>
-                                <a href="#new" class="text-gray-300 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300">Nuovi</a>
-                                <a href="#" onclick="openPartyMenu(); return false;" class="text-purple-400 hover:text-purple-300 px-3 py-2 rounded-md text-sm font-bold transition-colors duration-300 flex items-center gap-2 border border-purple-500/30 bg-purple-500/10">
-    <i class="fas fa-users"></i> Party
-</a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="hidden md:block">
-                        <div class="ml-4 flex items-center">
-                            <div class="relative">
-                                <input id="search-input" type="text" placeholder="Cerca Film o Serie TV..."
-                                       class="bg-secondary bg-opacity-70 text-white px-4 py-1 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary w-64 transition-all duration-300"
-                                       autocomplete="off"
-                                       aria-label="Cerca film e serie TV">
-                                <button id="search-button" class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <i class="fas fa-search text-gray-400 hover:text-primary transition-colors duration-300"></i>
-                                </button>
+        <nav class="lf-nav-links" aria-label="Sezioni">
+            <a href="#hero-section" class="nav-current">Home</a>
+            <a href="#movie-trend">Film</a>
+            <a href="#tv-popular">Serie TV</a>
+            <a href="#critics">Più votati</a>
+            <a href="#new">Al cinema</a>
+        </nav>
 
-                                <div id="search-history-desktop" class="search-history-dropdown"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="md:hidden flex items-center">
-                        <button id="mobile-search-toggle" class="text-gray-300 hover:text-primary focus:outline-none">
-                            <i class="fas fa-search text-2xl"></i>
-                        </button>
-                    </div>
-                </div>
+        <div class="lf-nav-actions">
+            <div class="lf-search">
+                <button id="search-button" class="lf-search-btn" aria-label="Cerca"><i class="fas fa-magnifying-glass"></i></button>
+                <input id="search-input" type="text" placeholder="Cerca film o serie"
+                       autocomplete="off" aria-label="Cerca film e serie TV">
+                <div id="search-history-desktop" class="search-history-dropdown"></div>
             </div>
+            <button type="button" class="lf-party-btn" onclick="openPartyMenu()">
+                <i class="fas fa-users"></i><span>Party</span>
+            </button>
+            <button id="mobile-search-toggle" class="lf-icon-btn" aria-label="Apri ricerca">
+                <i class="fas fa-search"></i>
+            </button>
         </div>
+    </div>
 
-        <div id="mobile-search-box">
-            <div class="relative">
-                <input id="mobile-search-input" type="text" placeholder="Cerca Film o Serie TV..."
-                       class="bg-gray-800 text-white px-4 py-2 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary w-full"
-                       autocomplete="off">
-                <button id="mobile-search-button" class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <i class="fas fa-search text-gray-400 hover:text-primary"></i>
-                </button>
-
-                <div id="search-history-mobile" class="search-history-dropdown"></div>
-            </div>
+    <div id="mobile-search-box">
+        <div class="lf-mobile-search">
+            <input id="mobile-search-input" type="text" placeholder="Cerca film o serie"
+                   autocomplete="off" aria-label="Cerca film e serie TV">
+            <button id="mobile-search-button" aria-label="Cerca"><i class="fas fa-arrow-right"></i></button>
+            <div id="search-history-mobile" class="search-history-dropdown"></div>
         </div>
-    </nav>
-</div>
+    </div>
+  </div>
+</header>
 
     <script>
 // --- SISTEMA CRONOLOGIA RICERCHE ---
@@ -2086,7 +2066,7 @@ async function removeWatchProgress(key, cardElement) {
         // Inizializzazione effetto liquid glass avanzato
         document.addEventListener('DOMContentLoaded', function() {
 
-            const navbar = document.querySelector('.glass-nav');
+            const navbar = document.getElementById('lf-nav');
 
             // Gestione scroll con liquid glass
             function handleScroll() {
@@ -2103,7 +2083,7 @@ async function removeWatchProgress(key, cardElement) {
             handleScroll();
 
             // Listener per scroll
-            window.addEventListener('scroll', handleScroll);
+            window.addEventListener('scroll', handleScroll, { passive: true });
 
 
 // Sostituisci la vecchia funzione con questa NUOVA versione
@@ -2276,192 +2256,145 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 
     <div id="home-view" class="transition-opacity duration-500 ease-in-out">
 
-<section id="hero-section" class="relative h-[80vh] md:h-[95vh] lg:h-screen overflow-hidden">
-        <div id="hero-backdrop" class="absolute inset-0 bg-cover bg-center transition-opacity duration-1000 z-0"></div>
-
-
-    <div class="hero-gradient absolute inset-0 z-10"></div>
-    <div class="hero-fade z-10"></div>
-
-    <div class="relative z-20 h-full flex items-center">
-                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-                    <div class="hero-content-container from-black/80 via-black/50 to-transparent md:bg-none">
-                        <div class="w-full lg:w-1/2">
-<div class="mb-4 min-h-[60px] flex items-end">
-        <img id="hero-logo" src="" alt="Title Logo" class="hidden w-full max-w-[280px] md:max-w-[450px] object-contain drop-shadow-2xl origin-bottom-left transition-all duration-700" />
-
-        <h1 id="hero-title" class="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-white drop-shadow-lg"></h1>
-    </div>                            <div class="flex items-center mb-4 flex-wrap gap-y-2">
-                                <span id="hero-rating" class="bg-primary text-white px-2 py-1 rounded-md text-sm font-bold mr-4"></span>
-                                <span id="hero-year" class="text-gray-300 mr-4"></span>
-                                <span id="hero-runtime" class="text-gray-300 mr-4"></span>
-                                <div id="hero-rt-scores" class="flex items-center gap-3"></div>
-                            </div>
-                            <p id="hero-overview" class="text-gray-300 mb-6 text-sm md:text-base"></p>
-                            <div class="flex space-x-4">
-                                <button id="play-button" class="glass-button liquid-glass lg-button" style="border-radius:0.375rem;" aria-label="Riproduci">
-                                    <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(229,9,20,0.85);"></div>
-                                    <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;justify-content:center;font-weight:600;padding:0.5rem 1.5rem;color:white;"><i class="fas fa-play mr-2"></i> Play</div>
-                                </button>
-                                <button id="more-info-button" class="glass-button liquid-glass lg-button" style="border-radius:0.375rem;" aria-label="Maggiori informazioni">
-                                    <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(109,109,109,0.7);"></div>
-                                    <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;justify-content:center;font-weight:600;padding:0.5rem 1.5rem;color:white;"><i class="fas fa-info-circle mr-2"></i> Info</div>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<section id="hero-section" class="lf-hero">
+    <div id="hero-backdrop" class="lf-hero-backdrop"></div>
+    <div class="lf-hero-shade" aria-hidden="true"></div>
+    <div class="lf-hero-inner">
+        <div class="lf-hero-copy">
+            <p class="lf-eyebrow"><span class="lf-eyebrow-dot" aria-hidden="true"></span><span id="hero-kind">In evidenza</span></p>
+            <div class="lf-hero-titlebox">
+                <img id="hero-logo" src="" alt="" class="hidden">
+                <h1 id="hero-title" class="lf-hero-title"></h1>
             </div>
-        </section>
-
-<main class="w-full pb-20 overflow-x-hidden relative z-20 -mt-16 md:-mt-24">
-<div class="w-full px-4 sm:px-6 lg:px-8 pb-8 pt-0">
-        <section id="continue-watching" class="mb-12 hidden relative">
-            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Continua a guardare</h2>
-            <div class="carousel-container relative">
-                <div id="continue-watching-grid" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x py-4">
-                    </div>
-                <button class="carousel-btn prev" data-target="continue-watching-grid" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn next" data-target="continue-watching-grid" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+            <div class="lf-hero-meta">
+                <span id="hero-rating" class="lf-rating"></span>
+                <span id="hero-year"></span>
+                <span id="hero-runtime"></span>
+                <div id="hero-rt-scores" class="lf-hero-rt"></div>
             </div>
-        </section>
-
-<section id="top-10-section" class="mb-12 relative">
-    <h2 class="text-xl font-bold mb-4 py-4 md:px-8">Top 10 oggi in Italia</h2>
-
-    <div class="carousel-container relative">
-        <div id="top-10-grid" class="carousel-row gap-4 pl-4 md:pl-8 pb-8 pt-4 flex overflow-x-auto scrollbar-hide snap-x">
-            <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%] h-64 bg-gray-800 rounded-lg ml-12"></div>
-            <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%] h-64 bg-gray-800 rounded-lg ml-12"></div>
-            <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%] h-64 bg-gray-800 rounded-lg ml-12"></div>
+            <p id="hero-overview" class="lf-hero-overview"></p>
+            <div class="lf-hero-actions">
+                <button id="play-button" class="lf-btn lf-btn--primary" aria-label="Riproduci">
+                    <i class="fas fa-play"></i><span>Riproduci</span>
+                </button>
+                <button id="more-info-button" class="lf-btn lf-btn--glass" aria-label="Maggiori informazioni">
+                    <i class="fas fa-circle-info"></i><span>Dettagli</span>
+                </button>
+            </div>
         </div>
-
-        <button class="carousel-btn prev" data-target="top-10-grid"><i class="fas fa-chevron-left"></i></button>
-        <button class="carousel-btn next" data-target="top-10-grid"><i class="fas fa-chevron-right"></i></button>
     </div>
 </section>
 
-        <section id="movie-trend" class="mb-12">
-            <h2 id="trending" class="text-xl font-bold mb-4 py-4 md:px-0">Film in tendenza</h2>
-            <div class="carousel-container relative">
-                <div id="trending-movies" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+<main class="lf-main">
+        <section id="continue-watching" class="lf-row lf-row--cw hidden">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title">Continua a <em>guardare</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="continue-watching-grid" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="continue-watching-grid" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <button class="carousel-btn prev" data-target="trending-movies"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn next" data-target="trending-movies"><i class="fas fa-chevron-right"></i></button>
-            </div>
+            </header>
+            <div id="continue-watching-grid" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="tv-popular" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Serie TV popolari</h2>
-            <div class="carousel-container relative">
-                <div id="popular-tv" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+        <section id="top-10-section" class="lf-row lf-row--top10">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title">Top 10 <em>oggi in Italia</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="top-10-grid" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="top-10-grid" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <button class="carousel-btn prev" data-target="popular-tv"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn next" data-target="popular-tv"><i class="fas fa-chevron-right"></i></button>
-            </div>
+            </header>
+            <div id="top-10-grid" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="critics" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Film più votati</h2>
-            <div class="carousel-container relative">
-                <div id="top-rated-movies" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+        <section id="movie-trend" class="lf-row">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title" id="trending">Film in <em>tendenza</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="trending-movies" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="trending-movies" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <button class="carousel-btn prev" data-target="top-rated-movies"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn next" data-target="top-rated-movies"><i class="fas fa-chevron-right"></i></button>
-            </div>
+            </header>
+            <div id="trending-movies" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="new" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Film al cinema</h2>
-            <div class="carousel-container relative">
-                <div id="upcoming-movies" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+        <section id="tv-popular" class="lf-row">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title">Serie TV <em>popolari</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="popular-tv" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="popular-tv" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <button class="carousel-btn prev" data-target="upcoming-movies"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn next" data-target="upcoming-movies"><i class="fas fa-chevron-right"></i></button>
-            </div>
+            </header>
+            <div id="popular-tv" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="genre-action-section" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Azione e Avventura</h2>
-            <div class="carousel-container relative">
-                <div id="genre-action" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+        <section id="critics" class="lf-row">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title">I più <em>votati</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="top-rated-movies" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="top-rated-movies" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <button class="carousel-btn prev" data-target="genre-action"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn next" data-target="genre-action"><i class="fas fa-chevron-right"></i></button>
-            </div>
+            </header>
+            <div id="top-rated-movies" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="genre-comedy-section" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Commedie</h2>
-            <div class="carousel-container relative">
-                <div id="genre-comedy" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+        <section id="new" class="lf-row">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title">Ora al <em>cinema</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="upcoming-movies" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="upcoming-movies" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <button class="carousel-btn prev" data-target="genre-comedy"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn next" data-target="genre-comedy"><i class="fas fa-chevron-right"></i></button>
-            </div>
+            </header>
+            <div id="upcoming-movies" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="genre-horror-section" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Brivido e Horror</h2>
-            <div class="carousel-container relative">
-                <div id="genre-horror" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+        <section id="genre-action-section" class="lf-row">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title">Azione e <em>avventura</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="genre-action" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="genre-action" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <button class="carousel-btn prev" data-target="genre-horror"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn next" data-target="genre-horror"><i class="fas fa-chevron-right"></i></button>
-            </div>
+            </header>
+            <div id="genre-action" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="genre-animation-section" class="mb-12">
-            <h2 class="text-xl font-bold mb-4 py-4 md:px-0">Animazione</h2>
-            <div class="carousel-container relative">
-                <div id="genre-animation" class="carousel-row gap-4 flex overflow-x-auto scrollbar-hide snap-x">
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
-                    <div class="animate-pulse flex-shrink-0 w-[40%] md:w-[28%] lg:w-[18%]"><div class="bg-gray-800 rounded-lg h-64"></div></div>
+        <section id="genre-comedy-section" class="lf-row">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title"><em>Commedie</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="genre-comedy" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="genre-comedy" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
                 </div>
-                <button class="carousel-btn prev" data-target="genre-animation"><i class="fas fa-chevron-left"></i></button>
-                <button class="carousel-btn next" data-target="genre-animation"><i class="fas fa-chevron-right"></i></button>
-            </div>
+            </header>
+            <div id="genre-comedy" class="carousel-row lf-track"></div>
         </section>
 
-    </div>
+        <section id="genre-horror-section" class="lf-row">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title">Brivido e <em>horror</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="genre-horror" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="genre-horror" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </header>
+            <div id="genre-horror" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="genre-animation-section" class="lf-row">
+            <header class="lf-row-head">
+                <h2 class="lf-row-title"><em>Animazione</em></h2>
+                <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="genre-animation" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="genre-animation" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </header>
+            <div id="genre-animation" class="carousel-row lf-track"></div>
+        </section>
 </main>
     </div>
 
@@ -2801,17 +2734,11 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
 </div>
 
     <!-- Footer -->
-    <footer class="bg-secondary py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-
-<p class="text-gray-400 text-sm mt-2">
-                    Tutti i contenuti del sito sono di proprietà di VixSrc e non sono in alcun modo hostati su LeleFlix.
-
-                    </p>
-                                        <a href="https://vixsrc.to/" class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
-                        Visita VixSrc
-                    </a>
+    <footer class="lf-footer">
+        <div class="lf-footer-inner">
+            <img src="logo.png" alt="LeleFlix" class="lf-footer-logo" width="96" height="26" loading="lazy">
+            <p>Tutti i contenuti del sito sono di proprietà di VixSrc e non sono in alcun modo ospitati su LeleFlix.</p>
+            <a href="https://vixsrc.to/" target="_blank" rel="noopener noreferrer">Visita VixSrc <i class="fas fa-arrow-up-right-from-square"></i></a>
         </div>
     </footer>
 
@@ -3013,10 +2940,7 @@ async function displayContinueWatching() {
         continueSection.style.display = 'block';
 
         // Skeleton loading
-        grid.innerHTML = `
-           <div class="animate-pulse flex-shrink-0 w-[60%] md:w-[35%] lg:w-[25%] aspect-video"><div class="bg-gray-800 rounded-lg h-full"></div></div>
-           <div class="animate-pulse flex-shrink-0 w-[60%] md:w-[35%] lg:w-[25%] aspect-video"><div class="bg-gray-800 rounded-lg h-full"></div></div>
-        `;
+        grid.innerHTML = '<div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div>';
 
         // Recupera i poster preliminari (per fallback)
         const itemsWithPosters = await Promise.all(
@@ -3044,35 +2968,27 @@ async function displayContinueWatching() {
 
             const card = document.createElement('div');
             // Classi per Card ORIZZONTALE (più larga)
-            card.className = 'movie-card cursor-pointer relative flex-shrink-0 w-[60%] md:w-[35%] lg:w-[25%] transform hover:scale-105 transition-transform duration-300';
+            card.className = 'movie-card lf-card lf-card--wide';
 
             card.innerHTML = `
-                <button class="remove-progress-btn absolute top-2 right-2 z-30 bg-black/60 rounded-full p-2 hover:bg-red-600 transition"
+                <button class="remove-progress-btn" aria-label="Rimuovi da Continua a guardare"
                         data-key="${item.id}" onclick="event.stopPropagation(); removeWatchProgress('${item.id}', this.closest('.movie-card'))">
-                    <i class="fas fa-times text-white text-xs"></i>
+                    <i class="fas fa-xmark"></i>
                 </button>
 
-                <div class="movie-card-content relative rounded-lg overflow-hidden aspect-video group w-full">
-
-                    <img src="${posterUrl}" alt="${title}" class="cw-poster w-full h-full object-cover" data-src-default="${posterUrl}">
-
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-90"></div>
-
-                    <div class="absolute bottom-3 left-0 right-0 px-4 flex justify-center items-end h-full pb-6 pointer-events-none z-10">
-                         <img class="cw-logo w-full max-h-12 object-contain opacity-0 transition-opacity duration-700 drop-shadow-md" src="" alt="">
+                <div class="lf-card-media">
+                    <img src="${posterUrl}" alt="${escapeHtml(title)}" class="cw-poster" data-src-default="${posterUrl}" decoding="async">
+                    <div class="lf-card-logo-wrap">
+                        <img class="cw-logo opacity-0" src="" alt="">
                     </div>
-
-                    <div class="absolute bottom-0 left-0 right-0 bg-gray-800/80 h-1 z-20">
-                        <div class="bg-primary h-full" style="width: ${item.progressPercentage || 0}%"></div>
-                    </div>
-
-                    <div class="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity z-20">
-                        <i class="fas fa-play text-white text-3xl"></i>
-                    </div>
+                    <span class="lf-card-play" aria-hidden="true"><i class="fas fa-play"></i></span>
+                    <div class="lf-progress"><span style="width: ${item.progressPercentage || 0}%"></span></div>
                 </div>
 
-                <h3 class="mt-2 text-sm font-semibold truncate text-white px-1">${escapeHtml(title)}</h3>
-                <p class="text-gray-400 text-xs px-1">${escapeHtml(typeLabel)}</p>
+                <div class="lf-card-info">
+                    <h3 class="lf-card-title">${escapeHtml(title)}</h3>
+                    <p class="lf-card-meta">${escapeHtml(typeLabel)}</p>
+                </div>
             `;
 
             // --- CARICAMENTO ASSETS (LOGO + BACKDROP) ---
@@ -3364,10 +3280,10 @@ try {
 
             // Store item data as data-attribute instead of inline onclick to prevent XSS
             return `
-                <div class="cursor-pointer search-result-item" data-id="${item.id}" data-type="${item.media_type}">
-                    <img src="${POSTER_PATH}${item.poster_path}" alt="${escapeHtml(title)}" class="rounded-lg w-full h-64 object-cover">
-                    <h3 class="mt-2 text-sm font-semibold truncate">${escapeHtml(title)}</h3>
-                    <p class="text-gray-400 text-xs">${isTV ? 'Serie TV' : 'Film'} • ${escapeHtml(year)}</p>
+                <div class="search-result-item lf-poster" data-id="${item.id}" data-type="${item.media_type}">
+                    <div class="lf-poster-media"><img src="${POSTER_PATH}${item.poster_path}" alt="${escapeHtml(title)}" loading="lazy" decoding="async"></div>
+                    <h3 class="lf-card-title">${escapeHtml(title)}</h3>
+                    <p class="lf-card-meta">${escapeHtml(year)}<span>${isTV ? 'Serie' : 'Film'}</span></p>
                 </div>
             `;
         }).join('');
@@ -3469,7 +3385,7 @@ async function openDetailView(contentOrId, type = 'movie') {
     detailView.scrollTop = 0;
 
     // Nascondi Navbar + mobile pill nav
-    const navbar = document.querySelector('.glass-nav-container');
+    const navbar = document.getElementById('lf-nav');
     if(navbar) navbar.style.display = 'none';
     document.body.classList.add('overlay-active');
 
@@ -3496,8 +3412,8 @@ const homeView = document.getElementById('home-view');
     window.scrollTo(0, scrollPositionBeforeDetail); // Ripristina scroll home
 
     // 2. Ripristina Navbar + mobile pill nav
-    const navbar = document.querySelector('.glass-nav-container');
-    if(navbar) navbar.style.display = 'block';
+    const navbar = document.getElementById('lf-nav');
+    if(navbar) navbar.style.display = '';
     document.body.classList.remove('overlay-active');
 
     // 3. AVVIA ANIMAZIONE USCITA
@@ -3727,6 +3643,9 @@ async function populateDetailView(content) {
             else{
                 titleEl.classList.remove('hidden');
             }
+        } else {
+            // Nessun logo su TMDB: mostra il titolo testuale
+            titleEl.classList.remove('hidden');
         }
     } catch (error) {
         console.error("Errore recupero logo:", error);
@@ -3892,13 +3811,13 @@ async function loadSimilar(id, type) {
 
         availableSimilar.forEach(item => {
             const card = document.createElement('div');
-            card.className = 'cursor-pointer transform hover:scale-105 transition duration-300';
+            card.className = 'lf-poster';
+            const simTitle = escapeHtml(item.title || item.name || '');
+            const simYear = (item.release_date || item.first_air_date || '').split('-')[0];
             card.innerHTML = `
-                <div class="relative rounded-md overflow-hidden aspect-[2/3]">
-                    <img src="${POSTER_PATH}${item.poster_path}" class="w-full h-full object-cover">
-                    <div class="absolute inset-0 bg-black/20 hover:bg-black/0 transition"></div>
-                </div>
-                <h4 class="text-gray-300 text-sm mt-2 truncate">${item.title || item.name}</h4>
+                <div class="lf-poster-media"><img src="${POSTER_PATH}${item.poster_path}" alt="${simTitle}" loading="lazy" decoding="async"></div>
+                <h4 class="lf-card-title">${simTitle}</h4>
+                ${simYear ? `<p class="lf-card-meta">${simYear}</p>` : ''}
             `;
 
             card.onclick = () => {
@@ -4120,56 +4039,21 @@ async function getTop10() {
             const title = isTV ? item.name : item.title;
 
             const card = document.createElement('div');
-            // Aggiunto 'pl-2' per dare un minimo di respiro a sinistra del numero
-            card.className = 'top10-card flex-shrink-0 relative cursor-pointer transform hover:scale-105 transition-transform duration-300 snap-start overflow-visible pl-2';
-
-            // --- MODIFICA PROPORZIONI ---
-            // Mobile: 42% larghezza card. Desktop: 20%.
-            card.classList.add('w-[50%]', 'md:w-[30%]', 'lg:w-[20%]');
-
-            // Configurazione SVG per altezza massima
-            let viewBox = "0 0 100 150";
-            let fontSize = "152px";
-            let xPos = "50%";
-            let yPos = "90%";
-
-            if (rank === 1) {
-                xPos = "50%"; // Sposta l'1 leggermente a sinistra per centrarlo nel suo spazio
-            } else if (rank === 10) {
-                xPos = "50%";
-                fontSize = "132px"
-            }
-
-            const numberHtml = `
-                <div class="top10-rank">
-                    <svg viewBox="${viewBox}" class="top10-svg" preserveAspectRatio="xMidYMax meet">
-                        <text x="${xPos}" y="${yPos}"
-                              class="top10-text"
-                              text-anchor="middle"
-                              font-size="${fontSize}"
-                              style="line-height: 1; transform-origin: bottom;">
-                            ${rank}
-                        </text>
-                    </svg>
+            card.className = 'top10-card lf-top10' + (rank >= 10 ? ' lf-top10--wide' : '');
+            card.innerHTML = `
+                <span class="lf-top10-rank" aria-hidden="true">${rank}</span>
+                <div class="lf-top10-media">
+                    <img src="${POSTER_PATH}${item.poster_path}" data-src-default="${POSTER_PATH}${item.poster_path}"
+                         alt="${escapeHtml(title || '')}" class="top10-poster" loading="lazy" decoding="async">
+                    <div class="lf-card-logo-wrap">
+                        <img class="top10-logo opacity-0" src="" alt="">
+                    </div>
                 </div>
             `;
 
-card.innerHTML = `
-    ${numberHtml}
-    <div class="top10-poster-container h-64 rounded-lg overflow-hidden shadow-lg ml-auto w-[64%] md:w-[60%] relative z-10 group">
-        <img src="${POSTER_PATH}${item.poster_path}" alt="${title}" class="top10-poster w-full h-full object-cover">
-
-        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
-        <div class="absolute bottom-2 left-0 right-0 px-2 flex justify-center items-end h-1/2 pointer-events-none">
-             <img class="top10-logo w-full max-h-10 object-contain opacity-0 transition-opacity duration-700" src="" alt="">
-        </div>
-    </div>
-`;
-
-// Seleziona e aggiorna
-const t10Logo = card.querySelector('.top10-logo');
-const t10Poster = card.querySelector('.top10-poster');
-fetchCardAssets(item.id, item.media_type, t10Logo, t10Poster);
+            const t10Logo = card.querySelector('.top10-logo');
+            const t10Poster = card.querySelector('.top10-poster');
+            fetchCardAssets(item.id, item.media_type, t10Logo, t10Poster);
 
             card.addEventListener('click', () => handleResultClick(item.id, item.media_type, item));
             container.appendChild(card);
@@ -4607,7 +4491,9 @@ async function displayHeroMovie(content) {
     }, { once: true });
 
     // 2. Info Testuali secondarie
-    heroRatingEl.textContent = content.vote_average.toFixed(1);
+    const heroKindEl = document.getElementById('hero-kind');
+    if (heroKindEl) heroKindEl.textContent = content.media_type === 'tv' ? 'Serie TV in evidenza' : 'Film in evidenza';
+    heroRatingEl.textContent = (content.vote_average || 0).toFixed(1);
     heroOverviewEl.textContent = content.overview;
 
     if (content.media_type === 'movie') {
@@ -4822,7 +4708,7 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
     const card = document.createElement("div");
 
     // SETUP CLASSI RESPONSIVE (Invariato)
-    card.className = "movie-card cursor-pointer relative flex-shrink-0 w-[40%] md:w-[35%] lg:w-[22%] transform hover:scale-105 transition-transform duration-300";
+    card.className = "movie-card lf-card";
 
     card.dataset.id = item.id;
     card.dataset.type = type;
@@ -4894,39 +4780,33 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
         </div>`;
     }
 
+    const cardTitle = escapeHtml(item.title || item.name || '');
+    const cardYear = type === 'movie'
+        ? (item.release_date ? item.release_date.split('-')[0] : '')
+        : (item.first_air_date ? item.first_air_date.split('-')[0] : '');
+
+    // Mobile: locandina verticale. Desktop (>=768px): backdrop orizzontale + logo.
     card.innerHTML = `
-        <div class="movie-card-content">
-            <div class="relative overflow-hidden rounded-lg group h-64 md:h-auto md:aspect-video w-full shadow-lg">
-
-                <picture class="w-full h-full">
-                    <source media="(min-width: 768px)"
-                            srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-                            data-src-default="${defaultBackdrop}"
-                            class="card-backdrop-source">
-
-                    <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-                         data-src-default="${defaultPoster}"
-                         alt="${item.title || item.name}"
-                         class="card-poster w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 opacity-0 transition-opacity duration-500"
-                         loading="lazy">
-                </picture>
-
-                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-80"></div>
-
-                <div class="absolute bottom-3 left-0 right-0 px-3 flex justify-center items-end h-2/3 md:h-full md:pb-4 z-10 pointer-events-none">
-                    <img class="card-logo w-full max-h-16 md:max-h-14 object-contain opacity-0 transition-opacity duration-700 filter drop-shadow-md"
-                         src="" alt="">
-                </div>
-
-                ${rtBadge}
+        <div class="lf-card-media">
+            <picture>
+                <source media="(min-width: 768px)"
+                        srcset="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                        data-src-default="${defaultBackdrop}"
+                        class="card-backdrop-source">
+                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                     data-src-default="${defaultPoster}"
+                     alt="${cardTitle}"
+                     class="card-poster opacity-0"
+                     loading="lazy" decoding="async">
+            </picture>
+            <div class="lf-card-logo-wrap">
+                <img class="card-logo opacity-0" src="" alt="">
             </div>
-
-            <h3 class="mt-2 text-sm font-semibold truncate px-1 text-gray-200 group-hover:text-white transition-colors">${item.title || item.name}</h3>
-            <p class="text-gray-400 text-xs px-1">
-                ${type === 'movie' ?
-                    (item.release_date ? item.release_date.split('-')[0] : 'N/A') :
-                    (item.first_air_date ? item.first_air_date.split('-')[0] : 'N/A')}
-            </p>
+            ${rtBadge}
+        </div>
+        <div class="lf-card-info">
+            <h3 class="lf-card-title">${cardTitle}</h3>
+            <p class="lf-card-meta">${cardYear || '—'}<span>${type === 'tv' ? 'Serie' : 'Film'}</span></p>
         </div>
     `;
 
@@ -6593,9 +6473,17 @@ document.addEventListener('DOMContentLoaded', function () {
         // Ken Burns: zoom lento e continuo sul backdrop dell'hero
         const backdrop = document.getElementById('hero-backdrop');
         if (backdrop) {
-            gsap.fromTo(backdrop,
-                { scale: 1.06 },
-                { scale: 1.15, duration: 20, ease: 'none', repeat: -1, yoyo: true });
+            const kenBurns = gsap.fromTo(backdrop,
+                { scale: 1.04 },
+                { scale: 1.12, duration: 24, ease: 'none', repeat: -1, yoyo: true });
+            // Pausa quando l'hero esce dallo schermo (scroll, scheda dettaglio aperta):
+            // l'animazione continua altrimenti a ridisegnare il backdrop e la nav di vetro.
+            const hero = document.getElementById('hero-section');
+            if (hero && 'IntersectionObserver' in window) {
+                new IntersectionObserver(([entry]) => {
+                    entry.isIntersecting ? kenBurns.resume() : kenBurns.pause();
+                }, { threshold: 0.15 }).observe(hero);
+            }
         }
 
         // Entrata in stagger del contenuto quando l'hero viene popolato
@@ -6604,9 +6492,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const els = [
                 document.getElementById('hero-logo'),
                 document.getElementById('hero-title'),
-                document.querySelector('#hero-section .flex.items-center.mb-4'),
+                document.querySelector('#hero-section .lf-eyebrow'),
+                document.querySelector('#hero-section .lf-hero-meta'),
                 document.getElementById('hero-overview'),
-                document.querySelector('#hero-section .flex.space-x-4')
+                document.querySelector('#hero-section .lf-hero-actions')
             ].filter(el => el && getComputedStyle(el).display !== 'none');
             gsap.from(els, {
                 y: 30, autoAlpha: 0, duration: 0.85,
@@ -6705,7 +6594,7 @@ document.addEventListener('DOMContentLoaded', function () {
 (function () {
     const tabs = [...document.querySelectorAll('.ios-tab[data-spy]')];
     // link in alto: <a href="#sezione"> nella navbar desktop
-    const topLinks = [...document.querySelectorAll('.glass-nav .nav-content .flex.space-x-4 > a[href^="#"]')]
+    const topLinks = [...document.querySelectorAll('.lf-nav-links > a[href^="#"]')]
         .map(a => ({ a, id: a.getAttribute('href').slice(1) }))
         .filter(x => x.id);
 
