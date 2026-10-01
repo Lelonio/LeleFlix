@@ -1,3 +1,6 @@
+// Colore della barra di stato (PWA): stesso nero dello sfondo della pagina
+const APP_THEME_COLOR = '#09090b';
+
 // LeleFlix Player – Fixed JavaScript
 // Fixes all 10 bugs listed in the requirements
 
@@ -83,11 +86,8 @@ class VideoPlayer {
             appleMeta.name = 'apple-mobile-web-app-status-bar-style';
             document.head.appendChild(appleMeta);
         }
-        if (color === '#000000' || color === '#000') {
-            appleMeta.setAttribute('content', 'black-translucent');
-        } else {
-            appleMeta.setAttribute('content', 'default');
-        }
+        // Tutti i colori dell'app sono scuri: barra iOS nera (mai quella bianca "default")
+        appleMeta.setAttribute('content', (color === '#000000' || color === '#000') ? 'black-translucent' : 'black');
     }
 
     // ── Player Full-Screen Background (PWA gap fix) ─────────
@@ -109,8 +109,8 @@ class VideoPlayer {
     }
 
     restoreThemeColor() {
-        // Restore the app's red theme color when player closes
-        this.setThemeColor('#E50914');
+        // Ripristina il colore dell'app (sfondo del design "Noir") alla chiusura del player
+        this.setThemeColor(APP_THEME_COLOR);
     }
 
     // ── Refresh Keeper + Wake Lock ──────────────────────────
@@ -2020,9 +2020,8 @@ class VideoPlayer {
 // ── Global Instance ────────────────────────────────────────
 const videoPlayerInstance = new VideoPlayer();
 
-// Set initial PWA theme color to red (app default)
-// manifest.json theme_color is #000000 (black) as fallback for the player
-videoPlayerInstance.setThemeColor('#E50914');
+// Colore iniziale della barra di stato PWA = sfondo della pagina (--bg in css/design.css)
+videoPlayerInstance.setThemeColor(APP_THEME_COLOR);
 
 // ── Global playMovie Function ──────────────────────────────
 function playMovie(content, type = null) {
