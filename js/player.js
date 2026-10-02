@@ -1930,7 +1930,8 @@ class VideoPlayer {
         this.abortController = null;
         this.playerModal.classList.add('hidden');
         // se sotto c'è la scheda dettaglio, la tab bar deve restare nascosta
-        const detailOpen = document.getElementById('detail-view') && !document.getElementById('detail-view').classList.contains('hidden');
+        const isOpen = id => document.getElementById(id) && !document.getElementById(id).classList.contains('hidden');
+        const detailOpen = isOpen('detail-view') || isOpen('browse-view');
         if (!detailOpen) document.body.classList.remove('overlay-active');
         // Restore PWA status bar color and body background when player closes
         this.restoreThemeColor();
@@ -2028,6 +2029,8 @@ videoPlayerInstance.setThemeColor(APP_THEME_COLOR);
 
 // ── Global playMovie Function ──────────────────────────────
 function playMovie(content, type = null) {
+    // gusti dell'utente per i suggerimenti (salvati solo su questo dispositivo)
+    if (window.LeleTaste && content && typeof content === 'object') window.LeleTaste.record(content, 'play');
     // If content is a numeric ID, create a basic content object
     if (typeof content === 'number') {
         content = {

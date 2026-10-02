@@ -1836,8 +1836,8 @@ main .max-w-7xl {
             <a href="#hero-section" class="nav-current">Home</a>
             <a href="#movie-trend">Film</a>
             <a href="#tv-popular">Serie TV</a>
+            <a href="#explore">Esplora</a>
             <a href="#critics">Più votati</a>
-            <a href="#new">Al cinema</a>
         </nav>
 
         <div class="lf-nav-actions">
@@ -2280,6 +2280,7 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
                 <div id="hero-rt-scores" class="lf-hero-rt"></div>
             </div>
             <p id="hero-overview" class="lf-hero-overview"></p>
+            <div id="hero-dots" class="lf-hero-dots" role="group" aria-label="Titoli in evidenza"></div>
             <div class="lf-hero-actions">
                 <button id="play-button" class="lf-btn lf-btn--primary" aria-label="Riproduci">
                     <i class="fas fa-play"></i><span>Riproduci</span>
@@ -2304,6 +2305,8 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
             <div id="continue-watching-grid" class="carousel-row lf-track"></div>
         </section>
 
+        <div id="lf-personal"></div>
+
         <section id="top-10-section" class="lf-row lf-row--top10">
             <header class="lf-row-head">
                 <h2 class="lf-row-title">Top 10 <em>oggi in Italia</em></h2>
@@ -2313,6 +2316,30 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
                 </div>
             </header>
             <div id="top-10-grid" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="surprise" class="lf-surprise" aria-labelledby="surprise-title">
+            <div class="lf-surprise-card">
+                <div class="lf-surprise-copy">
+                    <p class="lf-eyebrow">Non sai cosa guardare?</p>
+                    <h2 id="surprise-title" class="lf-surprise-title">Lascia scegliere <em>a noi.</em></h2>
+                    <p class="lf-surprise-lead">Dicci come ti senti stasera: ti proponiamo un titolo da guardare subito.</p>
+                    <div id="surprise-moods" class="lf-chips" role="radiogroup" aria-label="Umore"></div>
+                    <div class="lf-surprise-controls">
+                        <div id="surprise-type" class="lf-seg" role="group" aria-label="Tipo">
+                            <button type="button" class="is-active" data-type="movie">Film</button>
+                            <button type="button" data-type="tv">Serie</button>
+                        </div>
+                        <button id="surprise-btn" type="button" class="lf-btn lf-btn--primary"><i class="fas fa-shuffle"></i><span>Sorprendimi</span></button>
+                    </div>
+                </div>
+                <div id="surprise-result" class="lf-surprise-result" aria-live="polite">
+                    <div class="lf-surprise-placeholder" aria-hidden="true">
+                        <span></span><span></span><span></span>
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <section id="movie-trend" class="lf-row">
@@ -2326,6 +2353,16 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
             <div id="trending-movies" class="carousel-row lf-track"></div>
         </section>
 
+        <section id="explore" class="lf-row lf-explore" aria-labelledby="explore-title">
+            <header class="lf-row-head">
+                <div>
+                    <h2 id="explore-title" class="lf-row-title">Esplora <em>per genere</em></h2>
+                    <p class="lf-row-sub">Tocca un riquadro per vedere tutti i titoli, film o serie.</p>
+                </div>
+            </header>
+            <div id="explore-tiles" class="lf-tiles"></div>
+        </section>
+
         <section id="tv-popular" class="lf-row">
             <header class="lf-row-head">
                 <h2 class="lf-row-title">Serie TV <em>popolari</em></h2>
@@ -2337,73 +2374,359 @@ initializeMobileNavDynamics(); // <-- Aggiungi questa chiamata
             <div id="popular-tv" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="critics" class="lf-row">
+        <section id="critics" class="lf-row" data-src="rt:movie:movie/top_rated">
             <header class="lf-row-head">
-                <h2 class="lf-row-title">I più <em>votati</em></h2>
-                <div class="lf-row-nav">
-                    <button class="carousel-btn prev" data-target="top-rated-movies" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
-                    <button class="carousel-btn next" data-target="top-rated-movies" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                <div>
+                    <h2 class="lf-row-title">I più <em>votati</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="critics-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="critics-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
                 </div>
             </header>
-            <div id="top-rated-movies" class="carousel-row lf-track"></div>
+            <div id="critics-track" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="new" class="lf-row">
+        <section id="gems" class="lf-row" data-src="tmdb:movie:discover/movie?vote_average.gte=7.4&vote_count.gte=150&vote_count.lte=3000&sort_by=vote_average.desc">
             <header class="lf-row-head">
-                <h2 class="lf-row-title">Ora al <em>cinema</em></h2>
-                <div class="lf-row-nav">
-                    <button class="carousel-btn prev" data-target="upcoming-movies" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
-                    <button class="carousel-btn next" data-target="upcoming-movies" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                <div>
+                    <h2 class="lf-row-title">Gemme <em>nascoste</em></h2>
+                    <p class="lf-row-sub">Poco conosciute, amatissime da chi le ha viste.</p>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="gems-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="gems-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
                 </div>
             </header>
-            <div id="upcoming-movies" class="carousel-row lf-track"></div>
+            <div id="gems-track" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="genre-action-section" class="lf-row">
+        <section id="short" class="lf-row" data-src="tmdb:movie:discover/movie?with_runtime.lte=95&with_runtime.gte=60&vote_count.gte=400&vote_average.gte=6.5&sort_by=popularity.desc">
             <header class="lf-row-head">
-                <h2 class="lf-row-title">Azione e <em>avventura</em></h2>
-                <div class="lf-row-nav">
-                    <button class="carousel-btn prev" data-target="genre-action" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
-                    <button class="carousel-btn next" data-target="genre-action" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                <div>
+                    <h2 class="lf-row-title">Una serata <em>veloce</em></h2>
+                    <p class="lf-row-sub">Film sotto i 95 minuti.</p>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="short-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="short-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
                 </div>
             </header>
-            <div id="genre-action" class="carousel-row lf-track"></div>
+            <div id="short-track" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="genre-comedy-section" class="lf-row">
+        <section id="tv-crime" class="lf-row" data-src="tmdb:tv:discover/tv?with_genres=80&vote_count.gte=100&sort_by=popularity.desc">
             <header class="lf-row-head">
-                <h2 class="lf-row-title"><em>Commedie</em></h2>
-                <div class="lf-row-nav">
-                    <button class="carousel-btn prev" data-target="genre-comedy" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
-                    <button class="carousel-btn next" data-target="genre-comedy" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                <div>
+                    <h2 class="lf-row-title">Serie <em>crime</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="tv-crime-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="tv-crime-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
                 </div>
             </header>
-            <div id="genre-comedy" class="carousel-row lf-track"></div>
+            <div id="tv-crime-track" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="genre-horror-section" class="lf-row">
+        <section id="italian" class="lf-row" data-src="tmdb:movie:discover/movie?with_original_language=it&vote_count.gte=80&sort_by=popularity.desc">
             <header class="lf-row-head">
-                <h2 class="lf-row-title">Brivido e <em>horror</em></h2>
-                <div class="lf-row-nav">
-                    <button class="carousel-btn prev" data-target="genre-horror" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
-                    <button class="carousel-btn next" data-target="genre-horror" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                <div>
+                    <h2 class="lf-row-title">Cinema <em>italiano</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="italian-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="italian-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
                 </div>
             </header>
-            <div id="genre-horror" class="carousel-row lf-track"></div>
+            <div id="italian-track" class="carousel-row lf-track"></div>
         </section>
 
-        <section id="genre-animation-section" class="lf-row">
+        <section id="genre-action-section" class="lf-row" data-src="tmdb:movie:discover/movie?with_genres=28&vote_count.gte=100&sort_by=popularity.desc">
             <header class="lf-row-head">
-                <h2 class="lf-row-title"><em>Animazione</em></h2>
-                <div class="lf-row-nav">
-                    <button class="carousel-btn prev" data-target="genre-animation" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
-                    <button class="carousel-btn next" data-target="genre-animation" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                <div>
+                    <h2 class="lf-row-title">Azione e <em>avventura</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="genre-action-section-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="genre-action-section-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
                 </div>
             </header>
-            <div id="genre-animation" class="carousel-row lf-track"></div>
+            <div id="genre-action-section-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="tv-scifi" class="lf-row" data-src="tmdb:tv:discover/tv?with_genres=10765&vote_count.gte=100&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Serie <em>fantascienza e fantasy</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="tv-scifi-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="tv-scifi-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="tv-scifi-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="new" class="lf-row" data-src="rt:movie:movie/upcoming">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Ora al <em>cinema</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="new-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="new-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="new-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="genre-comedy-section" class="lf-row" data-src="tmdb:movie:discover/movie?with_genres=35&vote_count.gte=100&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title"><em>Commedie</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="genre-comedy-section-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="genre-comedy-section-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="genre-comedy-section-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="thriller" class="lf-row" data-src="tmdb:movie:discover/movie?with_genres=53&vote_count.gte=150&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Col fiato <em>sospeso</em></h2>
+                    <p class="lf-row-sub">Thriller e suspense.</p>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="thriller-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="thriller-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="thriller-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="tv-comedy" class="lf-row" data-src="tmdb:tv:discover/tv?with_genres=35&vote_count.gte=80&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Serie da <em>ridere</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="tv-comedy-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="tv-comedy-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="tv-comedy-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="genre-horror-section" class="lf-row" data-src="tmdb:movie:discover/movie?with_genres=27&vote_count.gte=100&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Brivido e <em>horror</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="genre-horror-section-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="genre-horror-section-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="genre-horror-section-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="scifi" class="lf-row" data-src="tmdb:movie:discover/movie?with_genres=878&vote_count.gte=150&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Altri <em>mondi</em></h2>
+                    <p class="lf-row-sub">Fantascienza al cinema.</p>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="scifi-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="scifi-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="scifi-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="romance" class="lf-row" data-src="tmdb:movie:discover/movie?with_genres=10749&vote_count.gte=100&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Storie <em>d'amore</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="romance-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="romance-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="romance-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="genre-animation-section" class="lf-row" data-src="tmdb:movie:discover/movie?with_genres=16&vote_count.gte=100&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title"><em>Animazione</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="genre-animation-section-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="genre-animation-section-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="genre-animation-section-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="anime" class="lf-row" data-src="tmdb:tv:discover/tv?with_genres=16&with_original_language=ja&vote_count.gte=50&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title"><em>Anime</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="anime-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="anime-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="anime-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="true-stories" class="lf-row" data-src="tmdb:movie:discover/movie?with_genres=99|36&vote_count.gte=80&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Storie <em>vere</em></h2>
+                    <p class="lf-row-sub">Documentari e film storici.</p>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="true-stories-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="true-stories-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="true-stories-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="nineties" class="lf-row" data-src="tmdb:movie:discover/movie?primary_release_date.gte=1990-01-01&primary_release_date.lte=1999-12-31&vote_count.gte=1000&sort_by=vote_average.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Gli anni <em>'90</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="nineties-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="nineties-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="nineties-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="family" class="lf-row" data-src="tmdb:movie:discover/movie?with_genres=10751&vote_count.gte=150&sort_by=popularity.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">Per <em>tutta la famiglia</em></h2>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="family-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="family-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="family-track" class="carousel-row lf-track"></div>
+        </section>
+
+        <section id="classics" class="lf-row" data-src="tmdb:movie:discover/movie?primary_release_date.lte=1979-12-31&vote_count.gte=800&sort_by=vote_average.desc">
+            <header class="lf-row-head">
+                <div>
+                    <h2 class="lf-row-title">I <em>classici</em></h2>
+                    <p class="lf-row-sub">Prima del 1980, ancora imperdibili.</p>
+                </div>
+                <div class="lf-row-tools">
+                    <button type="button" class="lf-row-more">Vedi tutto <i class="fas fa-arrow-right"></i></button>
+                    <div class="lf-row-nav">
+                    <button class="carousel-btn prev" data-target="classics-track" aria-label="Scorri a sinistra"><i class="fas fa-chevron-left"></i></button>
+                    <button class="carousel-btn next" data-target="classics-track" aria-label="Scorri a destra"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                </div>
+            </header>
+            <div id="classics-track" class="carousel-row lf-track"></div>
         </section>
 </main>
     </div>
+
+<div id="browse-view" class="lf-browse hidden" role="dialog" aria-modal="true" aria-labelledby="browse-title">
+    <header class="lf-browse-head">
+        <button type="button" class="lf-browse-back lf-detail-back" aria-label="Indietro"><i class="fas fa-arrow-left"></i></button>
+        <div class="lf-browse-heading">
+            <p id="browse-eyebrow" class="lf-eyebrow">Esplora</p>
+            <h1 id="browse-title" class="lf-browse-title"></h1>
+        </div>
+        <div class="lf-browse-controls">
+            <div id="browse-type" class="lf-seg" role="group" aria-label="Tipo">
+                <button type="button" data-type="movie" class="is-active">Film</button>
+                <button type="button" data-type="tv">Serie</button>
+            </div>
+            <div id="browse-sort-wrap" class="lf-select">
+                <select id="browse-sort" aria-label="Ordina">
+                    <option value="pop">Più popolari</option>
+                    <option value="top">Più votati</option>
+                    <option value="new">Più recenti</option>
+                </select>
+                <i class="fas fa-chevron-down" aria-hidden="true"></i>
+            </div>
+        </div>
+    </header>
+    <div id="browse-grid" class="lf-browse-grid"></div>
+    <div id="browse-sentinel" class="lf-browse-sentinel" aria-hidden="true"></div>
+</div>
 
 <div id="detail-view" class="hidden lf-detail" role="dialog" aria-modal="true" aria-labelledby="detail-title">
     <div class="lf-detail-topbar" aria-hidden="true"><span id="detail-topbar-title"></span></div>
@@ -3408,6 +3731,7 @@ async function openDetailView(contentOrId, type = 'movie', opts = {}) {
 
     // 3. Popola i dati
     populateDetailView(content, token);
+    if (window.LeleTaste) window.LeleTaste.record(content, 'view');
 
     // 4. GESTIONE ANIMAZIONE APERTURA
     const homeView = document.getElementById('home-view');
@@ -3444,10 +3768,13 @@ function closeDetailView() {
     homeView.classList.remove('hidden');
     window.scrollTo(0, scrollPositionBeforeDetail);
 
-    // 2. Ripristina Navbar + tab bar
-    const navbar = document.getElementById('lf-nav');
-    if (navbar) navbar.style.display = '';
-    document.body.classList.remove('overlay-active');
+    // 2. Ripristina Navbar + tab bar (non se sotto c'è la pagina "Esplora")
+    const browseOpen = !document.getElementById('browse-view').classList.contains('hidden');
+    if (!browseOpen) {
+        const navbar = document.getElementById('lf-nav');
+        if (navbar) navbar.style.display = '';
+        document.body.classList.remove('overlay-active');
+    }
 
     // 3. AVVIA ANIMAZIONE USCITA
     detailView.classList.remove('detail-view-enter');
@@ -4137,18 +4464,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- 2. CAROSELLI ---
     // Partono appena c'è la lista dei disponibili, in parallelo all'hero:
     // prima aspettavano che l'hero finisse (dettagli + cast + immagini in serie).
+    // js/discover.js aspetta questa promessa prima di caricare le sue righe
+    window.lfAvailableReady = availablePromise;
     availablePromise.then(() => {
         getTrendingMovies();
         getTop10();
         getPopularTv();
-        getTopRatedMovies();
-        getUpcomingMovies();
-
-        // Generi (meno prioritari)
-        getMoviesByGenre(28, 'genre-action');
-        getMoviesByGenre(35, 'genre-comedy');
-        getMoviesByGenre(27, 'genre-horror');
-        getMoviesByGenre(16, 'genre-animation');
+        // tutte le altre righe (data-src) si caricano da sole quando ci si arriva: js/discover.js
     });
 
     // --- 3. HERO ---
@@ -4160,7 +4482,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const availableHeroItems = heroCandidates.filter(item => isAvailable(item.id));
 
             if (availableHeroItems.length > 0) {
-                const randomItem = availableHeroItems[Math.floor(Math.random() * availableHeroItems.length)];
+                const topHero = availableHeroItems.filter(i => i.backdrop_path).sort((a, b) => b.popularity - a.popularity).slice(0, 10);
+                const heroPool = topHero.length ? topHero : availableHeroItems;
+                const randomItem = heroPool[Math.floor(Math.random() * heroPool.length)];
 
                 // Fetch dettagli rapidissimo per l'Hero
                 const details = await getMovieDetails(randomItem.id, randomItem.media_type);
@@ -4183,6 +4507,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Mostra a schermo!
                 displayHeroMovie(currentHeroMovie);
                 console.timeEnd("HeroLoad");
+                // poi altri titoli in evidenza a rotazione (js/discover.js)
+                if (window.LeleHero) window.LeleHero.start(currentHeroMovie, heroPool);
             } else {
                 // Fallback se nessun popolare è disponibile
                 getRandomHeroContent();
@@ -4257,7 +4583,7 @@ closePlayer.addEventListener('click', () => {
     }
 
     document.getElementById('player-modal').classList.add('hidden');
-    if (document.getElementById('detail-view').classList.contains('hidden')) document.body.classList.remove('overlay-active');
+    if (document.getElementById('detail-view').classList.contains('hidden') && document.getElementById('browse-view').classList.contains('hidden')) document.body.classList.remove('overlay-active');
 
     // Rimuovi blocco landscape se attivo
 // Esci dal fullscreen se attivo
@@ -4483,8 +4809,12 @@ let heroFadeTimeout = null;
 // Funzione per la HOME
 
 // Update displayHeroMovie to handle both types
+// Con l'hero a rotazione possono esserci più chiamate in corso: solo l'ultima scrive
+let heroRenderToken = 0;
 async function displayHeroMovie(content) {
     const isMobile = window.innerWidth <= 768;
+    const heroToken = ++heroRenderToken;
+    const heroIsCurrent = () => heroToken === heroRenderToken;
 
     // 1. GESTIONE SFONDO (Backdrop)
     const clone = heroBackdropEl.cloneNode(true);
@@ -4504,6 +4834,7 @@ async function displayHeroMovie(content) {
     });
 
     clone.addEventListener('transitionend', () => {
+        if (!heroIsCurrent()) { clone.remove(); return; }
         heroBackdropEl.style.backgroundImage = `url(${IMG_PATH}${content.backdrop_path})`;
         clone.remove();
     }, { once: true });
@@ -4536,6 +4867,7 @@ async function displayHeroMovie(content) {
         const heroYear = (content.release_date || content.first_air_date || '').split('-')[0];
 
         function renderHeroRTScores(rtData) {
+            if (!heroIsCurrent()) return;
             if (rtData && rtData.criticsScore !== null) {
                 const isRtFresh = rtData.criticsScore >= 60;
                 const rtIcon = isRtFresh ? './icons/tomato.svg' : './icons/splat.svg';
@@ -4560,6 +4892,7 @@ async function displayHeroMovie(content) {
         }
 
         function renderHeroTMDBFallback() {
+            if (!heroIsCurrent()) return;
             const tmdbHeroScore = Math.round(content.vote_average * 10);
             heroScoresContainer.innerHTML = `
                 <div class="flex items-center gap-1.5">
@@ -4606,6 +4939,7 @@ async function displayHeroMovie(content) {
     try {
         const response = await fetch(`${API_URL}/${content.media_type}/${content.id}/images?api_key=${API_KEY}&include_image_language=it,en,null`);
         const data = await response.json();
+        if (!heroIsCurrent()) return;
 
         let logo = null;
         if (data.logos && data.logos.length > 0) {
@@ -4622,6 +4956,7 @@ async function displayHeroMovie(content) {
             imgLoader.src = logoUrl;
 
             imgLoader.onload = () => {
+                if (!heroIsCurrent()) return;
                 // Solo quando l'immagine è pronta, la mostriamo
                 heroLogoEl.src = logoUrl;
                 heroLogoEl.classList.remove('hidden');
@@ -4722,7 +5057,7 @@ async function getMovieDetails(id, type = 'movie') {
 
         // Create movie card element
  // Funzione createMovieCard aggiornata con supporto orientamento
-function createMovieCard(item, type = "movie", orientation = "vertical") {
+function createMovieCard(item, type = "movie", orientation = "vertical", opts = {}) {
     const card = document.createElement("div");
 
     // SETUP CLASSI RESPONSIVE (Invariato)
@@ -4739,6 +5074,7 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
     // --- ROTTEN TOMATOES (direct from server cache, or pending background scrape) ---
     const rtData = item.rt || null;
     const hasRT = rtData && (rtData.criticsScore !== null || rtData.audienceScore !== null);
+    const noRT = !!opts.noRT;   // righe di scoperta: niente badge e niente polling RT
 
     const pathTomato = './icons/tomato.svg';
     const pathSplat = './icons/splat.svg';
@@ -4754,7 +5090,7 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
     card.dataset.rtType = type;
     card.dataset.rtYear = rtYear;
     card.dataset.tmdbId = item.id;
-    card.dataset.rtLoaded = hasRT ? 'true' : 'false';
+    card.dataset.rtLoaded = (hasRT || noRT) ? 'true' : 'false';
 
     // Build RT badge HTML
     let rtBadge = '';
@@ -4784,7 +5120,7 @@ function createMovieCard(item, type = "movie", orientation = "vertical") {
             </div>` : ''}
             <div class="rt-live-dot absolute -top-0.5 -left-0.5 w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Rotten Tomatoes Live Score"></div>
         </div>`;
-    } else {
+    } else if (!noRT) {
         // Placeholder badge con spinner di caricamento (visibile, sarà aggiornato dal /rt-cached poll)
         rtBadge = `
         <div class="rt-badge absolute top-2 right-2 z-20 flex flex-col gap-1 items-end" data-card-id="${item.id}">
@@ -6449,6 +6785,7 @@ window.setupPartyListeners = function setupPartyListeners() {
 
 </script>
 <script src="liquid-glass.js"></script>
+<script src="js/discover.js" defer></script>
 <script src="js/nav-history.js" defer></script>
 
 <!-- ============================================================
@@ -6576,7 +6913,7 @@ document.addEventListener('DOMContentLoaded', function () {
     <a href="#hero-section" class="ios-tab active" data-spy="hero-section"><i class="fas fa-house"></i><span>Home</span></a>
     <a href="#movie-trend" class="ios-tab" data-spy="movie-trend"><i class="fas fa-film"></i><span>Film</span></a>
     <a href="#tv-popular" class="ios-tab" data-spy="tv-popular"><i class="fas fa-tv"></i><span>Serie</span></a>
-    <a href="#critics" class="ios-tab" data-spy="critics"><i class="fas fa-star"></i><span>Top</span></a>
+    <a href="#explore" class="ios-tab" data-spy="explore"><i class="fas fa-compass"></i><span>Esplora</span></a>
     <a href="#" onclick="if(typeof openPartyMenu==='function')openPartyMenu();return false;" class="ios-tab tab-party"><i class="fas fa-users"></i><span>Party</span></a>
 </nav>
 <script>
