@@ -1707,6 +1707,28 @@ body.lf .skip-animation {
     text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
 }
 
+/* 2x tenendo premuto il bordo */
+body.lf #player-modal video { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+body.lf .lf-speed-hold {
+    position: absolute; z-index: 45;
+    top: max(18px, env(safe-area-inset-top)); left: 50%;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 7px 14px 7px 16px; border-radius: 999px;
+    background: rgba(9, 9, 11, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    color: var(--ink);
+    font: 600 14px/1 var(--font-ui); letter-spacing: 0.02em;
+    opacity: 0; pointer-events: none;
+    transform: translate(-50%, -8px) scale(0.96);
+    transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+body.lf .lf-speed-hold span { font: 400 20px/1 var(--font-display); }
+body.lf .lf-speed-hold i { font-size: 11px; opacity: 0.85; animation: lfSpeedPulse 0.9s ease-in-out infinite; }
+body.lf .lf-speed-hold.is-on { opacity: 1; transform: translate(-50%, 0) scale(1); }
+@keyframes lfSpeedPulse { 50% { opacity: 0.35; transform: translateX(2px); } }
+@media (prefers-reduced-motion: reduce) { body.lf .lf-speed-hold i { animation: none; } }
+
 /* caricamento */
 body.lf .lf-player-loading { background: rgba(0, 0, 0, 0.3); z-index: 15; }
 body.lf .lf-spinner {
@@ -2682,3 +2704,7 @@ body.lf .lf-hero-dots.is-paused .lf-hero-dot.is-active span::after { animation-p
 @media (prefers-reduced-motion: reduce) {
     body.lf .lf-hero-dot.is-active span::after { animation: none; transform: none; }
 }
+
+/* voti RT arrivati aprendo la scheda (righe di scoperta) */
+body.lf .rt-badge.lf-rt-fresh { animation: lfRtIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes lfRtIn { from { opacity: 0; transform: translateY(-4px) scale(0.94); } }
