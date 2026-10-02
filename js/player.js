@@ -1397,6 +1397,7 @@ class VideoPlayer {
         // Touch controls
         this.videoPlayer.addEventListener('touchstart', (e) => this.handleTouchStart(e));
         this.videoPlayer.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+        this.setupSpeedHold();
 
         // Zoom
         this.zoomBtn.addEventListener('click', () => this.toggleZoom());
@@ -1623,9 +1624,16 @@ class VideoPlayer {
     handleTouchStart(e) {
         this.touchStartX = e.touches[0].clientX;
         this.touchStartTime = Date.now();
+        if (e.touches.length === 1) this.armSpeedHold(e.touches[0].clientX, e.touches[0].clientY);
+        else this.cancelSpeedHold();
     }
 
     handleTouchEnd(e) {
+        // Rilascio dopo una pressione prolungata sul bordo: non è un tap
+        if (this.endSpeedHold()) {
+            this.lastTapTime = 0;
+            return;
+        }
         const touchEndX = e.changedTouches[0].clientX;
         const containerWidth = this.videoPlayer.offsetWidth;
         const currentTime = Date.now();
@@ -1656,6 +1664,97 @@ class VideoPlayer {
         }
 
         this.lastTapTime = currentTime;
+    }
+
+    // ── Velocità 2x tenendo premuto il bordo ────────────────
+    // Come le app video moderne: tieni premuto il lato sinistro o destro
+    // dello schermo e il video va a 2x finché non stacchi il dito.
+    setupSpeedHold() {
+        this.speedHold = { timer: null, active: false, x: 0, y: 0, rate: 1, lastTouch: 0 };
+        const badge = document.createElement('div');
+        badge.className = 'lf-speed-hold';
+        badge.setAttribute('aria-hidden', 'true');
+        badge.innerHTML = '<span>2×</span><i class="fas fa-forward"></i>';
+        (document.getElementById('videoContainer') || this.playerModal).appendChild(badge);
+        this.speedBadge = badge;
+
+        const v = this.videoPlayer;
+        v.addEventListener('touchmove', (e) => {
+            const t = e.touches[0];
+            if (this.speedHold.timer && t && Math.hypot(t.clientX - this.speedHold.x, t.clientY - this.speedHold.y) > 14) {
+                this.cancelSpeedHold();
+            }
+        }, { passive: true });
+        v.addEventListener('touchcancel', () => this.endSpeedHold());
+        // Su mobile la pressione lunga aprirebbe il menu del video
+        v.addEventListener('contextmenu', (e) => {
+            if (this.speedHold.active || this.speedHold.timer || Date.now() - this.speedHold.lastTouch < 1500) e.preventDefault();
+        });
+
+        // Desktop: stessa cosa tenendo premuto il mouse sul bordo
+        v.addEventListener('mousedown', (e) => {
+            if (e.button !== 0 || Date.now() - this.speedHold.lastTouch < 1000) return;
+            this.armSpeedHold(e.clientX, e.clientY);
+        });
+        document.addEventListener('mouseup', () => { this.cancelSpeedHold(); this.endSpeedHold(); });
+        v.addEventListener('mousemove', (e) => {
+            if (this.speedHold.timer && Math.hypot(e.clientX - this.speedHold.x, e.clientY - this.speedHold.y) > 14) this.cancelSpeedHold();
+        });
+
+        const stop = () => this.endSpeedHold();
+        v.addEventListener('pause', stop);
+        v.addEventListener('ended', stop);
+        v.addEventListener('emptied', stop);
+        document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+    }
+
+    isInSpeedEdge(x) {
+        const r = this.videoPlayer.getBoundingClientRect();
+        if (!r.width) return false;
+        const edge = Math.max(56, Math.min(r.width * 0.22, 220));
+        return x - r.left <= edge || r.right - x <= edge;
+    }
+
+    armSpeedHold(x, y) {
+        const h = this.speedHold;
+        if (!h) return;
+        this.cancelSpeedHold();
+        h.lastTouch = Date.now();
+        h.x = x; h.y = y;
+        const v = this.videoPlayer;
+        // In un party la velocità diversa desincronizzerebbe gli altri
+        let inParty = false;
+        try { inParty = typeof currentPartyCode !== 'undefined' && !!currentPartyCode; } catch (e) { /* nessun party */ }
+        if (inParty || v.paused || v.ended || this.isSeeking || !this.isInSpeedEdge(x)) return;
+        h.timer = setTimeout(() => {
+            h.timer = null;
+            if (v.paused || v.ended) return;
+            h.active = true;
+            h.rate = v.playbackRate || 1;
+            v.playbackRate = 2;
+            this.speedBadge.classList.add('is-on');
+            if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) { /* non supportato */ } }
+        }, 420);
+    }
+
+    cancelSpeedHold() {
+        if (this.speedHold && this.speedHold.timer) {
+            clearTimeout(this.speedHold.timer);
+            this.speedHold.timer = null;
+        }
+    }
+
+    // Ritorna true se era attiva la velocità 2x
+    endSpeedHold() {
+        const h = this.speedHold;
+        if (!h) return false;
+        this.cancelSpeedHold();
+        if (!h.active) return false;
+        h.active = false;
+        h.lastTouch = Date.now();
+        this.videoPlayer.playbackRate = h.rate || 1;
+        this.speedBadge.classList.remove('is-on');
+        return true;
     }
 
     // ── Skip Animations ─────────────────────────────────────

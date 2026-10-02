@@ -3836,6 +3836,44 @@ function rtPageUrl(rt, title) {
     return `https://www.rottentomatoes.com/search?search=${encodeURIComponent(title || '')}`;
 }
 
+// Mostra i voti RT sulle card di un titolo che ancora non li hanno
+function rtBadgeInnerHTML(cScore, aScore) {
+    const chip = (icon, alt, score, color) => `
+        <div class="liquid-glass" style="border-radius:4px;">
+            <div class="lg-overlay-bg" style="position:absolute;inset:0;z-index:1;background:rgba(0,0,0,0.6);border-radius:4px;"></div>
+            <div class="lg-content" style="position:relative;z-index:3;display:flex;align-items:center;gap:6px;padding:2px 6px;">
+                <img src="${icon}" class="w-4 h-4 object-contain" alt="${alt}">
+                <span class="${color} text-[11px] font-bold leading-none">${score}%</span>
+            </div>
+        </div>`;
+    let html = '';
+    if (cScore !== null && cScore !== undefined) html += chip(`./icons/${cScore >= 60 ? 'tomato' : 'splat'}.svg`, 'Critic', cScore, 'text-white');
+    if (aScore !== null && aScore !== undefined) html += chip(`./icons/${aScore >= 60 ? 'popcorn-full' : 'popcorn-spilled'}.svg`, 'Audience', aScore, 'text-gray-200');
+    return html;
+}
+function applyRTToCards(tmdbId, rt, title) {
+    if (!tmdbId || !rt) return;
+    const inner = rtBadgeInnerHTML(rt.criticsScore, rt.audienceScore);
+    if (!inner) return;
+    document.querySelectorAll(`.movie-card[data-rt-lazy][data-tmdb-id="${CSS.escape(String(tmdbId))}"]`).forEach(card => {
+        let badge = card.querySelector('.rt-badge');
+        if (badge && badge.dataset.rtUrl) return;   // ha già i voti
+        if (!badge) {
+            const host = card.querySelector('.lf-card-media') || card.firstElementChild || card;
+            badge = document.createElement('div');
+            badge.className = 'rt-badge absolute top-2 right-2 z-20 flex flex-col gap-1 items-end lf-rt-fresh';
+            badge.dataset.cardId = tmdbId;
+            host.appendChild(badge);
+        }
+        badge.style.display = '';
+        badge.innerHTML = inner;
+        badge.dataset.rtUrl = rtPageUrl(rt, title);
+        badge.setAttribute('role', 'link');
+        badge.title = 'Apri su Rotten Tomatoes';
+        card.dataset.rtLoaded = 'true';
+    });
+}
+
 // RT: prima la cache del proxy, poi lo scraping forzato
 async function loadRTScoresFor(title, type, year) {
     let d = await fetchRTScores(title, type, year, false).catch(() => null);
@@ -3970,6 +4008,8 @@ function populateDetailView(content, token = detailToken) {
         </div>`;
     const rtTitle = content.original_title || content.original_name || title;
     loadRTScoresFor(rtTitle, isTV ? 'tv' : 'movie', year).then(rt => {
+        // Le card senza voti (righe di scoperta) li ricevono al primo clic
+        if (rt) applyRTToCards(content.id, rt, rtTitle);
         if (token !== detailToken) return;
         let rtHtml = '';
         const rtHref = escapeHtml(rtPageUrl(rt, rtTitle));
@@ -5091,6 +5131,7 @@ function createMovieCard(item, type = "movie", orientation = "vertical", opts = 
     card.dataset.rtYear = rtYear;
     card.dataset.tmdbId = item.id;
     card.dataset.rtLoaded = (hasRT || noRT) ? 'true' : 'false';
+    if (noRT) card.dataset.rtLazy = '1';   // i voti arrivano quando si apre la scheda
 
     // Build RT badge HTML
     let rtBadge = '';
