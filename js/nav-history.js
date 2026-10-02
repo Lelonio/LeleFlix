@@ -96,6 +96,7 @@
     watch('detail-view', 'detail',
         el => !el.classList.contains('hidden') && !el.classList.contains('detail-view-exit'),
         () => closeDetailView());
+    watch('browse-view', 'browse', visible, () => { if (window.LeleBrowse) window.LeleBrowse.close(); });
     watch('party-menu-modal', 'party', visible, () => { if (window.closePartyMenu) window.closePartyMenu(); });
     watch('vlc-prompt', 'play-options', visible, click('btn-cancel-prompt'));
     watch('player-modal', 'player', visible, click('close-player'));
