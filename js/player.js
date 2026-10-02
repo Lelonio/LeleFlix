@@ -1670,7 +1670,7 @@ class VideoPlayer {
     // Come le app video moderne: tieni premuto il lato sinistro o destro
     // dello schermo e il video va a 2x finché non stacchi il dito.
     setupSpeedHold() {
-        this.speedHold = { timer: null, active: false, x: 0, y: 0, rate: 1, lastTouch: 0 };
+        this.speedHold = { timer: null, active: false, x: 0, y: 0, rate: 1, lastTouch: 0, releasedAt: 0 };
         const badge = document.createElement('div');
         badge.className = 'lf-speed-hold';
         badge.setAttribute('aria-hidden', 'true');
@@ -1732,9 +1732,18 @@ class VideoPlayer {
             h.active = true;
             h.rate = v.playbackRate || 1;
             v.playbackRate = 2;
+            this.hideControlsNow();
             this.speedBadge.classList.add('is-on');
             if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) { /* non supportato */ } }
         }, 420);
+    }
+
+    hideControlsNow() {
+        clearTimeout(this.controlsTimeout);
+        if (this.isAnyMenuOpen()) this.closeAllMenus();
+        this.controlsContainer.classList.remove('visible');
+        this.backButtonContainer.classList.remove('visible');
+        this.centerControls.classList.remove('visible-center');
     }
 
     cancelSpeedHold() {
@@ -1751,7 +1760,7 @@ class VideoPlayer {
         this.cancelSpeedHold();
         if (!h.active) return false;
         h.active = false;
-        h.lastTouch = Date.now();
+        h.lastTouch = h.releasedAt = Date.now();
         this.videoPlayer.playbackRate = h.rate || 1;
         this.speedBadge.classList.remove('is-on');
         return true;
@@ -1926,6 +1935,11 @@ class VideoPlayer {
     // FIX Bug #4: Unified visibility using ONLY .visible class
     // FIX Bug #7: centerControls uses opacity only (visible-center class)
     showControlsTemporarily() {
+        // Pressione prolungata per il 2x (in attesa, attiva o appena rilasciata):
+        // i controlli restano nascosti per non coprire il video
+        const h = this.speedHold;
+        if (h && (h.timer || h.active || Date.now() - h.releasedAt < 700)) return;
+
         // Mobile portrait layout
         if (this.isMobile && window.innerHeight > window.innerWidth) {
             this.controlsContainer.classList.add('mobile-portrait');
