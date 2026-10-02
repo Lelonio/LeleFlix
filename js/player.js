@@ -423,6 +423,80 @@ class VideoPlayer {
         }
         document.getElementById('player-title').textContent = playerTitle;
         this.updatePlayerInfo();
+        this.updateMediaSession();
+    }
+
+    // ── Media Session (notifica di sistema, schermata di blocco, cuffie) ──
+    setupMediaSession() {
+        if (!('mediaSession' in navigator)) return;
+        const ms = navigator.mediaSession;
+        const v = this.videoPlayer;
+        const on = (action, fn) => { try { ms.setActionHandler(action, fn); } catch (e) { /* azione non supportata */ } };
+        on('play', () => { v.play().catch(() => {}); });
+        on('pause', () => v.pause());
+        on('stop', () => v.pause());
+        on('seekbackward', d => { v.currentTime = Math.max(0, v.currentTime - (d.seekOffset || 10)); });
+        on('seekforward', d => { v.currentTime = Math.min(v.duration || Infinity, v.currentTime + (d.seekOffset || 10)); });
+        on('seekto', d => {
+            if (d.fastSeek && 'fastSeek' in v) v.fastSeek(d.seekTime);
+            else v.currentTime = d.seekTime;
+        });
+        const syncState = () => {
+            if (this.playerModal.classList.contains('hidden')) return;
+            ms.playbackState = v.paused ? 'paused' : 'playing';
+            this.updateMediaPosition();
+        };
+        ['play', 'pause', 'seeked', 'ratechange', 'durationchange', 'loadedmetadata'].forEach(t => v.addEventListener(t, syncState));
+    }
+
+    updateMediaSession() {
+        if (!('mediaSession' in navigator) || !window.MediaMetadata || !this.content) return;
+        const c = this.content;
+        const isEp = c.media_type === 'tv' && c.season_number && c.episode_number;
+        const show = c.name || c.title || 'LeleFlix';
+        const code = isEp ? `S${String(c.season_number).padStart(2, '0')}E${String(c.episode_number).padStart(2, '0')}` : '';
+        const epTitle = isEp ? (c.episode_data?.name || `Episodio ${c.episode_number}`) : '';
+        const img = 'https://image.tmdb.org/t/p/';
+        const artwork = [];
+        if (c.poster_path) {
+            artwork.push({ src: `${img}w342${c.poster_path}`, sizes: '342x513', type: 'image/jpeg' });
+            artwork.push({ src: `${img}w500${c.poster_path}`, sizes: '500x750', type: 'image/jpeg' });
+        }
+        if (c.backdrop_path) artwork.push({ src: `${img}w780${c.backdrop_path}`, sizes: '780x439', type: 'image/jpeg' });
+        try {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: isEp ? `${code} · ${epTitle}` : show,
+                artist: isEp ? show : 'LeleFlix',
+                album: 'LeleFlix',
+                artwork
+            });
+        } catch (e) { /* metadati non validi: si tiene la notifica di base */ }
+        // "Episodio successivo" dalla notifica, quando esiste
+        try {
+            navigator.mediaSession.setActionHandler('nexttrack',
+                c.media_type === 'tv' && this.checkNextEpisodeExists() ? () => this.playNextEpisode() : null);
+        } catch (e) { /* non supportato */ }
+    }
+
+    updateMediaPosition() {
+        const v = this.videoPlayer;
+        if (!('mediaSession' in navigator) || !navigator.mediaSession.setPositionState) return;
+        if (!isFinite(v.duration) || v.duration <= 0) return;
+        try {
+            navigator.mediaSession.setPositionState({
+                duration: v.duration,
+                playbackRate: v.playbackRate || 1,
+                position: Math.min(v.currentTime, v.duration)
+            });
+        } catch (e) { /* valori non validi */ }
+    }
+
+    clearMediaSession() {
+        if (!('mediaSession' in navigator)) return;
+        try {
+            navigator.mediaSession.metadata = null;
+            navigator.mediaSession.playbackState = 'none';
+        } catch (e) { /* non supportato */ }
     }
 
     // ── Pannello info sotto il video (mobile portrait): trama, cast,
@@ -1398,6 +1472,7 @@ class VideoPlayer {
         this.videoPlayer.addEventListener('touchstart', (e) => this.handleTouchStart(e));
         this.videoPlayer.addEventListener('touchend', (e) => this.handleTouchEnd(e));
         this.setupSpeedHold();
+        this.setupMediaSession();
 
         // Zoom
         this.zoomBtn.addEventListener('click', () => this.toggleZoom());
@@ -2042,6 +2117,7 @@ class VideoPlayer {
         this.currentStreamId = null;
         this.abortController = null;
         this.playerModal.classList.add('hidden');
+        this.clearMediaSession();
         // se sotto c'è la scheda dettaglio, la tab bar deve restare nascosta
         const isOpen = id => document.getElementById(id) && !document.getElementById(id).classList.contains('hidden');
         const detailOpen = isOpen('detail-view') || isOpen('browse-view');
