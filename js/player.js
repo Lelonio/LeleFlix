@@ -446,7 +446,16 @@ class VideoPlayer {
             ms.playbackState = v.paused ? 'paused' : 'playing';
             this.updateMediaPosition();
         };
-        ['play', 'pause', 'seeked', 'ratechange', 'durationchange', 'loadedmetadata'].forEach(t => v.addEventListener(t, syncState));
+        ['play', 'playing', 'pause', 'seeked', 'ratechange', 'durationchange', 'loadedmetadata'].forEach(t => v.addEventListener(t, syncState));
+        // La notifica stima l'avanzamento da sola, ma pause per il buffering e
+        // riprese la fanno sfasare: si riallinea ogni 5 secondi.
+        let lastSync = 0;
+        v.addEventListener('timeupdate', () => {
+            const now = Date.now();
+            if (now - lastSync < 5000) return;
+            lastSync = now;
+            syncState();
+        });
     }
 
     updateMediaSession() {
@@ -457,12 +466,18 @@ class VideoPlayer {
         const code = isEp ? `S${String(c.season_number).padStart(2, '0')}E${String(c.episode_number).padStart(2, '0')}` : '';
         const epTitle = isEp ? (c.episode_data?.name || `Episodio ${c.episode_number}`) : '';
         const img = 'https://image.tmdb.org/t/p/';
-        const artwork = [];
-        if (c.poster_path) {
-            artwork.push({ src: `${img}w342${c.poster_path}`, sizes: '342x513', type: 'image/jpeg' });
-            artwork.push({ src: `${img}w500${c.poster_path}`, sizes: '500x750', type: 'image/jpeg' });
-        }
-        if (c.backdrop_path) artwork.push({ src: `${img}w780${c.backdrop_path}`, sizes: '780x439', type: 'image/jpeg' });
+        // Immagine orizzontale: la scheda multimediale di Android è larga e una
+        // locandina verticale verrebbe tagliata. Per gli episodi si usa il
+        // fotogramma dell'episodio; la locandina resta solo come ripiego.
+        const wide = (isEp && c.episode_data?.still_path) || c.backdrop_path || c.tv_data?.backdrop_path;
+        const artwork = wide
+            ? [
+                { src: `${img}w780${wide}`, sizes: '780x439', type: 'image/jpeg' },
+                { src: `${img}w1280${wide}`, sizes: '1280x720', type: 'image/jpeg' }
+            ]
+            : c.poster_path
+                ? [{ src: `${img}w500${c.poster_path}`, sizes: '500x750', type: 'image/jpeg' }]
+                : [];
         try {
             navigator.mediaSession.metadata = new MediaMetadata({
                 title: isEp ? `${code} · ${epTitle}` : show,
